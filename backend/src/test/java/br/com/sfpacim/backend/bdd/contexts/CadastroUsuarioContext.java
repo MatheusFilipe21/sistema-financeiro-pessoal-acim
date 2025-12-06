@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Import;
 
 import br.com.sfpacim.backend.config.SegurancaConfig;
 import br.com.sfpacim.backend.exceptions.TratadorDeErrosGlobal;
+import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.UsuarioRepository;
 import io.cucumber.java.After;
 import io.cucumber.spring.CucumberContextConfiguration;
@@ -63,6 +64,19 @@ public class CadastroUsuarioContext extends BaseApiContext {
     @After("@limparUsuarios")
     public void limparTodosOsUsuarios() {
         usuarioRepository.deleteAll();
+    }
+
+    /**
+     * Insere um usuário diretamente no banco de dados para preparar o cenário de
+     * teste.
+     *
+     * @param email O email que será registrado.
+     */
+    public void criarUsuarioParaCenarioDeTeste(String email) {
+        final Usuario usuario = new Usuario("Matheus Filipe do Nascimento Pereira", email,
+                "eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJTRlAtQUNJTSBBUEkiLCJzdWIiOiJtYXRoZXVzZm5wZXJlaXJhQGdtYWlsLmNvbSIsImlhdCI6MTc2MzMwNjE3NiwiZXhwIjoxNzYzMzM0OTc2fQ.e90EOyfiPFUE4Mu5LgbZEtrYnQIGzueecgm4G-fWIKTtSr7IuxC1X_hBkltJBRxHo9ocTvQFje44r0g84TqaiQ");
+
+        usuarioRepository.save(usuario);
     }
 
 }

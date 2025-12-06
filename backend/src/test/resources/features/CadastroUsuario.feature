@@ -20,3 +20,21 @@ Funcionalidade: Cadastro de Novo Usuário
     Então o status da resposta deve ser 201
     E o corpo da resposta deve conter o campo "id"
     E o campo "email" na resposta deve ser "matheusfnpereira@gmail.com"
+
+  @limparUsuarios
+  Cenário: Tentativa de cadastro com email duplicado
+    Dado que já existe um usuário cadastrado com email "matheusfnpereira@gmail.com"
+    E que eu tenho os seguintes dados válidos para o novo usuário
+      """
+      {
+        "nome": "Matheus Filipe do Nascimento Pereira",
+        "email": "matheusfnpereira@gmail.com",
+        "senha": "Ab123456"
+      }
+      """
+    Quando o cliente faz uma requisição POST para "/api/autenticacao/cadastro"
+    Então o status da resposta deve ser 400
+    E o campo "titulo" na resposta deve ser "Violação de Dados"
+    E o campo "mensagem" na resposta deve ser "O e-mail: matheusfnpereira@gmail.com já está cadastrado."
+    E o campo "rota" na resposta deve ser "/api/autenticacao/cadastro"
+    E o corpo da resposta deve conter o campo "dataHora"

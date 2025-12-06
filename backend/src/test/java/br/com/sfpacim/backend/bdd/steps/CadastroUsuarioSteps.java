@@ -23,6 +23,14 @@ public class CadastroUsuarioSteps {
     }
 
     /**
+     * Step: "Dado que já existe um usuário cadastrado com email {string}".
+     */
+    @Dado("que já existe um usuário cadastrado com email {string}")
+    public void dadoQueJaExisteUmUsuarioCadastradoComEmail(String email) {
+        context.criarUsuarioParaCenarioDeTeste(email);
+    }
+
+    /**
      * Step: "Quando o cliente faz uma requisição POST para {string}"
      */
     @Quando("o cliente faz uma requisição POST para {string}")
