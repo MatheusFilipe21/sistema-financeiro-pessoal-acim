@@ -36,6 +36,8 @@ def before_scenario(context, scenario):
     """
     if 'cadastro' in scenario.tags:
         context.email_gerado = fake.unique.email()
+        context.nome_padrao = "MATHEUS FILIPE DO NASCIMENTO PEREIRA"
+        context.senha_padrao = "Ab123456"
 
         print("\n--- Dados gerados para o cenário: ---")
         print(f"E-mail: {context.email_gerado}")

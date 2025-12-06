@@ -6,8 +6,14 @@ Funcionalidade: Cadastro de Novo Usuário
   Para poder acessar a minha conta
 
   @cadastro
-  Cenario: Cadastro bem-sucedido com dados validos
-    Dado que estou na pagina de cadastro
+  Cenário: Cadastro bem-sucedido com dados válidos
+    Dado que estou na página de cadastro
     Quando preencho "MATHEUS FILIPE DO NASCIMENTO PEREIRA", o email gerado, e senhas "Ab123456" e "Ab123456"
-    E clico no botao "Cadastrar"
-    Entao uma mensagem de sucesso deve ser exibida com o texto "Usuário MATHEUS FILIPE DO NASCIMENTO PEREIRA cadastrado com sucesso!"
+    E clico no botão "Cadastrar"
+    Então uma mensagem de sucesso deve ser exibida com o texto "Usuário MATHEUS FILIPE DO NASCIMENTO PEREIRA cadastrado com sucesso!"
+
+  @cadastro
+  Cenário: Tentativa de cadastro com email duplicado
+    Dado que já existe um usuário cadastrado com o email gerado
+    Quando tento me cadastrar novamente com o mesmo email gerado
+    Então deve ser exibido um erro com título "Violação de Dados" e mensagem "O e-mail: {email} já está cadastrado."

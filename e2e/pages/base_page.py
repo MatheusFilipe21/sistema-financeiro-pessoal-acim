@@ -1,6 +1,7 @@
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.common.by import By
 from typing import Tuple, Any
 
 
@@ -22,6 +23,10 @@ class BasePage:
         self.url_base = url_base
 
         self.espera = WebDriverWait(driver, 10)
+
+        self.DIALOG_GLOBAL = (By.ID, "dialog-erro-global")
+        self.TITULO_ERRO_DIALOG_GLOBAL = (By.ID, "titulo-erro")
+        self.MENSAGEM_ERRO_DIALOG_GLOBAL = (By.ID, "mensagem-erro")
 
     def visitar(self) -> None:
         """

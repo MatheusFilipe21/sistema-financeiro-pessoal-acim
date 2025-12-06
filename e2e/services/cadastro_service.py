@@ -1,7 +1,8 @@
 from pages.cadastro_page import CadastroPage
+from services.base_service import BaseService
 
 
-class CadastroService:
+class CadastroService(BaseService):
     """
     Camada de Serviço/Contexto: Orquestra a lógica de teste para a funcionalidade de Cadastro.
     Contém as ações de alto nível e as asserções.
@@ -14,6 +15,7 @@ class CadastroService:
         Args:
             cadastro_page: A instância do Page Object de Cadastro.
         """
+        super().__init__(cadastro_page)
         self.cadastro_page = cadastro_page
 
     def navegar_para_cadastro(self) -> None:
@@ -43,3 +45,18 @@ class CadastroService:
         mensagem_esperada = f"Usuário {nome_esperado} cadastrado com sucesso!"
 
         assert mensagem_real == mensagem_esperada, f"Esperado: '{mensagem_esperada}', Obtido: '{mensagem_real}'"
+
+    def verificar_mensagem_erro_email_duplicado(self, email_duplicado: str) -> None:
+        """
+        Verifica se o Dialog de erro apareceu com a mensagem correta de duplicidade.
+        Utiliza o verificador genérico herdado de BaseService.
+
+        Args:
+            email_duplicado: O e-mail que gerou o conflito.
+
+        :author: Matheus F. N. Pereira
+        """
+        titulo = "Violação de Dados1"
+        mensagem = f"O e-mail: {email_duplicado} já está cadastrado.1"
+
+        self.verificar_erro_global(titulo, mensagem)
