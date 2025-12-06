@@ -169,6 +169,7 @@ export class Cadastro {
           duration: 5000,
           verticalPosition: 'top',
           horizontalPosition: 'end',
+          panelClass: ['snackbar-sucesso-cadastro'],
         });
       },
     });
