@@ -24,7 +24,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import br.com.sfpacim.backend.dtos.autenticacao.DadosAutenticacaoDTO;
 import br.com.sfpacim.backend.dtos.autenticacao.DadosRecuperacaoSenhaDTO;
+import br.com.sfpacim.backend.dtos.autenticacao.DadosRedefinicaoSenhaDTO;
 import br.com.sfpacim.backend.dtos.autenticacao.DadosTokenJWTDTO;
+import br.com.sfpacim.backend.exceptions.RegraDeNegocioException;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.UsuarioRepository;
 import br.com.sfpacim.backend.services.interfaces.EmailService;
@@ -52,6 +54,9 @@ class AutenticacaoServiceTest {
 
     @Mock
     private EmailService emailService;
+
+    @Mock
+    private UsuarioService usuarioService;
 
     @InjectMocks
     private AutenticacaoService autenticacaoService;
@@ -172,5 +177,95 @@ class AutenticacaoServiceTest {
         verify(usuarioRepository).findByEmail(anyString());
         verify(tokenService, never()).gerarTokenRecuperacao(any());
         verify(emailService, never()).enviar(anyString(), anyString(), anyString());
+    }
+
+    /**
+     * Testa o método
+     * {@link AutenticacaoService#redefinirSenha(DadosRedefinicaoSenhaDTO)}.
+     * Cenário: Sucesso.
+     *
+     * <p>
+     * O token é válido, o usuário é encontrado e a assinatura confere.
+     * Deve chamar o usuarioService para atualizar a senha.
+     */
+    @Test
+    @DisplayName("redefinirSenha: Quando token válido, deve delegar atualização para UsuarioService")
+    void testeRedefinirSenha_QuandoSucesso_DeveAtualizarSenha() {
+        String novaSenha = "NovaSenha123!";
+        DadosRedefinicaoSenhaDTO dados = new DadosRedefinicaoSenhaDTO(TOKEN_RECUPERACAO, novaSenha);
+        Usuario usuarioMock = new Usuario(UUID.randomUUID(), NOME, EMAIL, SENHA_HASH);
+
+        when(tokenService.obterEmailDoToken(TOKEN_RECUPERACAO)).thenReturn(EMAIL);
+        when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuarioMock));
+
+        autenticacaoService.redefinirSenha(dados);
+
+        verify(tokenService).validarTokenRecuperacao(TOKEN_RECUPERACAO, usuarioMock);
+        verify(usuarioService).atualizarSenha(usuarioMock, novaSenha);
+    }
+
+    /**
+     * Testa o método
+     * {@link AutenticacaoService#redefinirSenha(DadosRedefinicaoSenhaDTO)}.
+     * Cenário: Token ilegível (não conseguiu extrair e-mail).
+     */
+    @Test
+    @DisplayName("redefinirSenha: Quando token ilegível (sem e-mail), deve lançar RegraDeNegocioException")
+    void testeRedefinirSenha_QuandoTokenIlegivel_DeveLancarExcecao() {
+        DadosRedefinicaoSenhaDTO dados = new DadosRedefinicaoSenhaDTO("token.invalido", "Senha123!");
+
+        when(tokenService.obterEmailDoToken(anyString())).thenReturn(null);
+
+        RegraDeNegocioException ex = assertThrows(RegraDeNegocioException.class, () -> {
+            autenticacaoService.redefinirSenha(dados);
+        });
+
+        assertEquals("Token inválido ou expirado.", ex.getMessage());
+    }
+
+    /**
+     * Testa o método
+     * {@link AutenticacaoService#redefinirSenha(DadosRedefinicaoSenhaDTO)}.
+     * Cenário: Token contém e-mail, mas usuário não existe no banco.
+     */
+    @Test
+    @DisplayName("redefinirSenha: Quando usuário não encontrado, deve lançar RegraDeNegocioException")
+    void testeRedefinirSenha_QuandoUsuarioNaoEncontrado_DeveLancarExcecao() {
+        DadosRedefinicaoSenhaDTO dados = new DadosRedefinicaoSenhaDTO(TOKEN_RECUPERACAO, "Senha123!");
+
+        when(tokenService.obterEmailDoToken(TOKEN_RECUPERACAO)).thenReturn(EMAIL);
+        when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+
+        RegraDeNegocioException ex = assertThrows(RegraDeNegocioException.class, () -> {
+            autenticacaoService.redefinirSenha(dados);
+        });
+
+        assertEquals("Token inválido ou expirado.", ex.getMessage());
+    }
+
+    /**
+     * Testa o método
+     * {@link AutenticacaoService#redefinirSenha(DadosRedefinicaoSenhaDTO)}.
+     * Cenário: Falha na validação da assinatura (Token expirado ou senha antiga
+     * alterada).
+     */
+    @Test
+    @DisplayName("redefinirSenha: Quando assinatura do token falha, deve lançar RegraDeNegocioException")
+    void testeRedefinirSenha_QuandoAssinaturaFalha_DeveLancarExcecao() {
+        DadosRedefinicaoSenhaDTO dados = new DadosRedefinicaoSenhaDTO(TOKEN_RECUPERACAO, "Senha123!");
+        Usuario usuarioMock = new Usuario(UUID.randomUUID(), NOME, EMAIL, SENHA_HASH);
+
+        when(tokenService.obterEmailDoToken(TOKEN_RECUPERACAO)).thenReturn(EMAIL);
+        when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuarioMock));
+
+        doThrow(new RuntimeException("Assinatura inválida"))
+                .when(tokenService).validarTokenRecuperacao(TOKEN_RECUPERACAO, usuarioMock);
+
+        RegraDeNegocioException ex = assertThrows(RegraDeNegocioException.class, () -> {
+            autenticacaoService.redefinirSenha(dados);
+        });
+
+        assertEquals("Token inválido ou expirado.", ex.getMessage());
+        verify(usuarioService, never()).atualizarSenha(any(), anyString());
     }
 }

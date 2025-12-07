@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 
 import br.com.sfpacim.backend.dtos.autenticacao.DadosAutenticacaoDTO;
 import br.com.sfpacim.backend.dtos.autenticacao.DadosRecuperacaoSenhaDTO;
+import br.com.sfpacim.backend.dtos.autenticacao.DadosRedefinicaoSenhaDTO;
 import br.com.sfpacim.backend.dtos.autenticacao.DadosTokenJWTDTO;
+import br.com.sfpacim.backend.exceptions.RegraDeNegocioException;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.UsuarioRepository;
 import br.com.sfpacim.backend.services.interfaces.EmailService;
@@ -33,6 +35,7 @@ public class AutenticacaoService {
     private final TokenService tokenService;
     private final UsuarioRepository usuarioRepository;
     private final EmailService emailService;
+    private final UsuarioService usuarioService;
 
     /**
      * Construtor para Injeção de Dependências.
@@ -41,13 +44,15 @@ public class AutenticacaoService {
      * @param tokenService          O serviço para geração de tokens JWT.
      * @param usuarioRepository     Repositório para buscar usuários.
      * @param emailService          Serviço de envio de e-mails.
+     * @param usuarioService        Serviço de domínio do usuário.
      */
     public AutenticacaoService(AuthenticationManager authenticationManager, TokenService tokenService,
-            UsuarioRepository usuarioRepository, EmailService emailService) {
+            UsuarioRepository usuarioRepository, EmailService emailService, UsuarioService usuarioService) {
         this.authenticationManager = authenticationManager;
         this.tokenService = tokenService;
         this.usuarioRepository = usuarioRepository;
         this.emailService = emailService;
+        this.usuarioService = usuarioService;
     }
 
     /**
@@ -109,5 +114,42 @@ public class AutenticacaoService {
             emailService.enviar(usuarioEncontrado.getEmail(), "Recuperação de Senha - Sistema Financeiro Pessoal ACIM",
                     mensagemEmail);
         }
+    }
+
+    /**
+     * Realiza a redefinição de senha (RF17).
+     * 
+     * @param dados O DTO com token e nova senha.
+     */
+    public void redefinirSenha(DadosRedefinicaoSenhaDTO dados) {
+        String email = tokenService.obterEmailDoToken(dados.token());
+
+        if (email == null) {
+            throw criarErroToken();
+        }
+
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(this::criarErroToken);
+
+        try {
+            tokenService.validarTokenRecuperacao(dados.token(), usuario);
+        } catch (Exception e) {
+            throw criarErroToken();
+        }
+
+        usuarioService.atualizarSenha(usuario, dados.senha());
+    }
+
+    /**
+     * Método auxiliar para instanciar a exceção de erro de token.
+     *
+     * <p>
+     * Centraliza a criação da exceção para garantir que a mensagem de erro
+     * seja idêntica em todos os cenários de falha.
+     *
+     * @return Uma nova instância de {@link RegraDeNegocioException}.
+     */
+    private RegraDeNegocioException criarErroToken() {
+        return new RegraDeNegocioException("Token inválido ou expirado.");
     }
 }

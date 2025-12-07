@@ -28,6 +28,19 @@ public class SegurancaConfig {
     private final JWTFilter jwtFilter;
 
     /**
+     * Constante com a lista de URLs públicas da API
+     */
+    private static final String[] ENDPOINTS_PUBLICOS = {
+            "/v3/api-docs/**",
+            "/swagger-ui.html",
+            "/swagger-ui/**",
+            "/autenticacao/cadastro",
+            "/autenticacao/login",
+            "/autenticacao/esqueci-senha",
+            "/autenticacao/redefinir-senha"
+    };
+
+    /**
      * Construtor para Injeção de Dependências.
      * O Spring injeta automaticamente o JWTFilter quando esta classe de
      * configuração é criada.
@@ -93,18 +106,8 @@ public class SegurancaConfig {
 
                 // Configura as regras de autorização para os endpoints HTTP
                 .authorizeHttpRequests(authorize -> authorize
-                        // Permite acesso público (não autenticado) ao endpoint de cadastro (RF07).
-                        .requestMatchers("/autenticacao/cadastro").permitAll()
-
-                        // Permite acesso público (não autenticado) ao endpoint de login (RF08).
-                        .requestMatchers("/autenticacao/login").permitAll()
-
-                        // Permite acesso público (não autenticado) à solicitação de recuperação de
-                        // senha (RF14).
-                        .requestMatchers("/autenticacao/esqueci-senha").permitAll()
-
-                        // Permite acesso público (não autenticado) à documentação do Swagger.
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
+                        // Libera todos os endpoints listados no array ENDPOINTS_PUBLICOS
+                        .requestMatchers(ENDPOINTS_PUBLICOS).permitAll()
 
                         // Exige autenticação para todas as outras requisições.
                         .anyRequest().authenticated())

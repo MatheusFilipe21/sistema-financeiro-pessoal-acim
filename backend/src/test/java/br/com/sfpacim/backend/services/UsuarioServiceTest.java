@@ -17,7 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import br.com.sfpacim.backend.dtos.usuario.DadosCadastroUsuarioDTO;
 import br.com.sfpacim.backend.dtos.usuario.UsuarioDTO;
-import br.com.sfpacim.backend.exceptions.ViolacaoDadosExcecao;
+import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.UsuarioRepository;
 
@@ -82,22 +82,47 @@ class UsuarioServiceTest {
      * 
      * <p>
      * Verifica se o serviço captura a DataIntegrityViolationException (lançada
-     * pelo mock do repositório) e a relança como ViolacaoDadosExcecao.
+     * pelo mock do repositório) e a relança como ViolacaoDadosException.
      */
     @SuppressWarnings("null")
     @Test
-    @DisplayName("registrar: Quando e-mail duplicado, deve lançar ViolacaoDadosExcecao")
-    void testeRegistrar_QuandoEmailDuplicado_DeveLancarViolacaoDadosExcecao() {
+    @DisplayName("registrar: Quando e-mail duplicado, deve lançar ViolacaoDadosException")
+    void testeRegistrar_QuandoEmailDuplicado_DeveLancarViolacaoDadosException() {
         DadosCadastroUsuarioDTO dadosCadastro = new DadosCadastroUsuarioDTO(NOME, EMAIL, SENHA);
 
         when(passwordEncoder.encode(SENHA)).thenReturn(SENHA_HASH);
         when(usuarioRepository.save(any(Usuario.class)))
                 .thenThrow(new DataIntegrityViolationException("E-mail duplicado"));
 
-        ViolacaoDadosExcecao excecao = assertThrows(ViolacaoDadosExcecao.class, () -> {
+        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class, () -> {
             usuarioService.registrar(dadosCadastro);
         });
 
         assertEquals(excecao.getMessage(), String.format("O e-mail: %s já está cadastrado.", EMAIL));
+    }
+
+    /**
+     * Testa o método {@link UsuarioService#atualizarSenha(Usuario, String)}.
+     * Valida o fluxo de alteração de senha (RF17).
+     *
+     * <p>
+     * Verifica se a nova senha é encriptada (RF06) e se a entidade é salva
+     * no repositório com o novo hash.
+     */
+    @Test
+    @DisplayName("atualizarSenha: Deve gerar novo hash e salvar as alterações")
+    void testeAtualizarSenha_DeveCodificarESalvar() {
+        String novaSenha = "NovaSenha123";
+        String novoHash = "$2a$10$VUI0N7kPFDVnD6XZbLni6uyg3UF0RU/fQRNHnZb6oWhTGT3R9YqgG";
+        Usuario usuarioMock = new Usuario(UUID.randomUUID(), NOME, EMAIL, SENHA_HASH);
+
+        when(passwordEncoder.encode(novaSenha)).thenReturn(novoHash);
+
+        usuarioService.atualizarSenha(usuarioMock, novaSenha);
+
+        assertEquals(novoHash, usuarioMock.getSenha(), "A senha do objeto deve ser atualizada para o novo hash");
+
+        verify(passwordEncoder).encode(novaSenha);
+        verify(usuarioRepository).save(usuarioMock);
     }
 }

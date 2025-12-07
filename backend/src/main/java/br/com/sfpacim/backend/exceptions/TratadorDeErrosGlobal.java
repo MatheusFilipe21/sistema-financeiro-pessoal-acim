@@ -35,11 +35,11 @@ public class TratadorDeErrosGlobal {
      * @param requisicao A requisição HTTP (para obter a Rota/URI).
      * @return ResponseEntity (HTTP 400) com o {@link ErroPadraoDTO}.
      */
-    @ExceptionHandler({ ViolacaoDadosExcecao.class, DataIntegrityViolationException.class })
+    @ExceptionHandler({ ViolacaoDadosException.class, DataIntegrityViolationException.class })
     public ResponseEntity<ErroPadraoDTO> excecaoViolacaoDados(Exception excecao, HttpServletRequest requisicao) {
         String mensagemErro;
 
-        if (excecao instanceof ViolacaoDadosExcecao) {
+        if (excecao instanceof ViolacaoDadosException) {
             mensagemErro = excecao.getMessage();
         } else {
             mensagemErro = "Erro de integridade dos dados. Por gentileza, verifique os dados informados e tente novamente.";
@@ -100,6 +100,29 @@ public class TratadorDeErrosGlobal {
         excecao.getFieldErrors().forEach(erroValidacao::adicionarErro);
 
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(erroValidacao);
+    }
+
+    /**
+     * Manipula exceções de Regra de Negócio.
+     * Retorna HTTP 422 (Unprocessable Entity) com a mensagem específica do erro.
+     *
+     * @param excecao    A exceção de regra de negócio capturada.
+     * @param requisicao A requisição HTTP.
+     * @return ResponseEntity (HTTP 422) com o {@link ErroPadraoDTO}.
+     */
+    @ExceptionHandler(RegraDeNegocioException.class)
+    public ResponseEntity<ErroPadraoDTO> excecaoRegraDeNegocio(RegraDeNegocioException excecao,
+            HttpServletRequest requisicao) {
+
+        log.warn("Regra de Negócio violada: {}", excecao.getMessage());
+
+        ErroPadraoDTO erroPadrao = new ErroPadraoDTO(
+                HttpStatus.UNPROCESSABLE_ENTITY, // 422
+                "Regra de Negócio",
+                excecao.getMessage(),
+                requisicao.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(erroPadrao);
     }
 
     /**
