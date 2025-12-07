@@ -11,6 +11,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import br.com.sfpacim.backend.doc.ExemplosDocumentacao;
 import br.com.sfpacim.backend.dtos.autenticacao.DadosAutenticacaoDTO;
+import br.com.sfpacim.backend.dtos.autenticacao.DadosRecuperacaoSenhaDTO;
 import br.com.sfpacim.backend.dtos.autenticacao.DadosTokenJWTDTO;
 import br.com.sfpacim.backend.dtos.erro.ErroPadraoDTO;
 import br.com.sfpacim.backend.dtos.erro.ErroValidacaoDTO;
@@ -66,7 +67,7 @@ public class AutenticacaoController {
      * @return HTTP 201 (Created) com o DTO do usuário criado e o Header 'Location'.
      * @throws ViolacaoDadosExcecao Caso o e-mail já esteja cadastrado (RF04).
      */
-    @Operation(summary = "Cadastra um novo usuário", description = "Este endpoint permite criar um novo usuário no sistema.", responses = {
+    @Operation(summary = "Cadastra um novo usuário", description = "Endpoint público para cadastro de novos usuários. Recebe os dados de registro, cria a conta no sistema e retorna os dados do usuário criado com status 201.", responses = {
             @ApiResponse(responseCode = "201", description = "Usuário cadastrado com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UsuarioDTO.class)), headers = @Header(name = "Location", description = "URL do novo recurso criado")),
             @ApiResponse(responseCode = "400", description = "Violação de Dados", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_EMAIL_DUPLICADO))),
             @ApiResponse(responseCode = "422", description = "Erro de Validação", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroValidacaoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_VALIDACAO_CADASTRO))),
@@ -92,7 +93,7 @@ public class AutenticacaoController {
      * @return HTTP 200 (OK) com o Token JWT (RF12).
      *         HTTP 401 (Unauthorized) se as credenciais forem inválidas (RF13).
      */
-    @Operation(summary = "Autentica um usuário", description = "Endpoint público para login. Recebe e-mail e senha e retorna um Token JWT se a autenticação for bem-sucedida.", responses = {
+    @Operation(summary = "Autentica um usuário", description = "Endpoint público para login. Recebe e-mail e senha e retorna um Token JWT com status 200 se a autenticação for bem-sucedida.", responses = {
             @ApiResponse(responseCode = "200", description = "Login bem-sucedido", content = @Content(mediaType = "application/json", schema = @Schema(implementation = DadosTokenJWTDTO.class))),
             @ApiResponse(responseCode = "401", description = "Não Autorizado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "422", description = "Erro de Validação", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroValidacaoDTO.class))),
@@ -103,5 +104,28 @@ public class AutenticacaoController {
         DadosTokenJWTDTO dadosToken = autenticacaoService.login(dados);
 
         return ResponseEntity.ok(dadosToken);
+    }
+
+    /**
+     * Endpoint (RF14) para solicitar a recuperação de senha.
+     * 
+     * <p>
+     * Este endpoint inicia o fluxo de "Esqueci minha senha". Por questões de
+     * segurança, ele sempre retornará sucesso, independente de o e-mail existir na
+     * base ou não.
+     *
+     * @param dados O DTO contendo o e-mail do usuário.
+     * @return HTTP 204 (No Content).
+     */
+    @Operation(summary = "Solicita um link de recuperação de senha", description = "Endpoint público para recuperação de senha. Recebe o e-mail e inicia o envio do link se o usuário existir. Retorna 204 sempre para evitar descoberta de e-mails dos usuários.", responses = {
+            @ApiResponse(responseCode = "204", description = "Solicitação recebida com sucesso", content = @Content(schema = @Schema(hidden = true))),
+            @ApiResponse(responseCode = "422", description = "Erro de Validação", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroValidacaoDTO.class))),
+            @ApiResponse(responseCode = "500", description = "Erro Interno do Servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_INTERNO_SERVIDOR)))
+    })
+    @PostMapping("/esqueci-senha")
+    public ResponseEntity<Void> esqueciSenha(@Valid @RequestBody DadosRecuperacaoSenhaDTO dados) {
+        autenticacaoService.solicitarRecuperacaoSenha(dados);
+
+        return ResponseEntity.noContent().build();
     }
 }

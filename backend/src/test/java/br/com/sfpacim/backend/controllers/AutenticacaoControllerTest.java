@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import br.com.sfpacim.backend.config.SegurancaConfig;
 import br.com.sfpacim.backend.dtos.autenticacao.DadosAutenticacaoDTO;
+import br.com.sfpacim.backend.dtos.autenticacao.DadosRecuperacaoSenhaDTO;
 import br.com.sfpacim.backend.dtos.autenticacao.DadosTokenJWTDTO;
 import br.com.sfpacim.backend.dtos.usuario.DadosCadastroUsuarioDTO;
 import br.com.sfpacim.backend.dtos.usuario.UsuarioDTO;
@@ -228,6 +229,52 @@ class AutenticacaoControllerTest {
         String jsonRequisicao = objectMapper.writeValueAsString(dadosInvalidos);
 
         mockMvc.perform(post("/autenticacao/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonRequisicao))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    /**
+     * Testa o endpoint POST /autenticacao/esqueci-senha (RF14).
+     * Valida o cenário de sucesso (Solicitação aceita).
+     *
+     * <p>
+     * Verifica se, ao enviar um e-mail válido, o controlador retorna HTTP 204
+     * (No Content) e corpo vazio, indicando que o processo iniciou.
+     *
+     * @throws Exception se ocorrer um erro durante a execução do MockMvc.
+     */
+    @SuppressWarnings("null")
+    @Test
+    @DisplayName("esqueciSenha: Quando e-mail válido, deve retornar HTTP 204 No Content")
+    void testeEsqueciSenha_QuandoEmailValido_DeveRetornar204() throws Exception {
+        DadosRecuperacaoSenhaDTO dadosRecuperacao = new DadosRecuperacaoSenhaDTO(EMAIL);
+        String jsonRequisicao = objectMapper.writeValueAsString(dadosRecuperacao);
+
+        mockMvc.perform(post("/autenticacao/esqueci-senha")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonRequisicao))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+    }
+
+    /**
+     * Testa a validação do endpoint (RF14 - E-mail Inválido).
+     *
+     * <p>
+     * Verifica se, ao enviar um e-mail com formato inválido no DTO,
+     * o controlador retorna HTTP 422 (Unprocessable Entity).
+     *
+     * @throws Exception se ocorrer um erro durante a execução do MockMvc.
+     */
+    @SuppressWarnings("null")
+    @Test
+    @DisplayName("esqueciSenha: Quando e-mail inválido (DTO Validation), deve retornar HTTP 422")
+    void testeEsqueciSenha_QuandoEmailInvalido_DeveRetornar422() throws Exception {
+        DadosRecuperacaoSenhaDTO dadosInvalidos = new DadosRecuperacaoSenhaDTO(EMAIL_INVALIDO_FORMATO);
+        String jsonRequisicao = objectMapper.writeValueAsString(dadosInvalidos);
+
+        mockMvc.perform(post("/autenticacao/esqueci-senha")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonRequisicao))
                 .andExpect(status().isUnprocessableEntity());

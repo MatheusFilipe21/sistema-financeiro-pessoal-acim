@@ -99,6 +99,10 @@ public class SegurancaConfig {
                         // Permite acesso público (não autenticado) ao endpoint de login (RF08).
                         .requestMatchers("/autenticacao/login").permitAll()
 
+                        // Permite acesso público (não autenticado) à solicitação de recuperação de
+                        // senha (RF14).
+                        .requestMatchers("/autenticacao/esqueci-senha").permitAll()
+
                         // Permite acesso público (não autenticado) à documentação do Swagger.
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
 
