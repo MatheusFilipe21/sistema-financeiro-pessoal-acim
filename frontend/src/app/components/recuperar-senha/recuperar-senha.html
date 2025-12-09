@@ -1,0 +1,39 @@
+<main>
+  <section>
+    <h1>Recuperar Senha</h1>
+    <h2>Informe seu e-mail para receber o link de redefinição de senha</h2>
+
+    <form [formGroup]="formulario" (ngSubmit)="aoEnviar()">
+      <mat-form-field appearance="outline">
+        <mat-label>E-mail</mat-label>
+        <input
+          matInput
+          id="input-email"
+          formControlName="email"
+          placeholder="Digite seu e-mail cadastrado"
+          inputmode="email"
+        />
+
+        @if (formulario.get('email')?.invalid && (formulario.get('email')?.touched)) {
+        <mat-error>{{ obterMensagemErro('email') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <div id="acoes">
+        <button
+          matButton="filled"
+          color="primary"
+          id="btn-enviar"
+          type="submit"
+          [disabled]="formulario.invalid"
+        >
+          Enviar Link
+        </button>
+      </div>
+    </form>
+
+    <div id="link-login">
+      <a [routerLink]="['/login']">Voltar para o Login</a>
+    </div>
+  </section>
+</main>

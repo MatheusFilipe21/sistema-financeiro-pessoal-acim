@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { Login } from './components/login/login';
 import { Cadastro } from './components/cadastro/cadastro';
+import { RecuperarSenha } from './components/recuperar-senha/recuperar-senha';
 
 /**
  * Define as rotas principais da aplicação.
@@ -11,4 +12,5 @@ export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: 'login', component: Login },
   { path: 'cadastro', component: Cadastro },
+  { path: 'recuperar-senha', component: RecuperarSenha },
 ];

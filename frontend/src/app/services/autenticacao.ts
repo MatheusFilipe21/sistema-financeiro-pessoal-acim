@@ -44,4 +44,15 @@ export class Autenticacao {
   login(dados: DadosAutenticacaoDTO): Observable<DadosTokenJWTDTO> {
     return this.http.post<DadosTokenJWTDTO>(`${this.API_URL}/login`, dados);
   }
+
+  /**
+   * Chama o endpoint POST /autenticacao/esqueci-senha no backend (RF16).
+   * Envia o e-mail do usuário para iniciar o processo de recuperação de senha.
+   *
+   * @param email O e-mail informado pelo usuário.
+   * @returns Um Observable vazio (void) indicando sucesso na solicitação.
+   */
+  esqueciSenha(email: string): Observable<void> {
+    return this.http.post<void>(`${this.API_URL}/esqueci-senha`, { email });
+  }
 }
