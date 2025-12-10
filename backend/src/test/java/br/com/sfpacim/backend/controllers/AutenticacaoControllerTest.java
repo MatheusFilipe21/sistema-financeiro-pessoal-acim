@@ -238,7 +238,7 @@ class AutenticacaoControllerTest {
     }
 
     /**
-     * Testa o endpoint POST /autenticacao/esqueci-senha (RF14).
+     * Testa o endpoint POST /autenticacao/recuperar-senha (RF14).
      * Valida o cenário de sucesso (Solicitação aceita).
      *
      * <p>
@@ -249,12 +249,12 @@ class AutenticacaoControllerTest {
      */
     @SuppressWarnings("null")
     @Test
-    @DisplayName("esqueciSenha: Quando e-mail válido, deve retornar HTTP 204 No Content")
-    void testeEsqueciSenha_QuandoEmailValido_DeveRetornar204() throws Exception {
+    @DisplayName("recuperarSenha: Quando e-mail válido, deve retornar HTTP 204 No Content")
+    void testeRecuperarSenha_QuandoEmailValido_DeveRetornar204() throws Exception {
         DadosRecuperacaoSenhaDTO dadosRecuperacao = new DadosRecuperacaoSenhaDTO(EMAIL);
         String jsonRequisicao = objectMapper.writeValueAsString(dadosRecuperacao);
 
-        mockMvc.perform(post("/autenticacao/esqueci-senha")
+        mockMvc.perform(post("/autenticacao/recuperar-senha")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonRequisicao))
                 .andExpect(status().isNoContent())
@@ -272,12 +272,12 @@ class AutenticacaoControllerTest {
      */
     @SuppressWarnings("null")
     @Test
-    @DisplayName("esqueciSenha: Quando e-mail inválido (DTO Validation), deve retornar HTTP 422")
-    void testeEsqueciSenha_QuandoEmailInvalido_DeveRetornar422() throws Exception {
+    @DisplayName("recuperarSenha: Quando e-mail inválido (DTO Validation), deve retornar HTTP 422")
+    void testeRecuperarSenha_QuandoEmailInvalido_DeveRetornar422() throws Exception {
         DadosRecuperacaoSenhaDTO dadosInvalidos = new DadosRecuperacaoSenhaDTO(EMAIL_INVALIDO_FORMATO);
         String jsonRequisicao = objectMapper.writeValueAsString(dadosInvalidos);
 
-        mockMvc.perform(post("/autenticacao/esqueci-senha")
+        mockMvc.perform(post("/autenticacao/recuperar-senha")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonRequisicao))
                 .andExpect(status().isUnprocessableEntity());

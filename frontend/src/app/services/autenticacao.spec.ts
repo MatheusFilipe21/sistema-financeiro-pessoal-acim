@@ -102,17 +102,17 @@ describe('Autenticacao', () => {
   });
 
   /**
-   * Testa o método esqueciSenha(), garantindo que o endpoint correto (POST /autenticacao/esqueci-senha) seja chamado,
+   * Testa o método recuperarSenha(), garantindo que o endpoint correto (POST /autenticacao/recuperar-senha) seja chamado,
    * que o e-mail seja enviado no corpo da requisição e que o retorno seja vazio (void).
    */
-  it('deve solicitar recuperação de senha (POST /autenticacao/esqueci-senha)', (done) => {
+  it('deve solicitar recuperação de senha (POST /autenticacao/recuperar-senha)', (done) => {
     const email = 'matheusfnpereira@gmail.com';
 
-    service.esqueciSenha(email).subscribe(() => {
+    service.recuperarSenha(email).subscribe(() => {
       done();
     });
 
-    const req = httpMock.expectOne('/autenticacao/esqueci-senha');
+    const req = httpMock.expectOne('/autenticacao/recuperar-senha');
 
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({ email: email });

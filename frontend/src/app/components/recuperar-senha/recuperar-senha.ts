@@ -74,7 +74,7 @@ export class RecuperarSenha {
 
     const email = this.formulario.get('email')?.value;
 
-    this.autenticacaoService.esqueciSenha(email).subscribe({
+    this.autenticacaoService.recuperarSenha(email).subscribe({
       next: () => {
         this.dialogService
           .mostrarSucesso(

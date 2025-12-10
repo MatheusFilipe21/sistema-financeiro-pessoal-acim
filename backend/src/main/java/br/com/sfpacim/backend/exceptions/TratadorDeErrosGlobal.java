@@ -47,7 +47,7 @@ public class TratadorDeErrosGlobal {
 
         ErroPadraoDTO erroPadrao = new ErroPadraoDTO(
                 HttpStatus.BAD_REQUEST, // 400
-                "Violação de Dados",
+                "Dados Inválidos",
                 mensagemErro,
                 requisicao.getRequestURI());
 
@@ -93,7 +93,7 @@ public class TratadorDeErrosGlobal {
 
         ErroValidacaoDTO erroValidacao = new ErroValidacaoDTO(
                 HttpStatus.UNPROCESSABLE_ENTITY, // 422
-                "Erro de Validação",
+                "Dados Inválidos",
                 "Um ou mais campos estão inválidos.",
                 requisicao.getRequestURI());
 
@@ -118,7 +118,7 @@ public class TratadorDeErrosGlobal {
 
         ErroPadraoDTO erroPadrao = new ErroPadraoDTO(
                 HttpStatus.UNPROCESSABLE_ENTITY, // 422
-                "Regra de Negócio",
+                "Operação Não Permitida",
                 excecao.getMessage(),
                 requisicao.getRequestURI());
 
@@ -139,7 +139,7 @@ public class TratadorDeErrosGlobal {
 
         ErroPadraoDTO erroPadrao = new ErroPadraoDTO(
                 HttpStatus.INTERNAL_SERVER_ERROR, // 500
-                "Erro Interno",
+                "Serviço Indisponível",
                 "Ocorreu um erro inesperado no servidor. Tente novamente mais tarde.",
                 requisicao.getRequestURI());
 

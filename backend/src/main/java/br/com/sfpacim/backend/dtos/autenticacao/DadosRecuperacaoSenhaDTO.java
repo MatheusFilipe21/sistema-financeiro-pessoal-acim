@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 /**
  * DTO (Record) que representa os dados de entrada (JSON)
  * para o endpoint de solicitação de recuperação de senha (POST
- * /autenticacao/esqueci-senha).
+ * /autenticacao/recuperar-senha).
  *
  * @author Matheus F. N. Pereira
  *

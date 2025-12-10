@@ -13,7 +13,7 @@ import { Login } from '../login/login';
  * Mock do serviço de autenticação.
  */
 class AutenticacaoServiceMock {
-  esqueciSenha = jasmine.createSpy('esqueciSenha').and.returnValue(of(void 0));
+  recuperarSenha = jasmine.createSpy('recuperarSenha').and.returnValue(of(void 0));
 }
 
 /**
@@ -96,16 +96,16 @@ describe('RecuperarSenha', () => {
   });
 
   /**
-   * Garante que esqueciSenha() não é chamado quando o formulário está inválido.
+   * Garante que recuperarSenha() não é chamado quando o formulário está inválido.
    */
-  it('não deve chamar o serviço esqueciSenha() se o formulário estiver inválido', () => {
+  it('não deve chamar o serviço recuperarSenha() se o formulário estiver inválido', () => {
     component.formulario.get('email')?.setValue('');
     component.aoEnviar();
-    expect(autenticacaoService.esqueciSenha).not.toHaveBeenCalled();
+    expect(autenticacaoService.recuperarSenha).not.toHaveBeenCalled();
   });
 
   /**
-   * Verifica se esqueciSenha() é chamado com os dados corretos quando o formulário é válido.
+   * Verifica se recuperarSenha() é chamado com os dados corretos quando o formulário é válido.
    */
   it('deve chamar o serviço, exibir dialog e navegar para login ao enviar com sucesso', () => {
     const emailTeste = 'matheus@exemplo.com';
@@ -115,7 +115,7 @@ describe('RecuperarSenha', () => {
 
     component.aoEnviar();
 
-    expect(autenticacaoService.esqueciSenha).toHaveBeenCalledWith(emailTeste);
+    expect(autenticacaoService.recuperarSenha).toHaveBeenCalledWith(emailTeste);
 
     expect(dialogService.mostrarSucesso).toHaveBeenCalledWith(
       'E-mail Enviado',

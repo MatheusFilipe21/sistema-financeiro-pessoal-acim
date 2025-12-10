@@ -114,7 +114,7 @@ public class AutenticacaoController {
      * Endpoint (RF14) para solicitar a recuperação de senha.
      * 
      * <p>
-     * Este endpoint inicia o fluxo de "Esqueci minha senha". Por questões de
+     * Este endpoint inicia o fluxo de "Recuperação de senha". Por questões de
      * segurança, ele sempre retornará sucesso, independente de o e-mail existir na
      * base ou não.
      *
@@ -127,8 +127,8 @@ public class AutenticacaoController {
             @ApiResponse(responseCode = "422", description = "Erro de Validação", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroValidacaoDTO.class))),
             @ApiResponse(responseCode = "500", description = "Erro Interno do Servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_INTERNO_SERVIDOR)))
     })
-    @PostMapping("/esqueci-senha")
-    public ResponseEntity<Void> esqueciSenha(@Valid @RequestBody DadosRecuperacaoSenhaDTO dados) {
+    @PostMapping("/recuperar-senha")
+    public ResponseEntity<Void> recuperarSenha(@Valid @RequestBody DadosRecuperacaoSenhaDTO dados) {
         autenticacaoService.solicitarRecuperacaoSenha(dados);
 
         return ResponseEntity.noContent().build();

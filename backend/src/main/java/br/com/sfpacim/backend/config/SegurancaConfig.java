@@ -36,7 +36,7 @@ public class SegurancaConfig {
             "/swagger-ui/**",
             "/autenticacao/cadastro",
             "/autenticacao/login",
-            "/autenticacao/esqueci-senha",
+            "/autenticacao/recuperar-senha",
             "/autenticacao/redefinir-senha"
     };
 
