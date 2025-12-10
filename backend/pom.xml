@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.7</version>
+        <version>3.5.8</version>
         <relativePath /> <!-- lookup parent from repository -->
     </parent>
     <groupId>br.com.sfpacim</groupId>
@@ -53,6 +53,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
@@ -179,6 +183,7 @@
                         <exclude>br/com/sfpacim/backend/config/**</exclude>
                         <exclude>br/com/sfpacim/backend/dtos/**</exclude>
                         <exclude>br/com/sfpacim/backend/exceptions/**</exclude>
+                        <exclude>br/com/sfpacim/backend/services/LogEmailService.class</exclude>
                     </excludes>
                 </configuration>
                 <executions>

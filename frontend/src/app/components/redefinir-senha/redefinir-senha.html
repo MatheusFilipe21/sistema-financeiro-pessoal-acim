@@ -1,0 +1,116 @@
+<main>
+  <section>
+    <h1>Redefinir Senha</h1>
+    <h2>Crie uma nova senha segura para sua conta</h2>
+
+    <form [formGroup]="formulario" (ngSubmit)="aoEnviar()">
+      <mat-form-field appearance="outline">
+        <mat-label>Nova Senha</mat-label>
+        <input
+          matInput
+          id="input-senha"
+          formControlName="senha"
+          [type]="esconderSenha() ? 'password' : 'text'"
+          placeholder="Digite sua nova senha"
+          autocomplete="on"
+          (focus)="aoFocarSenha()"
+          (blur)="aoDesfocarSenha()"
+        />
+        <button
+          mat-icon-button
+          matSuffix
+          id="btn-alternar-senha"
+          type="button"
+          (click)="alternarVisibilidadeSenha()"
+          [attr.aria-label]="'Alternar visibilidade da senha'"
+        >
+          <mat-icon>{{ esconderSenha() ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+
+        @if (formulario.get('senha')?.invalid && (formulario.get('senha')?.touched)) {
+        <mat-error>{{ obterMensagemErro('senha') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Confirmar Nova Senha</mat-label>
+        <input
+          matInput
+          id="input-confirmar-senha"
+          formControlName="confirmarSenha"
+          [type]="esconderConfirmarSenha() ? 'password' : 'text'"
+          placeholder="Digite a senha novamente"
+          autocomplete="on"
+        />
+
+        <button
+          mat-icon-button
+          matSuffix
+          id="btn-alternar-confirmar-senha"
+          type="button"
+          (click)="alternarVisibilidadeConfirmarSenha()"
+          [attr.aria-label]="'Alternar visibilidade da confirmação de senha'"
+        >
+          <mat-icon>{{ esconderConfirmarSenha() ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+
+        @if (formulario.get('confirmarSenha')?.invalid &&
+        (formulario.get('confirmarSenha')?.touched)) {
+        <mat-error>{{ obterMensagemErro('confirmarSenha') }}</mat-error>
+        }
+      </mat-form-field>
+
+      @if (formulario.get('senha')?.touched || senhaEstaEmFoco()) {
+      <div id="requisitos-senha">
+        <div id="requisito-tamanho-minimo" [class.valid]="requisitosSenha.minLength">
+          <span
+            class="icone-requisito-senha"
+            [innerHTML]="requisitosSenha.minLength ? '&check;' : '&times;'"
+          ></span>
+          8 caracteres no mínimo
+        </div>
+
+        <div id="requisito-maiuscula" [class.valid]="requisitosSenha.temMaiuscula">
+          <span
+            class="icone-requisito-senha"
+            [innerHTML]="requisitosSenha.temMaiuscula ? '&check;' : '&times;'"
+          ></span>
+          1 letra maiúscula
+        </div>
+
+        <div id="requisito-minuscula" [class.valid]="requisitosSenha.temMinuscula">
+          <span
+            class="icone-requisito-senha"
+            [innerHTML]="requisitosSenha.temMinuscula ? '&check;' : '&times;'"
+          ></span>
+          1 letra minúscula
+        </div>
+
+        <div id="requisito-numero" [class.valid]="requisitosSenha.temNumero">
+          <span
+            class="icone-requisito-senha"
+            [innerHTML]="requisitosSenha.temNumero ? '&check;' : '&times;'"
+          ></span>
+          1 número
+        </div>
+      </div>
+      }
+
+      <div id="acoes">
+        <button
+          matButton="filled"
+          color="primary"
+          id="btn-enviar"
+          type="submit"
+          [disabled]="formulario.invalid"
+        >
+          Redefinir Senha
+        </button>
+      </div>
+
+      <div id="link-login">
+        <a [routerLink]="['/login']">Voltar para o Login</a>
+      </div>
+    </form>
+  </section>
+</main>

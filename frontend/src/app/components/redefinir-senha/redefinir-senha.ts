@@ -1,24 +1,24 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Autenticacao as AutenticacaoService } from '../../services/autenticacao';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatIconModule } from '@angular/material/icon';
-import { RouterModule } from '@angular/router';
+import { Autenticacao as AutenticacaoService } from '../../services/autenticacao';
+import { Dialog as DialogService } from '../../services/dialog';
+import { DadosRedefinicaoSenhaDTO } from '../../dtos/autenticacao/DadosRedefinicaoSenhaDTO';
 import { validarSenhasIguais } from '../../validators/validar-senhas-iguais';
-import { DadosCadastroUsuarioDTO } from '../../dtos/usuario/DadosCadastroUsuarioDTO';
 
 /**
- * Componente responsável pelo formulário e lógica
- * de cadastro de novos usuários (RF01).
+ * Componente responsável pela redefinição de senha (RF17).
+ * Utiliza validação visual de requisitos e tokens de segurança.
  *
  * @author Matheus F. N. Pereira
  */
 @Component({
-  selector: 'app-cadastro',
+  selector: 'app-redefinir-senha',
   standalone: true,
   imports: [
     CommonModule,
@@ -26,17 +26,18 @@ import { DadosCadastroUsuarioDTO } from '../../dtos/usuario/DadosCadastroUsuario
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatSnackBarModule,
     MatIconModule,
     RouterModule,
   ],
-  templateUrl: './cadastro.html',
-  styleUrls: ['./cadastro.scss'],
+  templateUrl: './redefinir-senha.html',
+  styleUrls: ['./redefinir-senha.scss'],
 })
-export class Cadastro {
+export class RedefinirSenha implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly autenticacaoService = inject(AutenticacaoService);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly dialogService = inject(DialogService);
+  private readonly router = inject(Router);
+  private readonly activatedRoute = inject(ActivatedRoute);
 
   formulario: FormGroup;
   esconderSenha = signal(true);
@@ -48,21 +49,16 @@ export class Cadastro {
     temMinuscula: false,
     temNumero: false,
   };
+  private token: string | null = null;
 
   /**
    * Construtor do componente.
    * Inicializa o formulário reativo (ReactiveForms) com os campos
-   * e validadores necessários para o cadastro.
+   * e validadores necessários para a redefinição e senha.
    */
   constructor() {
     this.formulario = this.formBuilder.group(
       {
-        // RF04: Nome obrigatório
-        nome: ['', [Validators.required]],
-
-        // RF02 e RF04: E-mail obrigatório e em formato válido
-        email: ['', [Validators.required, Validators.email]],
-
         // RF03 e RF04: Senha obrigatória e complexa (Mínimo 8, 1 maiúscula, 1 minúscula, 1 número)
         senha: [
           '',
@@ -75,15 +71,25 @@ export class Cadastro {
         ],
         confirmarSenha: ['', Validators.required],
       },
-      {
-        validators: validarSenhasIguais,
-      }
+      { validators: validarSenhasIguais }
     );
 
     // Escuta as mudanças no campo 'senha' para atualizar a UI de requisitos
     this.formulario.get('senha')?.valueChanges.subscribe((valor) => {
       this.atualizarRequisitosSenha(valor || '');
     });
+  }
+
+  /**
+   * Ao iniciar, captura o token da URL.
+   * Se o token não estiver presente, redireciona para o login por segurança.
+   */
+  ngOnInit(): void {
+    this.token = this.activatedRoute.snapshot.queryParamMap.get('token');
+
+    if (!this.token) {
+      this.router.navigate(['/login']);
+    }
   }
 
   /**
@@ -136,10 +142,6 @@ export class Cadastro {
       return 'Este campo é obrigatório.';
     }
 
-    if (control.hasError('email')) {
-      return 'Formato de e-mail inválido.';
-    }
-
     if (nomeControle === 'senha' && control.invalid) {
       return 'A senha não atende aos requisitos mínimos.';
     }
@@ -149,27 +151,31 @@ export class Cadastro {
     }
     return '';
   }
-
   /**
-   * Manipula o evento de submissão do formulário de cadastro.
+   * Manipula o evento de submissão do formulário de redefinição de senha.
    * Verifica a validade do formulário e chama o serviço de autenticação.
    */
   aoEnviar(): void {
-    if (this.formulario.invalid) {
+    if (this.formulario.invalid || !this.token) {
       this.formulario.markAllAsTouched();
       return;
     }
 
-    const { confirmarSenha, ...dadosParaEnvio } = this.formulario.value;
-    const dto: DadosCadastroUsuarioDTO = dadosParaEnvio;
+    const dados: DadosRedefinicaoSenhaDTO = {
+      token: this.token,
+      senha: this.formulario.get('senha')?.value,
+    };
 
-    this.autenticacaoService.registrar(dto).subscribe({
-      next: (usuario) => {
-        this.snackBar.open(`Usuário ${usuario.nome} cadastrado com sucesso!`, 'OK', {
-          duration: 5000,
-          verticalPosition: 'top',
-          horizontalPosition: 'end',
-        });
+    this.autenticacaoService.redefinirSenha(dados).subscribe({
+      next: () => {
+        this.dialogService
+          .mostrarSucesso(
+            'Senha Alterada',
+            'Sua senha foi redefinida com sucesso! Você já pode acessar sua conta.'
+          )
+          .subscribe(() => {
+            this.router.navigate(['/login']);
+          });
       },
     });
   }

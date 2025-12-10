@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 import br.com.sfpacim.backend.dtos.usuario.DadosCadastroUsuarioDTO;
 import br.com.sfpacim.backend.dtos.usuario.UsuarioDTO;
-import br.com.sfpacim.backend.exceptions.ViolacaoDadosExcecao;
+import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.UsuarioRepository;
 
@@ -48,10 +48,25 @@ public class UsuarioService {
      * @param dados Os dados de cadastro (DTO) já validados pelo controller.
      * @return O {@link UsuarioDTO} contendo os dados públicos do usuário
      *         recém-criado.
-     * @throws ViolacaoDadosExcecao Se o e-mail já existir no banco (RF04).
+     * @throws ViolacaoDadosException Se o e-mail já existir no banco (RF04).
      */
-    public UsuarioDTO registrar(DadosCadastroUsuarioDTO dados) throws ViolacaoDadosExcecao {
+    public UsuarioDTO registrar(DadosCadastroUsuarioDTO dados) throws ViolacaoDadosException {
         return paraDTO(this.salvarEntidade(paraEntidade(dados)));
+    }
+
+    /**
+     * Atualiza a senha do usuário (RF17).
+     *
+     * <p>
+     * Responsável por gerar o hash da nova senha (RF06) e persistir a alteração.
+     *
+     * @param usuario   A entidade do usuário já carregada do banco.
+     * @param novaSenha A nova senha vinda do DTO.
+     */
+    public void atualizarSenha(Usuario usuario, String novaSenha) {
+        usuario.setSenha(passwordEncoder.encode(novaSenha));
+
+        this.salvarEntidade(usuario);
     }
 
     /**
@@ -85,18 +100,18 @@ public class UsuarioService {
      * <p>
      * Este método encapsula o save() e trata a exceção de violação
      * de integridade (e-mail duplicado - RF04), lançando uma
-     * exceção de negócio mais clara (ViolacaoDadosExcecao).
+     * exceção de negócio mais clara (ViolacaoDadosException).
      *
      * @param usuario Entidade {@link Usuario} a ser salva.
-     * @throws ViolacaoDadosExcecao Caso o e-mail (unique=true) já esteja
-     *                              cadastrado.
+     * @throws ViolacaoDadosException Caso o e-mail (unique=true) já esteja
+     *                                cadastrado.
      */
     @SuppressWarnings("null")
-    private Usuario salvarEntidade(Usuario usuario) throws ViolacaoDadosExcecao {
+    private Usuario salvarEntidade(Usuario usuario) throws ViolacaoDadosException {
         try {
             return usuarioRepository.save(usuario);
         } catch (DataIntegrityViolationException e) {
-            throw new ViolacaoDadosExcecao(
+            throw new ViolacaoDadosException(
                     String.format("O e-mail: %s já está cadastrado.", usuario.getEmail()));
         }
     }

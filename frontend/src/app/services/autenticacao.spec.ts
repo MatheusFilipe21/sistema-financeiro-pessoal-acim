@@ -7,6 +7,7 @@ import { DadosCadastroUsuarioDTO } from '../dtos/usuario/DadosCadastroUsuarioDTO
 import { UsuarioDTO } from '../dtos/usuario/UsuarioDTO';
 import { DadosAutenticacaoDTO } from '../dtos/autenticacao/DadosAutenticacaoDTO';
 import { DadosTokenJWTDTO } from '../dtos/autenticacao/DadosTokenJWTDTO';
+import { DadosRedefinicaoSenhaDTO } from '../dtos/autenticacao/DadosRedefinicaoSenhaDTO';
 
 /**
  * Testes unitários para o serviço {@link Autenticacao}.
@@ -98,5 +99,45 @@ describe('Autenticacao', () => {
     expect(req.request.body).toEqual(dadosLogin);
 
     req.flush(mockResponse);
+  });
+
+  /**
+   * Testa o método recuperarSenha(), garantindo que o endpoint correto (POST /autenticacao/recuperar-senha) seja chamado,
+   * que o e-mail seja enviado no corpo da requisição e que o retorno seja vazio (void).
+   */
+  it('deve solicitar recuperação de senha (POST /autenticacao/recuperar-senha)', (done) => {
+    const email = 'matheusfnpereira@gmail.com';
+
+    service.recuperarSenha(email).subscribe(() => {
+      done();
+    });
+
+    const req = httpMock.expectOne('/autenticacao/recuperar-senha');
+
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ email: email });
+
+    req.flush(null);
+  });
+
+  /**
+   * Testa o método redefinirSenha(), garantindo que o endpoint correto (POST /autenticacao/redefinir-senha) seja chamado,
+   * que o token e a nova senha sejam enviados no corpo da requisição e que o retorno seja vazio (void).
+   */
+  it('deve redefinir a senha', () => {
+    const dados: DadosRedefinicaoSenhaDTO = {
+      token:
+        'eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJTRlAtQUNJTSBBUEkiLCJzdWIiOiJtYXRoZXVzZm5wZXJlaXJhQGdtYWlsLmNvbSIsImlhdCI6MTc2NTMyMjMzOSwiZXhwIjoxNzY1MzM2NzM5fQ.sfznaHFA4WvRXHHflYWzrHw1-v3nqS3Oz80DaUOFP4g6RpVbbNOrSwOWcEWfc19cJkygSTSPYAnlzXeFU4vRxw',
+      senha: 'NovaSenha123!',
+    };
+
+    service.redefinirSenha(dados).subscribe((res) => {
+      expect(res).toBeNull();
+    });
+
+    const req = httpMock.expectOne(`/autenticacao/redefinir-senha`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(dados);
+    req.flush(null);
   });
 });
