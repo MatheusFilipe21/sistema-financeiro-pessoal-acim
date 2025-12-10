@@ -5,6 +5,7 @@ import { DadosCadastroUsuarioDTO } from '../dtos/usuario/DadosCadastroUsuarioDTO
 import { UsuarioDTO } from '../dtos/usuario/UsuarioDTO';
 import { DadosAutenticacaoDTO } from '../dtos/autenticacao/DadosAutenticacaoDTO';
 import { DadosTokenJWTDTO } from '../dtos/autenticacao/DadosTokenJWTDTO';
+import { DadosRedefinicaoSenhaDTO } from '../dtos/autenticacao/DadosRedefinicaoSenhaDTO';
 
 /**
  * Serviço responsável pela comunicação com os endpoints
@@ -54,5 +55,15 @@ export class Autenticacao {
    */
   esqueciSenha(email: string): Observable<void> {
     return this.http.post<void>(`${this.API_URL}/esqueci-senha`, { email });
+  }
+
+  /**
+   * Envia a solicitação de redefinição de senha (RF17).
+   *
+   * @param dados Objeto contendo o token de recuperação e a nova senha.
+   * @returns Observable vazio indicando sucesso na alteração.
+   */
+  redefinirSenha(dados: DadosRedefinicaoSenhaDTO): Observable<void> {
+    return this.http.post<void>(`${this.API_URL}/redefinir-senha`, dados);
   }
 }
