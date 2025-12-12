@@ -9,7 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 
-import { Autenticacao as AutenticacaoService } from '../../services/autenticacao';
+import { Autenticacao as AutenticacaoService } from '../../../services/autenticacao';
 import { toSignal } from '@angular/core/rxjs-interop';
 
 /**
@@ -39,10 +39,10 @@ export class Dashboard {
 
   /**
    * (RNF15) Signal que define se o layout deve se comportar como Mobile.
-   * * Regra de Negócio Visual:
+   * Regra de Negócio Visual:
    * - TRUE (Mobile): Celulares (XSmall) e Tablets em Retrato (Small).
    * - FALSE (Desktop): Tablets em Paisagem, Laptops e Monitores (Medium, Large, XLarge).
-   * * Limite de corte: 960px.
+   * Limite de corte: 960px.
    */
   dispositivoMovel = toSignal(
     this.breakpointObserver

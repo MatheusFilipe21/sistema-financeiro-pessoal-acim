@@ -1,15 +1,15 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Autenticacao as AutenticacaoService } from '../../services/autenticacao';
+import { Autenticacao as AutenticacaoService } from '../../../services/autenticacao';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterModule } from '@angular/router';
-import { validarSenhasIguais } from '../../validators/validar-senhas-iguais';
-import { DadosCadastroUsuarioDTO } from '../../dtos/usuario/DadosCadastroUsuarioDTO';
-import { Dialog as DialogService } from '../../services/dialog';
+import { validarSenhasIguais } from '../../../validators/validar-senhas-iguais';
+import { DadosCadastroUsuarioDTO } from '../../../dtos/usuario/DadosCadastroUsuarioDTO';
+import { Dialog as DialogService } from '../../../services/dialog';
 
 /**
  * Componente responsável pelo formulário e lógica

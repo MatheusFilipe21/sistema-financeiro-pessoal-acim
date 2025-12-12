@@ -2,12 +2,12 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { provideLocationMocks } from '@angular/common/testing';
 import { Cadastro } from './cadastro';
-import { Autenticacao as AutenticacaoService } from '../../services/autenticacao';
+import { Autenticacao as AutenticacaoService } from '../../../services/autenticacao';
 import { ReactiveFormsModule } from '@angular/forms';
-import { UsuarioDTO } from '../../dtos/usuario/UsuarioDTO';
+import { UsuarioDTO } from '../../../dtos/usuario/UsuarioDTO';
 import { Router, RouterModule } from '@angular/router';
-import { Dialog as DialogService } from '../../services/dialog';
-import { Login } from '../login/login';
+import { Dialog as DialogService } from '../../../services/dialog';
+import { Login } from '../../pages/login/login';
 
 /**
  * Mock do serviço de autenticação.

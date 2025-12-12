@@ -5,7 +5,7 @@ import { of } from 'rxjs';
 import { provideLocationMocks } from '@angular/common/testing';
 
 import { Dashboard } from './dashboard';
-import { Autenticacao as AutenticacaoService } from '../../services/autenticacao';
+import { Autenticacao as AutenticacaoService } from '../../../services/autenticacao';
 import { Login } from '../login/login';
 
 /**
