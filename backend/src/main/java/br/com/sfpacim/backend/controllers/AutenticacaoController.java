@@ -33,8 +33,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 /**
- * Controlador REST responsável pelos endpoints de autenticação
- * Cadastro.
+ * Controlador REST responsável pelos endpoints de autenticação.
  *
  * @author Matheus F. N. Pereira
  */
@@ -72,9 +71,9 @@ public class AutenticacaoController {
     @SecurityRequirements({})
     @Operation(summary = "Cadastra um novo usuário", description = "Endpoint público para cadastro de novos usuários. Recebe os dados de registro, cria a conta no sistema e retorna os dados do usuário criado com status 201.", responses = {
             @ApiResponse(responseCode = "201", description = "Usuário cadastrado com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UsuarioDTO.class)), headers = @Header(name = "Location", description = "URL do novo recurso criado")),
-            @ApiResponse(responseCode = "400", description = "Violação de Dados", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_EMAIL_DUPLICADO))),
-            @ApiResponse(responseCode = "422", description = "Erro de Validação", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroValidacaoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_VALIDACAO_CADASTRO))),
-            @ApiResponse(responseCode = "500", description = "Erro Interno do Servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_INTERNO_SERVIDOR)))
+            @ApiResponse(responseCode = "409", description = "Conflito (E-mail já cadastrado)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_409))),
+            @ApiResponse(responseCode = "422", description = "Erro de Validação", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroValidacaoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_422))),
+            @ApiResponse(responseCode = "500", description = "Erro Interno do Servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_500)))
     })
     @PostMapping("/cadastro")
     public ResponseEntity<UsuarioDTO> cadastrar(@Valid @RequestBody DadosCadastroUsuarioDTO dados)
@@ -99,9 +98,9 @@ public class AutenticacaoController {
     @SecurityRequirements({})
     @Operation(summary = "Autentica um usuário", description = "Endpoint público para login. Recebe e-mail e senha e retorna um Token JWT com status 200 se a autenticação for bem-sucedida.", responses = {
             @ApiResponse(responseCode = "200", description = "Login bem-sucedido", content = @Content(mediaType = "application/json", schema = @Schema(implementation = DadosTokenJWTDTO.class))),
-            @ApiResponse(responseCode = "401", description = "Não Autorizado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "422", description = "Erro de Validação", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroValidacaoDTO.class))),
-            @ApiResponse(responseCode = "500", description = "Erro Interno do Servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_INTERNO_SERVIDOR)))
+            @ApiResponse(responseCode = "401", description = "Não Autorizado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_401))),
+            @ApiResponse(responseCode = "422", description = "Erro de Validação", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroValidacaoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_422))),
+            @ApiResponse(responseCode = "500", description = "Erro Interno do Servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_500)))
     })
     @PostMapping("/login")
     public ResponseEntity<DadosTokenJWTDTO> login(@Valid @RequestBody DadosAutenticacaoDTO dados) {
@@ -124,8 +123,8 @@ public class AutenticacaoController {
     @SecurityRequirements({})
     @Operation(summary = "Solicita um link de recuperação de senha", description = "Endpoint público para recuperação de senha. Recebe o e-mail e inicia o envio do link se o usuário existir. Retorna 204 sempre para evitar descoberta de e-mails dos usuários.", responses = {
             @ApiResponse(responseCode = "204", description = "Solicitação recebida com sucesso", content = @Content(schema = @Schema(hidden = true))),
-            @ApiResponse(responseCode = "422", description = "Erro de Validação", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroValidacaoDTO.class))),
-            @ApiResponse(responseCode = "500", description = "Erro Interno do Servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_INTERNO_SERVIDOR)))
+            @ApiResponse(responseCode = "422", description = "Erro de Validação", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroValidacaoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_422))),
+            @ApiResponse(responseCode = "500", description = "Erro Interno do Servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_500)))
     })
     @PostMapping("/recuperar-senha")
     public ResponseEntity<Void> recuperarSenha(@Valid @RequestBody DadosRecuperacaoSenhaDTO dados) {
@@ -148,8 +147,9 @@ public class AutenticacaoController {
     @Operation(summary = "Redefine a senha do usuário", description = "Endpoint público. Recebe o token de recuperação e a nova senha. Se o token for válido (assinatura correta e não expirado), a senha é atualizada.", responses = {
             @ApiResponse(responseCode = "204", description = "Senha alterada com sucesso", content = @Content(schema = @Schema(hidden = true))),
             @ApiResponse(responseCode = "422", description = "Erro de Processamento (Validação de Campos ou Regra de Negócio)", content = @Content(mediaType = "application/json", schema = @Schema(oneOf = {
-                    ErroValidacaoDTO.class, ErroPadraoDTO.class }))),
-            @ApiResponse(responseCode = "500", description = "Erro Interno do Servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class)))
+                    ErroValidacaoDTO.class,
+                    ErroPadraoDTO.class }), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_422))),
+            @ApiResponse(responseCode = "500", description = "Erro Interno do Servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_500)))
     })
     @PostMapping("/redefinir-senha")
     public ResponseEntity<Void> redefinirSenha(@Valid @RequestBody DadosRedefinicaoSenhaDTO dados) {

@@ -28,33 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 public class TratadorDeErrosGlobal {
 
     /**
-     * Manipula exceções de violação de integridade dos dados (RF04 - E-mail
-     * duplicado).
-     *
-     * @param excecao    A exceção de violação de dados capturada.
-     * @param requisicao A requisição HTTP (para obter a Rota/URI).
-     * @return ResponseEntity (HTTP 400) com o {@link ErroPadraoDTO}.
-     */
-    @ExceptionHandler({ ViolacaoDadosException.class, DataIntegrityViolationException.class })
-    public ResponseEntity<ErroPadraoDTO> excecaoViolacaoDados(Exception excecao, HttpServletRequest requisicao) {
-        String mensagemErro;
-
-        if (excecao instanceof ViolacaoDadosException) {
-            mensagemErro = excecao.getMessage();
-        } else {
-            mensagemErro = "Erro de integridade dos dados. Por gentileza, verifique os dados informados e tente novamente.";
-        }
-
-        ErroPadraoDTO erroPadrao = new ErroPadraoDTO(
-                HttpStatus.BAD_REQUEST, // 400
-                "Dados Inválidos",
-                mensagemErro,
-                requisicao.getRequestURI());
-
-        return ResponseEntity.badRequest().body(erroPadrao);
-    }
-
-    /**
      * Manipula exceções de autenticação (lançadas pelo Spring Security).
      * Retorna HTTP 401 (Unauthorized) se o e-mail ou senha estiverem incorretos
      * durante a tentativa de login (RF13).
@@ -74,7 +47,64 @@ public class TratadorDeErrosGlobal {
                 "E-mail ou senha inválidos.",
                 requisicao.getRequestURI());
 
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(erroPadrao);
+        return ResponseEntity.status(erroPadrao.status()).body(erroPadrao);
+    }
+
+    /**
+     * Manipula exceções de recurso não encontrado (EntityNotFoundException).
+     * Retorna HTTP 404 (Not Found).
+     * *
+     * <p>
+     * Utilizado quando uma busca por ID (ex: Pessoa, Conta) não retorna resultados
+     * ou quando o registro pertence a outro usuário (Isolamento de Dados).
+     *
+     * @param excecao    A exceção
+     *                   {@link jakarta.persistence.EntityNotFoundException}
+     *                   capturada.
+     * @param requisicao A requisição HTTP (para obter a Rota/URI).
+     * @return ResponseEntity (HTTP 404) com o {@link ErroPadraoDTO}.
+     */
+    @ExceptionHandler(jakarta.persistence.EntityNotFoundException.class)
+    public ResponseEntity<ErroPadraoDTO> excecaoEntidadeNaoEncontrada(
+            jakarta.persistence.EntityNotFoundException excecao,
+            HttpServletRequest requisicao) {
+
+        log.warn("Recurso não encontrado: {}", excecao.getMessage());
+
+        ErroPadraoDTO erroPadrao = new ErroPadraoDTO(
+                HttpStatus.NOT_FOUND, // 404
+                "Recurso Não Encontrado",
+                excecao.getMessage(),
+                requisicao.getRequestURI());
+
+        return ResponseEntity.status(erroPadrao.status()).body(erroPadrao);
+    }
+
+    /**
+     * Manipula exceções de violação de integridade dos dados (RF04 - E-mail
+     * duplicado).
+     *
+     * @param excecao    A exceção de violação de dados capturada.
+     * @param requisicao A requisição HTTP (para obter a Rota/URI).
+     * @return ResponseEntity (HTTP 400) com o {@link ErroPadraoDTO}.
+     */
+    @ExceptionHandler({ ViolacaoDadosException.class, DataIntegrityViolationException.class })
+    public ResponseEntity<ErroPadraoDTO> excecaoViolacaoDados(Exception excecao, HttpServletRequest requisicao) {
+        String mensagemErro;
+
+        if (excecao instanceof ViolacaoDadosException) {
+            mensagemErro = excecao.getMessage();
+        } else {
+            mensagemErro = "Erro de integridade dos dados. Por gentileza, verifique os dados informados e tente novamente.";
+        }
+
+        ErroPadraoDTO erroPadrao = new ErroPadraoDTO(
+                HttpStatus.CONFLICT, // 409
+                "Conflito de Dados",
+                mensagemErro,
+                requisicao.getRequestURI());
+
+        return ResponseEntity.status(erroPadrao.status()).body(erroPadrao);
     }
 
     /**
@@ -99,7 +129,7 @@ public class TratadorDeErrosGlobal {
 
         excecao.getFieldErrors().forEach(erroValidacao::adicionarErro);
 
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(erroValidacao);
+        return ResponseEntity.status(erroValidacao.getErro().status()).body(erroValidacao);
     }
 
     /**
@@ -122,7 +152,7 @@ public class TratadorDeErrosGlobal {
                 excecao.getMessage(),
                 requisicao.getRequestURI());
 
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(erroPadrao);
+        return ResponseEntity.status(erroPadrao.status()).body(erroPadrao);
     }
 
     /**
@@ -143,6 +173,6 @@ public class TratadorDeErrosGlobal {
                 "Ocorreu um erro inesperado no servidor. Tente novamente mais tarde.",
                 requisicao.getRequestURI());
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(erroPadrao);
+        return ResponseEntity.status(erroPadrao.status()).body(erroPadrao);
     }
 }
