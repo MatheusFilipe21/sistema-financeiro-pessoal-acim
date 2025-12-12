@@ -1,0 +1,66 @@
+<div id="container-principal-filtros">
+  <header id="cabecalho-filtros">
+    <h1 id="titulo-pagina">{{ titulo }}</h1>
+
+    @if (dispositivoMovel()) {
+    <button
+      mat-icon-button
+      id="btn-abrir-filtros"
+      type="button"
+      (click)="alternarFiltro()"
+      color="primary"
+      matTooltip="Filtrar resultados"
+      aria-label="Abrir filtros de busca"
+    >
+      <mat-icon>filter_list</mat-icon>
+    </button>
+    }
+  </header>
+
+  @if (dispositivoMovel() && filtroAberto) {
+  <button
+    id="fundo-escuro-modal"
+    type="button"
+    (click)="fecharFiltro()"
+    aria-label="Fechar filtros"
+  ></button>
+  }
+
+  <div id="area-conteudo-filtros" [class.aberto]="filtroAberto || !dispositivoMovel()">
+    @if (dispositivoMovel()) {
+    <div id="cabecalho-mobile-filtros">
+      <h3>Filtros</h3>
+      <button
+        mat-icon-button
+        type="button"
+        (click)="fecharFiltro()"
+        id="btn-fechar-painel"
+        aria-label="Fechar painel de filtros"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    }
+
+    <div id="container-campos-injetados">
+      <ng-content></ng-content>
+    </div>
+
+    <div id="container-botoes-acao">
+      <button mat-button color="warn" id="btn-acao-limpar" type="button" (click)="aoLimpar()">
+        Limpar
+      </button>
+
+      <button
+        mat-flat-button
+        color="primary"
+        id="btn-acao-buscar"
+        type="button"
+        (click)="aoBuscar()"
+      >
+        <mat-icon>search</mat-icon>
+        {{ textoBotaoBuscar }}
+      </button>
+    </div>
+  </div>
+</div>

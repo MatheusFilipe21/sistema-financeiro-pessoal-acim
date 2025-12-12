@@ -10,26 +10,26 @@ export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   {
     path: 'login',
-    loadComponent: () => import('./components/login/login').then((m) => m.Login),
+    loadComponent: () => import('./components/pages/login/login').then((m) => m.Login),
   },
   {
     path: 'cadastro',
-    loadComponent: () => import('./components/cadastro/cadastro').then((m) => m.Cadastro),
+    loadComponent: () => import('./components/pages/cadastro/cadastro').then((m) => m.Cadastro),
   },
   {
     path: 'recuperar-senha',
     loadComponent: () =>
-      import('./components/recuperar-senha/recuperar-senha').then((m) => m.RecuperarSenha),
+      import('./components/pages/recuperar-senha/recuperar-senha').then((m) => m.RecuperarSenha),
   },
   {
     path: 'redefinir-senha',
     loadComponent: () =>
-      import('./components/redefinir-senha/redefinir-senha').then((m) => m.RedefinirSenha),
+      import('./components/pages/redefinir-senha/redefinir-senha').then((m) => m.RedefinirSenha),
   },
   {
     path: 'dashboard',
     canActivate: [autenticacaoGuard],
-    loadComponent: () => import('./components/dashboard/dashboard').then((m) => m.Dashboard),
+    loadComponent: () => import('./components/pages/dashboard/dashboard').then((m) => m.Dashboard),
     children: [],
   },
   // Tem que ser o último.
