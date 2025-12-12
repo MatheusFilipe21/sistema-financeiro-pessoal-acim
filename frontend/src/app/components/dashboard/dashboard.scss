@@ -1,0 +1,67 @@
+#dashboard {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+
+  #menu-lateral {
+    width: 250px;
+    background-color: var(--mat-sys-surface);
+    color: var(--mat-sys-on-surface);
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    border-right: none;
+    border-radius: 0 !important;
+
+    #cabecalho-menu-lateral {
+      background-color: var(--mat-sys-primary);
+      color: var(--mat-sys-on-primary);
+      font-weight: 500;
+    }
+  }
+
+  #conteudo {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+
+    #menu-superior {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+
+      background-color: var(--mat-sys-primary);
+      color: var(--mat-sys-on-primary);
+
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+
+      min-height: 64px;
+      padding-top: 8px;
+      padding-bottom: 8px;
+
+      .mdc-icon-button {
+        color: var(--mat-sys-on-primary);
+      }
+
+      #titulo-sistema {
+        white-space: normal;
+        line-height: 1.2;
+        font-size: 1.1rem;
+        margin-left: 8px;
+
+        @media (max-width: 460px) {
+          font-size: 0.9rem;
+        }
+      }
+
+      .espacamento {
+        flex: 1 1 auto;
+        min-width: 10px;
+      }
+    }
+
+    #pagina {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+  }
+}
