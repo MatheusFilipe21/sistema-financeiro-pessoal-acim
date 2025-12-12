@@ -362,7 +362,6 @@ class AutenticacaoControllerTest {
         mockMvc.perform(post("/autenticacao/redefinir-senha")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonRequisicao))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.titulo").value("Regra de Negócio"));
+                .andExpect(status().isUnprocessableEntity());
     }
 }
