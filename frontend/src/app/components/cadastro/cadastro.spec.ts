@@ -3,10 +3,10 @@ import { of } from 'rxjs';
 import { provideLocationMocks } from '@angular/common/testing';
 import { Cadastro } from './cadastro';
 import { Autenticacao as AutenticacaoService } from '../../services/autenticacao';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { ReactiveFormsModule } from '@angular/forms';
 import { UsuarioDTO } from '../../dtos/usuario/UsuarioDTO';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
+import { Dialog as DialogService } from '../../services/dialog';
 import { Login } from '../login/login';
 
 /**
@@ -22,10 +22,19 @@ class AutenticacaoServiceMock {
   );
 }
 
+/**
+ * Mock do serviço de dialog.
+ */
+class DialogServiceMock {
+  mostrarSucesso = jasmine.createSpy('mostrarSucesso').and.returnValue(of(true));
+}
+
 describe('Cadastro', () => {
   let component: Cadastro;
   let fixture: ComponentFixture<Cadastro>;
   let autenticacaoService: AutenticacaoServiceMock;
+  let dialogService: DialogServiceMock;
+  let router: Router;
 
   /**
    * Configuração inicial do módulo de teste, carregando o componente standalone,
@@ -37,12 +46,13 @@ describe('Cadastro', () => {
         Cadastro,
         ReactiveFormsModule,
         RouterModule.forRoot([
-          { path: '', component: Login },
+          { path: 'login', component: Login },
           { path: 'cadastro', component: Cadastro },
         ]),
       ],
       providers: [
         { provide: AutenticacaoService, useClass: AutenticacaoServiceMock },
+        { provide: DialogService, useClass: DialogServiceMock },
         provideLocationMocks(),
       ],
     }).compileComponents();
@@ -51,6 +61,8 @@ describe('Cadastro', () => {
     component = fixture.componentInstance;
 
     autenticacaoService = TestBed.inject(AutenticacaoService) as any;
+    dialogService = TestBed.inject(DialogService) as any;
+    router = TestBed.inject(Router);
 
     fixture.detectChanges();
   });
@@ -121,22 +133,39 @@ describe('Cadastro', () => {
   });
 
   /**
-   * Verifica se o MatSnackBar é acionado após um cadastro bem-sucedido.
+   * Verifica se registrar() é chamado corretamente e se ocorre o redirecionamento
+   * para login após o sucesso.
    */
-  it('deve exibir snackbar ao cadastrar com sucesso', () => {
-    component.formulario.setValue({
+  it('deve chamar o serviço registrar e navegar para login ao enviar com sucesso', () => {
+    const dadosFormulario = {
       nome: 'Matheus Filipe do Nascimento Pereira',
       email: 'matheusfnpereira@gmail.com',
       senha: 'Ab123456',
       confirmarSenha: 'Ab123456',
-    });
+    };
 
-    const snackInstance = (component as any).snackBar as MatSnackBar;
-    spyOn(snackInstance, 'open');
+    component.formulario.setValue(dadosFormulario);
+
+    spyOn(router, 'navigate');
 
     component.aoEnviar();
 
-    expect(snackInstance.open).toHaveBeenCalled();
+    const dadosEsperadosAPI = {
+      nome: 'Matheus Filipe do Nascimento Pereira',
+      email: 'matheusfnpereira@gmail.com',
+      senha: 'Ab123456',
+    };
+
+    expect(autenticacaoService.registrar).toHaveBeenCalledWith(
+      jasmine.objectContaining(dadosEsperadosAPI)
+    );
+
+    expect(dialogService.mostrarSucesso).toHaveBeenCalledWith(
+      'Cadastro realizado com sucesso!',
+      jasmine.stringMatching(dadosFormulario.nome)
+    );
+
+    expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
 
   /**
