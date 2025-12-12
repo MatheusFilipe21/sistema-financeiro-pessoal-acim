@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
+import { Router, RouterModule } from '@angular/router';
 
 import { Autenticacao } from './autenticacao';
 import { DadosCadastroUsuarioDTO } from '../dtos/usuario/DadosCadastroUsuarioDTO';
@@ -8,6 +9,7 @@ import { UsuarioDTO } from '../dtos/usuario/UsuarioDTO';
 import { DadosAutenticacaoDTO } from '../dtos/autenticacao/DadosAutenticacaoDTO';
 import { DadosTokenJWTDTO } from '../dtos/autenticacao/DadosTokenJWTDTO';
 import { DadosRedefinicaoSenhaDTO } from '../dtos/autenticacao/DadosRedefinicaoSenhaDTO';
+import { Dashboard } from '../components/dashboard/dashboard';
 
 /**
  * Testes unitários para o serviço {@link Autenticacao}.
@@ -17,24 +19,33 @@ import { DadosRedefinicaoSenhaDTO } from '../dtos/autenticacao/DadosRedefinicaoS
 describe('Autenticacao', () => {
   let service: Autenticacao;
   let httpMock: HttpTestingController;
+  let router: Router;
+
+  const TOKEN_VALIDO =
+    'eyJhbGciOiJIUzUxMiJ9.eyJleHAiOjk5OTk5OTk5OTl9.e90EOyfiPFUE4Mu5LgbZEtrYnQIGzueecgm4G-fWIKTtSr7IuxC1X_hBkltJBRxHo9ocTvQFje44r0g84TqaiQ';
+  const TOKEN_EXPIRADO =
+    'eyJhbGciOiJIUzUxMiJ9.eyJleHAiOjF9.e90EOyfiPFUE4Mu5LgbZEtrYnQIGzueecgm4G-fWIKTtSr7IuxC1X_hBkltJBRxHo9ocTvQFje44r0g84TqaiQ';
 
   /**
    * Configura o ambiente de testes antes de cada 'it'.
    */
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [RouterModule.forRoot([{ path: 'dashboard', component: Dashboard }])],
       providers: [provideHttpClient(), provideHttpClientTesting(), Autenticacao],
     });
 
     service = TestBed.inject(Autenticacao);
     httpMock = TestBed.inject(HttpTestingController);
+    router = TestBed.inject(Router);
   });
 
   /**
-   * Verifica se não ficaram requisições pendentes após cada teste.
+   * Limpa requisições pendentes e o LocalStorage após cada teste.
    */
   afterEach(() => {
     httpMock.verify();
+    localStorage.clear();
   });
 
   /**
@@ -75,29 +86,28 @@ describe('Autenticacao', () => {
   });
 
   /**
-   * Testa o método login(), garantindo que o endpoint correto (POST /autenticacao/login) seja chamado,
-   * que o DTO enviado esteja correto e que o retorno do backend (DadosTokenJWTDTO) seja recebido.
+   * Testa o método login(), garantindo que além de chamar a API,
+   * ele invoca a lógica de persistência de sessão (logar).
    */
-  it('deve autenticar um usuário (POST /autenticacao/login)', (done) => {
+  it('deve autenticar um usuário e salvar a sessão (POST /autenticacao/login)', (done) => {
     const dadosLogin: DadosAutenticacaoDTO = {
-      email: 'matheusfnpereira@gmail.com',
+      email: 'matheus@gmail.com',
       senha: 'Ab123456',
     };
     const mockResponse: DadosTokenJWTDTO = {
-      token:
-        'eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJTRlAtQUNJTSBBUEkiLCJzdWIiOiJtYXRoZXVzZm5wZXJlaXJhQGdtYWlsLmNvbSIsImlhdCI6MTc2MzMwNjE3NiwiZXhwIjoxNzYzMzM0OTc2fQ.e90EOyfiPFUE4Mu5LgbZEtrYnQIGzueecgm4G-fWIKTtSr7IuxC1X_hBkltJBRxHo9ocTvQFje44r0g84TqaiQ',
+      token: TOKEN_VALIDO,
     };
+
+    spyOn(service, 'logar').and.callThrough();
 
     service.login(dadosLogin).subscribe((res) => {
       expect(res).toEqual(mockResponse);
+      expect(service.logar).toHaveBeenCalledWith(TOKEN_VALIDO);
       done();
     });
 
     const req = httpMock.expectOne('/autenticacao/login');
-
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual(dadosLogin);
-
     req.flush(mockResponse);
   });
 
@@ -139,5 +149,73 @@ describe('Autenticacao', () => {
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(dados);
     req.flush(null);
+  });
+
+  /**
+   * Testa o método logar().
+   * Deve verificar se o token é salvo no localStorage, se o Signal é atualizado
+   * e se ocorre o redirecionamento para o dashboard.
+   */
+  it('deve salvar sessão, atualizar signal e navegar para dashboard', () => {
+    spyOn(localStorage, 'setItem');
+    spyOn(router, 'navigate');
+
+    service.logar(TOKEN_VALIDO);
+
+    expect(localStorage.setItem).toHaveBeenCalledWith('sfp-acim-token-jwt', TOKEN_VALIDO);
+    expect(service.usuarioEstaLogado()).toBeTrue();
+    expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+  });
+
+  /**
+   * Testa o método deslogar().
+   * Deve verificar se o token é removido, o Signal atualizado para false
+   * e se ocorre o redirecionamento para o login.
+   */
+  it('deve limpar sessão, atualizar signal e navegar para login', () => {
+    spyOn(localStorage, 'removeItem');
+    spyOn(router, 'navigate');
+
+    service.deslogar();
+
+    expect(localStorage.removeItem).toHaveBeenCalledWith('sfp-acim-token-jwt');
+    expect(service.usuarioEstaLogado()).toBeFalse();
+    expect(router.navigate).toHaveBeenCalledWith(['/login']);
+  });
+
+  /**
+   * Testa a validação de token (possuiTokenValido) com um JWT válido (data futura).
+   */
+  it('deve retornar true para token válido (não expirado)', () => {
+    spyOn(localStorage, 'getItem').and.returnValue(TOKEN_VALIDO);
+    expect(service.possuiTokenValido()).toBeTrue();
+  });
+
+  /**
+   * Testa a validação de token com um JWT expirado (data passada).
+   */
+  it('deve retornar false para token expirado', () => {
+    spyOn(localStorage, 'getItem').and.returnValue(TOKEN_EXPIRADO);
+    expect(service.possuiTokenValido()).toBeFalse();
+  });
+
+  /**
+   * Testa a validação quando não há token no armazenamento.
+   */
+  it('deve retornar false se não houver token', () => {
+    spyOn(localStorage, 'getItem').and.returnValue(null);
+    expect(service.possuiTokenValido()).toBeFalse();
+  });
+
+  /**
+   * Testa a robustez contra tokens malformados (não JWTs).
+   * Garante que o serviço não quebra e retorna false.
+   */
+  it('deve retornar false e logar aviso se o token for malformado', () => {
+    spyOn(localStorage, 'getItem').and.returnValue('token-invalido-que-nao-eh-jwt');
+    spyOn(console, 'warn');
+
+    expect(service.possuiTokenValido()).toBeFalse();
+    expect(console.warn).toHaveBeenCalled();
   });
 });

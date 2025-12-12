@@ -1,8 +1,5 @@
 import { Routes } from '@angular/router';
-import { Login } from './components/login/login';
-import { Cadastro } from './components/cadastro/cadastro';
-import { RecuperarSenha } from './components/recuperar-senha/recuperar-senha';
-import { RedefinirSenha } from './components/redefinir-senha/redefinir-senha';
+import { autenticacao as autenticacaoGuard } from './guards/autenticacao';
 
 /**
  * Define as rotas principais da aplicação.
@@ -11,8 +8,33 @@ import { RedefinirSenha } from './components/redefinir-senha/redefinir-senha';
  */
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
-  { path: 'login', component: Login },
-  { path: 'cadastro', component: Cadastro },
-  { path: 'recuperar-senha', component: RecuperarSenha },
-  { path: 'redefinir-senha', component: RedefinirSenha },
+  {
+    path: 'login',
+    loadComponent: () => import('./components/login/login').then((m) => m.Login),
+  },
+  {
+    path: 'cadastro',
+    loadComponent: () => import('./components/cadastro/cadastro').then((m) => m.Cadastro),
+  },
+  {
+    path: 'recuperar-senha',
+    loadComponent: () =>
+      import('./components/recuperar-senha/recuperar-senha').then((m) => m.RecuperarSenha),
+  },
+  {
+    path: 'redefinir-senha',
+    loadComponent: () =>
+      import('./components/redefinir-senha/redefinir-senha').then((m) => m.RedefinirSenha),
+  },
+  {
+    path: 'dashboard',
+    canActivate: [autenticacaoGuard],
+    loadComponent: () => import('./components/dashboard/dashboard').then((m) => m.Dashboard),
+    children: [],
+  },
+  // Tem que ser o último.
+  {
+    path: '**',
+    redirectTo: 'login',
+  },
 ];

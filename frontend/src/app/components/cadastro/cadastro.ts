@@ -5,11 +5,11 @@ import { Autenticacao as AutenticacaoService } from '../../services/autenticacao
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatIconModule } from '@angular/material/icon';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { validarSenhasIguais } from '../../validators/validar-senhas-iguais';
 import { DadosCadastroUsuarioDTO } from '../../dtos/usuario/DadosCadastroUsuarioDTO';
+import { Dialog as DialogService } from '../../services/dialog';
 
 /**
  * Componente responsável pelo formulário e lógica
@@ -26,7 +26,6 @@ import { DadosCadastroUsuarioDTO } from '../../dtos/usuario/DadosCadastroUsuario
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatSnackBarModule,
     MatIconModule,
     RouterModule,
   ],
@@ -36,7 +35,8 @@ import { DadosCadastroUsuarioDTO } from '../../dtos/usuario/DadosCadastroUsuario
 export class Cadastro {
   private readonly formBuilder = inject(FormBuilder);
   private readonly autenticacaoService = inject(AutenticacaoService);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly dialogService = inject(DialogService);
+  private readonly router = inject(Router);
 
   formulario: FormGroup;
   esconderSenha = signal(true);
@@ -165,11 +165,14 @@ export class Cadastro {
 
     this.autenticacaoService.registrar(dto).subscribe({
       next: (usuario) => {
-        this.snackBar.open(`Usuário ${usuario.nome} cadastrado com sucesso!`, 'OK', {
-          duration: 5000,
-          verticalPosition: 'top',
-          horizontalPosition: 'end',
-        });
+        this.dialogService
+          .mostrarSucesso(
+            'Cadastro realizado com sucesso!',
+            `O usuário ${usuario.nome} foi cadastrado, acesse a tela de login ou clique no OK para ser redirecionado e acessar o sistema.`
+          )
+          .subscribe(() => {
+            this.router.navigate(['/login']);
+          });
       },
     });
   }

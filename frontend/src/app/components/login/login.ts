@@ -1,12 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { Autenticacao as AutenticacaoService } from '../../services/autenticacao';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatIconModule } from '@angular/material/icon';
 
 /**
@@ -25,16 +24,15 @@ import { MatIconModule } from '@angular/material/icon';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatSnackBarModule,
     MatIconModule,
   ],
   templateUrl: './login.html',
   styleUrls: ['./login.scss'],
 })
-export class Login {
+export class Login implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly autenticacaoService = inject(AutenticacaoService);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly router = inject(Router);
 
   formulario: FormGroup;
   esconderSenha = signal(true);
@@ -50,6 +48,17 @@ export class Login {
       email: ['', [Validators.required, Validators.email]],
       senha: ['', [Validators.required]],
     });
+  }
+
+  /**
+   * Método do ciclo de vida do Angular (OnInit).
+   *
+   * Ao carregar a tela de Login, invoca o serviço de autenticação para
+   * realizar o logout forçado (limpeza de token), garantindo que o usuário
+   * inicie uma nova sessão a partir de um estado limpo.
+   */
+  ngOnInit(): void {
+    this.autenticacaoService.deslogar();
   }
 
   /**
@@ -95,15 +104,7 @@ export class Login {
     }
 
     this.autenticacaoService.login(this.formulario.value).subscribe({
-      next: (respostaToken) => {
-        localStorage.setItem('sfp-acim-token-jwt', respostaToken.token);
-
-        this.snackBar.open('Login realizado com sucesso!', 'OK', {
-          duration: 5000,
-          verticalPosition: 'top',
-          horizontalPosition: 'end',
-        });
-      },
+      next: () => {},
     });
   }
 }
