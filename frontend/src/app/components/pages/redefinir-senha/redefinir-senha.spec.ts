@@ -4,10 +4,10 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 import { provideLocationMocks } from '@angular/common/testing';
 import { RedefinirSenha } from './redefinir-senha';
-import { Autenticacao as AutenticacaoService } from '../../services/autenticacao';
-import { Dialog as DialogService } from '../../services/dialog';
+import { Autenticacao as AutenticacaoService } from '../../../services/autenticacao';
+import { Dialog as DialogService } from '../../../services/dialog';
 import { Login } from '../login/login';
-import { DadosRedefinicaoSenhaDTO } from '../../dtos/autenticacao/DadosRedefinicaoSenhaDTO';
+import { DadosRedefinicaoSenhaDTO } from '../../../dtos/autenticacao/DadosRedefinicaoSenhaDTO';
 
 /**
  * Mock do serviço de autenticação.

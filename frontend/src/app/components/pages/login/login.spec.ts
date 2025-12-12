@@ -4,9 +4,9 @@ import { RouterModule } from '@angular/router';
 import { of } from 'rxjs';
 import { provideLocationMocks } from '@angular/common/testing';
 import { Login } from './login';
-import { Autenticacao } from '../../services/autenticacao';
-import { DadosTokenJWTDTO } from '../../dtos/autenticacao/DadosTokenJWTDTO';
-import { DadosAutenticacaoDTO } from '../../dtos/autenticacao/DadosAutenticacaoDTO';
+import { Autenticacao } from '../../../services/autenticacao';
+import { DadosTokenJWTDTO } from '../../../dtos/autenticacao/DadosTokenJWTDTO';
+import { DadosAutenticacaoDTO } from '../../../dtos/autenticacao/DadosAutenticacaoDTO';
 import { Cadastro } from '../cadastro/cadastro';
 
 /**

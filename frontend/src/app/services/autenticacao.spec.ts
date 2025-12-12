@@ -9,7 +9,7 @@ import { UsuarioDTO } from '../dtos/usuario/UsuarioDTO';
 import { DadosAutenticacaoDTO } from '../dtos/autenticacao/DadosAutenticacaoDTO';
 import { DadosTokenJWTDTO } from '../dtos/autenticacao/DadosTokenJWTDTO';
 import { DadosRedefinicaoSenhaDTO } from '../dtos/autenticacao/DadosRedefinicaoSenhaDTO';
-import { Dashboard } from '../components/dashboard/dashboard';
+import { Dashboard } from '../components/pages/dashboard/dashboard';
 
 /**
  * Testes unitários para o serviço {@link Autenticacao}.

@@ -1,0 +1,67 @@
+<div class="container-tabela mat-elevation-z2" id="container-tabela-base">
+  <table mat-table [dataSource]="dataSource" matSort id="tabela-dados">
+    @for (coluna of colunas; track coluna.chave) {
+    <ng-container [matColumnDef]="coluna.chave">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header [id]="'cabecalho-' + coluna.chave">
+        {{ coluna.titulo }}
+      </th>
+      <td mat-cell *matCellDef="let row" [id]="'celula-' + coluna.chave + '-' + row.id">
+        {{ row[coluna.chave] }}
+      </td>
+    </ng-container>
+    }
+
+    <ng-container matColumnDef="acoes">
+      <th mat-header-cell *matHeaderCellDef id="cabecalho-acoes" class="coluna-acoes-header">
+        Ações
+      </th>
+
+      <td mat-cell *matCellDef="let row" class="coluna-acoes-celula">
+        <button
+          mat-icon-button
+          color="primary"
+          type="button"
+          [id]="'btn-editar-' + row.id"
+          (click)="aoEditar(row)"
+          matTooltip="Editar registro"
+        >
+          <mat-icon>edit</mat-icon>
+        </button>
+
+        <button
+          mat-icon-button
+          color="warn"
+          type="button"
+          [id]="'btn-excluir-' + row.id"
+          (click)="aoExcluir(row)"
+          matTooltip="Excluir registro"
+          aria-label="Excluir registro"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="colunasExibidas" id="linha-cabecalho"></tr>
+
+    <tr mat-row *matRowDef="let row; columns: colunasExibidas" [id]="'linha-dados-' + row.id"></tr>
+
+    <tr class="mat-row" *matNoDataRow>
+      <td
+        class="mat-cell celula-sem-dados"
+        [attr.colspan]="colunasExibidas.length"
+        id="msg-sem-dados"
+      >
+        Nenhum registro encontrado.
+      </td>
+    </tr>
+  </table>
+
+  <mat-paginator
+    id="paginador-tabela"
+    [pageSizeOptions]="[25, 50, 100]"
+    showFirstLastButtons
+    aria-label="Selecionar página de registros"
+  >
+  </mat-paginator>
+</div>

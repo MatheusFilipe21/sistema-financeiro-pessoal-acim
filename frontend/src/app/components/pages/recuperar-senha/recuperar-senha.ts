@@ -1,12 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Autenticacao as AutenticacaoService } from '../../services/autenticacao';
+import { Autenticacao as AutenticacaoService } from '../../../services/autenticacao';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterModule } from '@angular/router';
-import { Dialog as DialogService } from '../../services/dialog';
+import { Dialog as DialogService } from '../../../services/dialog';
 
 /**
  * Componente responsável pela solicitação de recuperação de senha (RF16).

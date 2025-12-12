@@ -5,8 +5,8 @@ import { of } from 'rxjs';
 import { provideLocationMocks } from '@angular/common/testing';
 
 import { RecuperarSenha } from './recuperar-senha';
-import { Autenticacao, Autenticacao as AutenticacaoService } from '../../services/autenticacao';
-import { Dialog as DialogService } from '../../services/dialog';
+import { Autenticacao, Autenticacao as AutenticacaoService } from '../../../services/autenticacao';
+import { Dialog as DialogService } from '../../../services/dialog';
 import { Login } from '../login/login';
 
 /**

@@ -6,10 +6,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { Autenticacao as AutenticacaoService } from '../../services/autenticacao';
-import { Dialog as DialogService } from '../../services/dialog';
-import { DadosRedefinicaoSenhaDTO } from '../../dtos/autenticacao/DadosRedefinicaoSenhaDTO';
-import { validarSenhasIguais } from '../../validators/validar-senhas-iguais';
+import { Autenticacao as AutenticacaoService } from '../../../services/autenticacao';
+import { Dialog as DialogService } from '../../../services/dialog';
+import { DadosRedefinicaoSenhaDTO } from '../../../dtos/autenticacao/DadosRedefinicaoSenhaDTO';
+import { validarSenhasIguais } from '../../../validators/validar-senhas-iguais';
 
 /**
  * Componente responsável pela redefinição de senha (RF17).
