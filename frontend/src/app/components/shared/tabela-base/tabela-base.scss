@@ -1,0 +1,33 @@
+.container-tabela {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 4px;
+  background-color: var(--mat-sys-surface);
+
+  table {
+    width: 100%;
+
+    td,
+    th {
+      white-space: nowrap;
+      padding: 0 16px;
+    }
+  }
+
+  .coluna-acoes-header {
+    width: 100px;
+    text-align: center;
+  }
+
+  .coluna-acoes-celula {
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .celula-sem-dados {
+    padding: 24px;
+    text-align: center;
+    font-style: italic;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}

@@ -1,13 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { of } from 'rxjs';
 import { provideLocationMocks } from '@angular/common/testing';
 import { Login } from './login';
-import { Autenticacao } from '../../services/autenticacao';
-import { DadosTokenJWTDTO } from '../../dtos/autenticacao/DadosTokenJWTDTO';
-import { DadosAutenticacaoDTO } from '../../dtos/autenticacao/DadosAutenticacaoDTO';
+import { Autenticacao } from '../../../services/autenticacao';
+import { DadosTokenJWTDTO } from '../../../dtos/autenticacao/DadosTokenJWTDTO';
+import { DadosAutenticacaoDTO } from '../../../dtos/autenticacao/DadosAutenticacaoDTO';
 import { Cadastro } from '../cadastro/cadastro';
 
 /**
@@ -20,6 +19,8 @@ class AutenticacaoServiceMock {
         'eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJTRlAtQUNJTSBBUEkiLCJzdWIiOiJtYXRoZXVzZm5wZXJlaXJhQGdtYWlsLmNvbSIsImlhdCI6MTc2MzMwNjE3NiwiZXhwIjoxNzYzMzM0OTc2fQ.e90EOyfiPFUE4Mu5LgbZEtrYnQIGzueecgm4G-fWIKTtSr7IuxC1X_hBkltJBRxHo9ocTvQFje44r0g84TqaiQ',
     } as DadosTokenJWTDTO)
   );
+
+  deslogar = jasmine.createSpy('deslogar');
 }
 
 describe('Login', () => {
@@ -73,6 +74,13 @@ describe('Login', () => {
   });
 
   /**
+   * Verifica se o logout é forçado ao entrar na tela.
+   */
+  it('deve deslogar o usuário ao inicializar o componente', () => {
+    expect(autenticacaoService.deslogar).toHaveBeenCalled();
+  });
+
+  /**
    * Verifica se o formulário é considerado inválido quando campos obrigatórios não são preenchidos.
    */
   it('deve deixar o formulário inválido quando campos obrigatórios estiverem vazios', () => {
@@ -119,23 +127,6 @@ describe('Login', () => {
     component.aoEnviar();
 
     expect(autenticacaoService.login).toHaveBeenCalledOnceWith(dados);
-  });
-
-  /**
-   * Verifica se o MatSnackBar é acionado após um login bem-sucedido.
-   */
-  it('deve exibir snackbar ao logar com sucesso', () => {
-    component.formulario.setValue({
-      email: 'matheusfnpereira@gmail.com',
-      senha: 'Ab123456',
-    } as DadosAutenticacaoDTO);
-
-    const snackInstance = (component as any).snackBar as MatSnackBar;
-    spyOn(snackInstance, 'open');
-
-    component.aoEnviar();
-
-    expect(snackInstance.open).toHaveBeenCalled();
   });
 
   /**

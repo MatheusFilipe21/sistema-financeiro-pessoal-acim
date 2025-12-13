@@ -1,0 +1,58 @@
+<mat-sidenav-container id="dashboard">
+  <mat-sidenav
+    #drawer
+    id="menu-lateral"
+    fixedInViewport
+    [attr.role]="dispositivoMovel() ? 'dialog' : 'navigation'"
+    [mode]="dispositivoMovel() ? 'over' : 'side'"
+    [opened]="!dispositivoMovel()"
+  >
+    <mat-toolbar id="cabecalho-menu-lateral">Menu</mat-toolbar>
+
+    <mat-nav-list id="lista-navegacao">
+      <a
+        mat-list-item
+        routerLink="/dashboard"
+        id="link-inicio"
+        (click)="dispositivoMovel() ? drawer.close() : null"
+      >
+        <mat-icon matListItemIcon>dashboard</mat-icon>
+        <span matListItemTitle id="txt-inicio">Início</span>
+      </a>
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content id="conteudo">
+    <mat-toolbar color="primary" id="menu-superior">
+      @if (dispositivoMovel()) {
+      <button
+        type="button"
+        mat-icon-button
+        id="btn-alternar-menu"
+        aria-label="Abrir menu"
+        (click)="drawer.toggle()"
+      >
+        <mat-icon>menu</mat-icon>
+      </button>
+      }
+
+      <span id="titulo-sistema">Sistema Financeiro Pessoal - ACIM</span>
+
+      <span class="espacamento"></span>
+
+      <button
+        mat-icon-button
+        id="btn-sair"
+        aria-label="Sair"
+        matTooltip="Sair do Sistema"
+        (click)="deslogar()"
+      >
+        <mat-icon>logout</mat-icon>
+      </button>
+    </mat-toolbar>
+
+    <main id="pagina">
+      <router-outlet></router-outlet>
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

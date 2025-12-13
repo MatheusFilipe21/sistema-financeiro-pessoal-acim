@@ -1,10 +1,10 @@
 import { ErrorHandler, Injectable, Injector, NgZone } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { MatDialog } from '@angular/material/dialog';
 
 import { ErroPadraoDTO } from '../dtos/erro/ErroPadraoDTO';
 import { ErroValidacaoDTO } from '../dtos/erro/ErroValidacaoDTO';
 import { ErroDialog, DadosErroDialog } from '../components/dialogs/erro-dialog/erro-dialog';
+import { Dialog as DialogService } from '../services/dialog';
 
 /**
  * Handler (Manipulador) Global de Exceções.
@@ -34,7 +34,7 @@ export class TratadorDeErrosGlobal implements ErrorHandler {
    * @param error O erro (pode ser HttpErrorResponse ou um Error).
    */
   handleError(error: any): void {
-    const dialog = this.injector.get(MatDialog);
+    const dialogService = this.injector.get(DialogService);
     const zone = this.injector.get(NgZone);
 
     const dadosDialog = this.processarErro(error);
@@ -42,11 +42,7 @@ export class TratadorDeErrosGlobal implements ErrorHandler {
     console.error('[TratadorDeErrosGlobal] Erro capturado:', error);
 
     zone.run(() => {
-      dialog.open(ErroDialog, {
-        id: 'dialog-erro-global',
-        data: dadosDialog,
-        width: '450px',
-      });
+      dialogService.mostrarErro(dadosDialog);
     });
   }
 

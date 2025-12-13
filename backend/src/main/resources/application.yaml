@@ -5,3 +5,12 @@ spring:
 server:
   servlet:
     context-path: /api
+
+# =======================================================
+# CONFIGURAÇÕES CUSTOMIZADAS DA APLICAÇÃO
+# =======================================================
+app:
+  frontend:
+    # Lê a variável de ambiente APP_FRONTEND_URL (do Docker Compose).
+    # Se ela não existir, usa 'http://localhost:4200' (Padrão Angular local).
+    url: ${APP_FRONTEND_URL:http://localhost:4200}

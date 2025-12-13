@@ -7,7 +7,7 @@ import { ErroPadraoDTO } from '../../../dtos/erro/ErroPadraoDTO';
 import { CampoMensagemDTO } from '../../../dtos/erro/CampoMensagemDTO';
 
 /**
- * Interface para os dados que o Dialog de Erro espera receber.
+ * Interface para os dados que o dialog de Erro espera receber.
  */
 export interface DadosErroDialog {
   erroPadrao: ErroPadraoDTO;
@@ -15,7 +15,7 @@ export interface DadosErroDialog {
 }
 
 /**
- * Componente que renderiza o modal (Dialog) de erro global.
+ * Componente que renderiza o dialog de erro global.
  *
  * @author Matheus F. N. Pereira
  */

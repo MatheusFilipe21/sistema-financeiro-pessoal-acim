@@ -113,4 +113,97 @@ class TokenServiceTest {
             tokenService.validarToken(tokenExpirado);
         }, "Deveria lançar ExpiredJwtException (token expirado)");
     }
+
+    /**
+     * Testa o método {@link TokenService#gerarTokenRecuperacao(Usuario)}.
+     * Valida se o token de recuperação é gerado corretamente.
+     */
+    @Test
+    @DisplayName("gerarTokenRecuperacao: Deve gerar token com assinatura dinâmica")
+    void testeGerarTokenRecuperacao_DeveGerarToken() {
+        String token = tokenService.gerarTokenRecuperacao(usuarioMock);
+
+        assertNotNull(token, "O token de recuperação não deve ser nulo");
+        assertFalse(token.isBlank(), "O token de recuperação não deve estar em branco");
+    }
+
+    /**
+     * Testa o método {@link TokenService#validarTokenRecuperacao(String, Usuario)}.
+     * Valida o cenário de sucesso (Senha não mudou).
+     */
+    @Test
+    @DisplayName("validarTokenRecuperacao: Quando senha não mudou, deve validar com sucesso")
+    void testeValidarTokenRecuperacao_QuandoSenhaIntacta_DeveValidar() {
+        String token = tokenService.gerarTokenRecuperacao(usuarioMock);
+
+        String subject = tokenService.validarTokenRecuperacao(token, usuarioMock);
+
+        assertEquals(EMAIL, subject, "Deve retornar o e-mail do usuário");
+    }
+
+    /**
+     * Testa o método {@link TokenService#validarTokenRecuperacao(String, Usuario)}.
+     * Valida o cenário de segurança: A senha mudou após a emissão do token.
+     * 
+     * <p>
+     * O token deve ser considerado inválido (assinatura não bate) pois a chave
+     * de validação é derivada da nova senha.
+     */
+    @Test
+    @DisplayName("validarTokenRecuperacao: Quando senha foi alterada, deve lançar SignatureException")
+    void testeValidarTokenRecuperacao_QuandoSenhaAlterada_DeveFalhar() {
+        String tokenComSenhaAntiga = tokenService.gerarTokenRecuperacao(usuarioMock);
+
+        Usuario usuarioComNovaSenha = new Usuario(
+                usuarioMock.getId(),
+                usuarioMock.getNome(),
+                usuarioMock.getEmail(),
+                "Ab1234567");
+
+        assertThrows(SignatureException.class, () -> {
+            tokenService.validarTokenRecuperacao(tokenComSenhaAntiga, usuarioComNovaSenha);
+        }, "Deveria lançar erro de assinatura pois a senha mudou");
+    }
+
+    /**
+     * Testa o método {@link TokenService#obterEmailDoToken(String)}.
+     * Valida a extração do subject (e-mail) sem validar assinatura.
+     */
+    @Test
+    @DisplayName("obterEmailDoToken: Quando token válido, deve extrair o e-mail")
+    void testeObterEmailDoToken_QuandoTokenValido_DeveRetornarEmail() {
+        String token = tokenService.gerarToken(usuarioMock);
+
+        String emailExtraido = tokenService.obterEmailDoToken(token);
+
+        assertEquals(EMAIL, emailExtraido);
+    }
+
+    /**
+     * Testa o método {@link TokenService#obterEmailDoToken(String)}.
+     * Valida o cenário onde o token não tem a estrutura mínima (pontos).
+     */
+    @Test
+    @DisplayName("obterEmailDoToken: Quando token não tem pontos (estrutura incorreta), deve retornar null")
+    void testeObterEmailDoToken_QuandoTokenSemPontos_DeveRetornarNull() {
+        String tokenMalFormado = "TokenSemPontosSeparadores";
+
+        String resultado = tokenService.obterEmailDoToken(tokenMalFormado);
+
+        assertNull(resultado, "Deveria retornar null pois não tem payload separável");
+    }
+
+    /**
+     * Testa o método {@link TokenService#obterEmailDoToken(String)}.
+     * Valida o tratamento de erro para tokens malformados.
+     */
+    @Test
+    @DisplayName("obterEmailDoToken: Quando token malformado, deve retornar null")
+    void testeObterEmailDoToken_QuandoTokenInvalido_DeveRetornarNull() {
+        String tokenInvalido = "token.sem.formato.valido";
+
+        String resultado = tokenService.obterEmailDoToken(tokenInvalido);
+
+        assertNull(resultado, "Deveria retornar null para token ilegível");
+    }
 }

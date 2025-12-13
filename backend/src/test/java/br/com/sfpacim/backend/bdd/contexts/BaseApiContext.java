@@ -8,6 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import br.com.sfpacim.backend.services.interfaces.EmailService;
 
 /**
  * Classe base abstrata para todos os Contextos de Teste de API.
@@ -23,6 +26,9 @@ import org.springframework.test.context.TestPropertySource;
         "api.security.token.expiration-ms=3600000"
 })
 public abstract class BaseApiContext {
+
+    @MockitoBean
+    protected EmailService emailService;
 
     /**
      * Armazena a resposta HTTP recebida do endpoint da API.

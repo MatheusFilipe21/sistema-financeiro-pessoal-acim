@@ -1,6 +1,7 @@
 package br.com.sfpacim.backend.controllers;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -22,9 +23,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import br.com.sfpacim.backend.config.SegurancaConfig;
 import br.com.sfpacim.backend.dtos.autenticacao.DadosAutenticacaoDTO;
+import br.com.sfpacim.backend.dtos.autenticacao.DadosRecuperacaoSenhaDTO;
+import br.com.sfpacim.backend.dtos.autenticacao.DadosRedefinicaoSenhaDTO;
 import br.com.sfpacim.backend.dtos.autenticacao.DadosTokenJWTDTO;
 import br.com.sfpacim.backend.dtos.usuario.DadosCadastroUsuarioDTO;
 import br.com.sfpacim.backend.dtos.usuario.UsuarioDTO;
+import br.com.sfpacim.backend.exceptions.RegraDeNegocioException;
 import br.com.sfpacim.backend.exceptions.TratadorDeErrosGlobal;
 import br.com.sfpacim.backend.services.AutenticacaoService;
 import br.com.sfpacim.backend.services.TokenService;
@@ -228,6 +232,134 @@ class AutenticacaoControllerTest {
         String jsonRequisicao = objectMapper.writeValueAsString(dadosInvalidos);
 
         mockMvc.perform(post("/autenticacao/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonRequisicao))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    /**
+     * Testa o endpoint POST /autenticacao/recuperar-senha (RF14).
+     * Valida o cenário de sucesso (Solicitação aceita).
+     *
+     * <p>
+     * Verifica se, ao enviar um e-mail válido, o controlador retorna HTTP 204
+     * (No Content) e corpo vazio, indicando que o processo iniciou.
+     *
+     * @throws Exception se ocorrer um erro durante a execução do MockMvc.
+     */
+    @SuppressWarnings("null")
+    @Test
+    @DisplayName("recuperarSenha: Quando e-mail válido, deve retornar HTTP 204 No Content")
+    void testeRecuperarSenha_QuandoEmailValido_DeveRetornar204() throws Exception {
+        DadosRecuperacaoSenhaDTO dadosRecuperacao = new DadosRecuperacaoSenhaDTO(EMAIL);
+        String jsonRequisicao = objectMapper.writeValueAsString(dadosRecuperacao);
+
+        mockMvc.perform(post("/autenticacao/recuperar-senha")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonRequisicao))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+    }
+
+    /**
+     * Testa a validação do endpoint (RF14 - E-mail Inválido).
+     *
+     * <p>
+     * Verifica se, ao enviar um e-mail com formato inválido no DTO,
+     * o controlador retorna HTTP 422 (Unprocessable Entity).
+     *
+     * @throws Exception se ocorrer um erro durante a execução do MockMvc.
+     */
+    @SuppressWarnings("null")
+    @Test
+    @DisplayName("recuperarSenha: Quando e-mail inválido (DTO Validation), deve retornar HTTP 422")
+    void testeRecuperarSenha_QuandoEmailInvalido_DeveRetornar422() throws Exception {
+        DadosRecuperacaoSenhaDTO dadosInvalidos = new DadosRecuperacaoSenhaDTO(EMAIL_INVALIDO_FORMATO);
+        String jsonRequisicao = objectMapper.writeValueAsString(dadosInvalidos);
+
+        mockMvc.perform(post("/autenticacao/recuperar-senha")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonRequisicao))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    /**
+     * Testa o endpoint POST /autenticacao/redefinir-senha (RF17).
+     * Valida o cenário de sucesso.
+     *
+     * <p>
+     * Verifica se, ao enviar um token e uma nova senha válida, o controlador
+     * chama o serviço e retorna HTTP 204 (No Content).
+     */
+    @SuppressWarnings("null")
+    @Test
+    @DisplayName("redefinirSenha: Quando dados válidos, deve retornar HTTP 204 No Content")
+    void testeRedefinirSenha_QuandoDadosValidos_DeveRetornar204() throws Exception {
+        DadosRedefinicaoSenhaDTO dados = new DadosRedefinicaoSenhaDTO(TOKEN_JWT, SENHA);
+        String jsonRequisicao = objectMapper.writeValueAsString(dados);
+
+        mockMvc.perform(post("/autenticacao/redefinir-senha")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonRequisicao))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+    }
+
+    /**
+     * Testa a validação do endpoint (Senha Fraca).
+     *
+     * <p>
+     * Verifica se o @Valid barra uma senha que não atende aos requisitos de
+     * complexidade.
+     */
+    @SuppressWarnings("null")
+    @Test
+    @DisplayName("redefinirSenha: Quando senha fraca (DTO Validation), deve retornar HTTP 422")
+    void testeRedefinirSenha_QuandoSenhaFraca_DeveRetornar422() throws Exception {
+        DadosRedefinicaoSenhaDTO dadosInvalidos = new DadosRedefinicaoSenhaDTO(TOKEN_JWT, "123");
+        String jsonRequisicao = objectMapper.writeValueAsString(dadosInvalidos);
+
+        mockMvc.perform(post("/autenticacao/redefinir-senha")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonRequisicao))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    /**
+     * Testa a validação do endpoint (Token em branco).
+     */
+    @SuppressWarnings("null")
+    @Test
+    @DisplayName("redefinirSenha: Quando token em branco (DTO Validation), deve retornar HTTP 422")
+    void testeRedefinirSenha_QuandoTokenBranco_DeveRetornar422() throws Exception {
+        DadosRedefinicaoSenhaDTO dadosInvalidos = new DadosRedefinicaoSenhaDTO("", SENHA);
+        String jsonRequisicao = objectMapper.writeValueAsString(dadosInvalidos);
+
+        mockMvc.perform(post("/autenticacao/redefinir-senha")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonRequisicao))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    /**
+     * Testa o erro de Regra de Negócio (Token Inválido/Expirado).
+     *
+     * <p>
+     * Simula o serviço lançando RegraDeNegocioException e verifica se o
+     * TratadorDeErrosGlobal converte corretamente para 422 (Unprocessable Entity),
+     * conforme definimos na arquitetura.
+     */
+    @SuppressWarnings("null")
+    @Test
+    @DisplayName("redefinirSenha: Quando serviço lança RegraDeNegocioException, deve retornar HTTP 422")
+    void testeRedefinirSenha_QuandoTokenInvalidoNoService_DeveRetornar422() throws Exception {
+        DadosRedefinicaoSenhaDTO dados = new DadosRedefinicaoSenhaDTO(TOKEN_JWT, SENHA);
+        String jsonRequisicao = objectMapper.writeValueAsString(dados);
+
+        doThrow(new RegraDeNegocioException("Token inválido ou expirado."))
+                .when(autenticacaoService).redefinirSenha(any(DadosRedefinicaoSenhaDTO.class));
+
+        mockMvc.perform(post("/autenticacao/redefinir-senha")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonRequisicao))
                 .andExpect(status().isUnprocessableEntity());

@@ -6,14 +6,14 @@ package br.com.sfpacim.backend.exceptions;
  *
  * @author Matheus F. N. Pereira
  */
-public class ViolacaoDadosExcecao extends RuntimeException {
+public class ViolacaoDadosException extends RuntimeException {
 
     /**
      * Construtor que aceita a mensagem de erro.
      *
      * @param mensagem A descrição do erro (ex: "O e-mail já está cadastrado").
      */
-    public ViolacaoDadosExcecao(String mensagem) {
+    public ViolacaoDadosException(String mensagem) {
         super(mensagem);
     }
 }

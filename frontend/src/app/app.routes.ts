@@ -1,6 +1,5 @@
 import { Routes } from '@angular/router';
-import { Login } from './components/login/login';
-import { Cadastro } from './components/cadastro/cadastro';
+import { autenticacao as autenticacaoGuard } from './guards/autenticacao';
 
 /**
  * Define as rotas principais da aplicação.
@@ -9,6 +8,33 @@ import { Cadastro } from './components/cadastro/cadastro';
  */
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
-  { path: 'login', component: Login },
-  { path: 'cadastro', component: Cadastro },
+  {
+    path: 'login',
+    loadComponent: () => import('./components/pages/login/login').then((m) => m.Login),
+  },
+  {
+    path: 'cadastro',
+    loadComponent: () => import('./components/pages/cadastro/cadastro').then((m) => m.Cadastro),
+  },
+  {
+    path: 'recuperar-senha',
+    loadComponent: () =>
+      import('./components/pages/recuperar-senha/recuperar-senha').then((m) => m.RecuperarSenha),
+  },
+  {
+    path: 'redefinir-senha',
+    loadComponent: () =>
+      import('./components/pages/redefinir-senha/redefinir-senha').then((m) => m.RedefinirSenha),
+  },
+  {
+    path: 'dashboard',
+    canActivate: [autenticacaoGuard],
+    loadComponent: () => import('./components/pages/dashboard/dashboard').then((m) => m.Dashboard),
+    children: [],
+  },
+  // Tem que ser o último.
+  {
+    path: '**',
+    redirectTo: 'login',
+  },
 ];

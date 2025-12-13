@@ -1,0 +1,65 @@
+spring:
+  config:
+    activate:
+      # Ativa estas configurações apenas quando o perfil 'prod' é selecionado via
+      # SPRING_PROFILES_ACTIVE=prod (definido no Docker Compose).
+      on-profile: prod
+
+  # =======================================================
+  # CONFIGURAÇÕES DO BANCO DE DADOS
+  # =======================================================
+  datasource:
+    # NOTA: URL, Username e Password foram omitidos intencionalmente.
+    # O Spring Boot detecta automaticamente as variáveis de ambiente:
+    #   - SPRING_DATASOURCE_URL
+    #   - SPRING_DATASOURCE_USERNAME
+    #   - SPRING_DATASOURCE_PASSWORD
+    # Essas variáveis são injetadas pelo Docker Compose, garantindo que
+    # as credenciais não fiquem expostas no código fonte.
+    driver-class-name: org.postgresql.Driver
+
+  # =======================================================
+  # CONFIGURAÇÕES DO JPA
+  # =======================================================
+  jpa:
+    hibernate:
+      # Define a estratégia de Schema via variável de ambiente (Ex: update, validate, none).
+      ddl-auto: ${JPA_DDL_AUTO}
+
+    # Controla a exibição de SQL no log via variável.
+    show-sql: ${SHOW_SQL}
+
+    properties:
+      hibernate:
+        # Formata o SQL caso o show-sql esteja ativo.
+        "[format_sql]": true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # =======================================================
+  # CONFIGURAÇÕES DE E-MAIL
+  # =======================================================
+  mail:
+    # Mapeamento explícito das variáveis do Docker para as propriedades do Spring.
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+# =======================================================
+# CONFIGURAÇÕES DA API (SFP-ACIM)
+# =======================================================
+api:
+  security:
+    token:
+      # Segredo do JWT injetado via ambiente.
+      secret: ${JWT_SECRET}
+
+      # Tempo de expiração injetado via ambiente.
+      expiration-ms: ${JWT_EXPIRATION}

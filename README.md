@@ -64,13 +64,135 @@ O pipeline é disparado automaticamente em `push` (para `main`/`develop`) ou `pu
 
 ## 💻 Setup do Ambiente de Desenvolvimento (DevContainer)
 
-O ambiente está 100% configurado para VS Code/Docker.
+O ambiente está 100% configurado para VS Code/Docker. Para começar, você precisa apenas do **Docker** e do **VS Code** com a extensão **Dev Containers**.
 
-1.  **Pré-requisitos:** Docker Desktop (ou Docker Engine) instalado e rodando.
-2.  **VS Code:** Instale a extensão "Dev Containers".
-3.  **Abrir:** Ao abrir a pasta no VS Code, o editor irá perguntar: **"Reopen in Container?"** Clique em Sim.
+### 1. Pré-requisitos (Instalação do Docker)
 
-### Comandos Principais no VS Code (Run and Debug)
+Se ainda não possui o Docker instalado e configurado, expanda a seção correspondente ao seu sistema operacional abaixo:
+
+<details>
+<summary><strong>🪟 Clique aqui para instruções Windows (WSL2 + Ubuntu)</strong></summary>
+
+Para garantir performance e compatibilidade, utilizaremos o Docker Desktop integrado a uma distribuição Linux dedicada (Ubuntu 24.04) rodando sobre o WSL2.
+
+1.  **Habilitar WSL2:**
+    Abra o PowerShell como Administrador e execute os comandos abaixo para instalar e garantir a versão 2:
+
+    ```powershell
+    wsl --install
+    wsl --set-default-version 2
+    ```
+
+    _Reinicie o computador se solicitado._
+
+2.  **Instalar a Distribuição Linux (Ubuntu):**
+
+    - Abra a **Microsoft Store**.
+    - Procure por **"Ubuntu 24.04 LTS"** (ou sua versão preferida) e instale.
+    - Após instalar, **abra o terminal do Ubuntu** uma vez para finalizar a configuração criando seu usuário e senha UNIX.
+    - **Importante:** Volte ao PowerShell e defina este Ubuntu como o padrão do sistema:
+      ```powershell
+      wsl --set-default Ubuntu-24.04
+      ```
+
+3.  **Instalar e Configurar Docker Desktop:**
+
+    - Baixe e instale o [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+    - **Configuração Geral:** Nas configurações (_Settings_) -> _General_, certifique-se de que **"Use the WSL 2 based engine"** está marcado.
+    - **Integração com a Distro:**
+      1. Vá em _Settings_ -> _Resources_ -> _WSL Integration_.
+      2. Marque a opção **"Enable integration with my default WSL distro"**.
+      3. Clique em _Apply & Restart_.
+         _(Como definimos o Ubuntu como padrão no passo anterior, ele será automaticamente integrado)._
+
+4.  **Validação:**
+    Abra o terminal do seu **Ubuntu 24.04** e digite `docker ps`. Se não der erro de conexão, o ambiente está pronto.
+
+</details>
+
+<details>
+<summary><strong>🐧 Clique aqui para instruções Linux</strong></summary>
+
+1.  **Atualizar pacotes:**
+    ```bash
+    sudo apt-get update
+    sudo apt-get install ca-certificates curl gnupg
+    ```
+2.  **Instalar Docker Engine:**
+    ```bash
+    curl -fsSL [https://get.docker.com](https://get.docker.com) -o get-docker.sh
+    sudo sh get-docker.sh
+    ```
+3.  **Configurar permissões (para rodar sem `sudo`):**
+    ```bash
+    sudo usermod -aG docker $USER
+    newgrp docker
+    ```
+
+</details>
+
+### 2. Inicialização e Clonagem
+
+Dependendo do seu sistema operacional, o método para baixar (clonar) o projeto muda. **Siga rigorosamente os passos abaixo para evitar problemas de permissão e performance.**
+
+<details>
+<summary><strong>🪟 Windows (Fluxo via WSL2 - Obrigatório)</strong></summary>
+
+No Windows, **NÃO** clone o projeto na sua Área de Trabalho ou Documentos. Você deve clonar dentro do sistema de arquivos do Linux.
+
+1.  Abra o **VS Code** no Windows.
+2.  Clique no botão verde/azul no canto inferior esquerdo (**Remote Window**) ou pressione `F1` e selecione:
+    - `WSL: Connect to WSL using Distro...`
+    - Escolha **Ubuntu-24.04**.
+3.  Uma nova janela do VS Code abrirá conectada ao Linux. Abra o terminal integrado (`Ctrl + J`) e clone o projeto na sua pasta home:
+
+    ```bash
+    cd ~
+    # Clona o repositório
+    git clone https://github.com/MatheusFilipe21/sistema-financeiro-pessoal-acim
+
+    # Entra na pasta e muda para a branch de desenvolvimento
+    cd sistema-financeiro-pessoal-acim
+    git checkout develop
+    code .
+    ```
+
+</details>
+
+<details>
+<summary><strong>🐧 Linux (Fluxo Nativo)</strong></summary>
+
+No Linux nativo, o processo é direto.
+
+1.  Abra seu terminal e execute:
+
+    ```bash
+    # Clona o repositório
+    git clone https://github.com/MatheusFilipe21/sistema-financeiro-pessoal-acim
+
+    # Entra na pasta e muda para a branch de desenvolvimento
+    cd sistema-financeiro-pessoal-acim
+    git checkout develop
+
+    # Abre o projeto no VS Code
+    code .
+    ```
+
+</details>
+
+---
+
+### 3. Ativando o DevContainer
+
+Assim que você abrir a pasta do projeto no VS Code (seguindo os passos acima):
+
+1.  O editor detectará os arquivos de configuração `.devcontainer` e exibirá uma notificação no canto inferior direito:
+    > **"Folder contains a Dev Container configuration file. Reopen to develop in a container."**
+2.  Clique no botão **Reopen in Container**.
+    - _Caso a notificação não apareça:_ Pressione `F1` e digite/selecione `Dev Containers: Reopen in Container`.
+3.  Aguarde a construção do ambiente (pode demorar alguns minutos na primeira vez enquanto baixa as imagens do Java, Node, Chrome, etc).
+
+### 4. Comandos Principais no VS Code (Run and Debug)
 
 O fluxo de trabalho no VS Code é dividido em dois menus principais:
 
@@ -93,6 +215,46 @@ O fluxo de trabalho no VS Code é dividido em dois menus principais:
 Para simular o ambiente de produção/deploy completo (com Nginx, JRE, etc.), você pode usar o `docker-compose.yml`.
 
 **Este ambiente roda em portas distintas do ambiente de desenvolvimento (ex: 8081, 4201, 5433), garantindo que não haja conflito com as portas padrão (8080, 4200) usadas pelo DevContainer.**
+
+### 1. Configuração de Segurança (.env)
+
+Antes de iniciar, crie um arquivo chamado `.env` na raiz do projeto.
+Abaixo estão todas as variáveis suportadas. **Apenas as credenciais de E-mail são obrigatórias**; as demais possuem valores padrão configurados no `docker-compose.yml` e podem permanecer comentadas para uso local.
+
+```properties
+# === E-MAIL (Obrigatório) ===
+MAIL_USERNAME=SUBSTITUIR_PELO_E_MAIL_DO_GOOGLE
+MAIL_PASSWORD=SUBSTITUIR_PELA_SENHA_DE_APP
+# Se mantido comentado, o sistema usará: smtp.gmail.com / 587
+# MAIL_HOST=smtp.gmail.com
+# MAIL_PORT=587
+
+# === BANCO DE DADOS (Opcional) ===
+# Se mantido comentado, o sistema usará: sfpacim_db / user / password
+# POSTGRES_DB=sfpacim_db
+# POSTGRES_USER=admin_sfp
+# POSTGRES_PASSWORD=senha_segura_sfp
+
+# === SEGURANÇA JWT (Opcional) ===
+# Se mantido comentado, o sistema usará um hash padrão de desenvolvimento.
+# JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+# JWT_EXPIRATION=28800000
+
+# === CONFIGURAÇÕES GERAIS (Opcional) ===
+# APP_FRONTEND_URL=http://localhost:4201
+# JPA_DDL_AUTO=update
+# SHOW_SQL=false
+```
+
+> **🔑 Como obter a Senha de App (Google Workspace/Gmail):**
+>
+> 1. Acesse **Gerenciar sua Conta do Google** -> **Segurança**.
+> 2. Garanta que a **"Verificação em duas etapas"** esteja ATIVADA.
+> 3. Na barra de busca da conta, digite **"Senhas de app"**.
+> 4. Crie uma nova senha com o nome "SFP-Local".
+> 5. Copie a senha de 16 caracteres gerada e cole no campo `MAIL_PASSWORD` acima.
+
+### 2. Execução
 
 1.  No seu terminal (na raiz do projeto), execute:
     ```bash

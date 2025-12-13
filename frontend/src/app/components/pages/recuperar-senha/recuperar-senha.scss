@@ -29,10 +29,6 @@ main {
     mat-form-field {
       width: 100%;
       margin-bottom: 10px;
-
-      #btn-alternar-senha {
-        margin-right: 4px;
-      }
     }
 
     #acoes {
@@ -46,7 +42,25 @@ main {
       }
     }
 
-    #link-cadastro {
+    #sucesso-container {
+      text-align: center;
+      padding: 16px;
+      background-color: #e8f5e9;
+      border-radius: 4px;
+      margin-bottom: 24px;
+      color: #2e7d32;
+
+      p {
+        margin: 8px 0;
+      }
+
+      .aviso-spam {
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+    }
+
+    #link-login {
       text-align: center;
       margin-top: 24px;
       font-size: 0.9rem;

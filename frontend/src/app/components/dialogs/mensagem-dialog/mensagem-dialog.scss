@@ -1,0 +1,37 @@
+#mensagem-dialog {
+  &.tipo-sucesso {
+    --cor-destaque: #2e7d32;
+  }
+  &.tipo-aviso {
+    --cor-destaque: #d3d60e;
+  }
+  &.tipo-info {
+    --cor-destaque: #0288d1;
+  }
+
+  #titulo-dialog {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    color: var(--cor-destaque);
+    border-bottom: 1px solid #f0f0f0;
+
+    mat-icon {
+      transform: scale(1.2);
+    }
+  }
+
+  #conteudo-dialog {
+    min-width: 300px;
+    max-width: 450px;
+    padding: 24px;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--mat-sys-on-surface);
+
+    p {
+      white-space: pre-line;
+    }
+  }
+}
