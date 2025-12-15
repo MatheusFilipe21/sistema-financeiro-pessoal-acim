@@ -1,0 +1,25 @@
+#container-pagina-pessoas {
+  padding: 24px;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+#barra-controle-visualizacao {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+#area-conteudo-dados {
+  flex: 1;
+  overflow-y: auto;
+}
+
+#txt-sem-registros {
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+  margin-top: 32px;
+  grid-column: 1 / -1;
+}

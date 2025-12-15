@@ -1,0 +1,61 @@
+<div id="container-pagina-pessoas">
+  <app-container-filtro
+    titulo="Gestão de Pessoas"
+    textoBotaoBuscar="Pesquisar"
+    [filtroInstantaneo]="true"
+    (buscar)="filtrar()"
+    (limpar)="limpar()"
+  >
+    <mat-form-field appearance="outline">
+      <mat-label>Nome</mat-label>
+      <input
+        matInput
+        [(ngModel)]="filtro.nome"
+        (ngModelChange)="filtrar()"
+        name="nome"
+        id="input-filtro-nome"
+        placeholder="Busque por nome..."
+      />
+    </mat-form-field>
+  </app-container-filtro>
+
+  <section id="barra-controle-visualizacao">
+    <app-alternador-visualizacao [(emCards)]="visualizacaoEmCards"> </app-alternador-visualizacao>
+  </section>
+
+  <section id="area-conteudo-dados">
+    @if (visualizacaoEmCards) {
+
+    <app-grid-base identificador="grid-pessoas">
+      @for (pessoa of pessoasFiltradas; track pessoa.id) {
+
+      <app-card-base
+        [identificador]="pessoa.id"
+        [titulo]="pessoa.nome"
+        icone="person"
+        (editar)="aoEditar(pessoa)"
+        (excluir)="aoExcluir(pessoa)"
+      >
+      </app-card-base>
+
+      } @empty {
+      <p id="txt-sem-registros">Nenhuma pessoa encontrada.</p>
+      }
+    </app-grid-base>
+
+    } @else {
+
+    <app-tabela-base
+      [colunas]="colunasTabela"
+      [dados]="pessoasFiltradas"
+      (editar)="aoEditar($event)"
+      (excluir)="aoExcluir($event)"
+    >
+    </app-tabela-base>
+
+    }
+  </section>
+
+  <app-botao-adicionar [temRodape]="!visualizacaoEmCards" (adicionar)="aoAdicionar()">
+  </app-botao-adicionar>
+</div>

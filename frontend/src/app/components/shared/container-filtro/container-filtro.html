@@ -26,10 +26,12 @@
   ></button>
   }
 
+  <h2 id="titulo-sessao-filtros">Filtros</h2>
+
   <div id="area-conteudo-filtros" [class.aberto]="filtroAberto || !dispositivoMovel()">
     @if (dispositivoMovel()) {
     <div id="cabecalho-mobile-filtros">
-      <h3>Filtros</h3>
+      <h2>Filtros</h2>
       <button
         mat-icon-button
         type="button"
@@ -51,6 +53,7 @@
         Limpar
       </button>
 
+      @if (!filtroInstantaneo || dispositivoMovel()) {
       <button
         mat-flat-button
         color="primary"
@@ -58,9 +61,11 @@
         type="button"
         (click)="aoBuscar()"
       >
-        <mat-icon>search</mat-icon>
-        {{ textoBotaoBuscar }}
+        <mat-icon>{{ filtroInstantaneo && dispositivoMovel() ? 'check' : 'search' }}</mat-icon>
+
+        {{ filtroInstantaneo && dispositivoMovel() ? 'Ver Resultados' : textoBotaoBuscar }}
       </button>
+      }
     </div>
   </div>
 </div>

@@ -4,6 +4,7 @@ import { of } from 'rxjs';
 import { Dialog } from './dialog';
 import { MensagemDialog } from '../components/dialogs/mensagem-dialog/mensagem-dialog';
 import { ErroDialog, DadosErroDialog } from '../components/dialogs/erro-dialog/erro-dialog';
+import { DadosPessoaDialog, PessoaDialog } from '../components/dialogs/pessoa-dialog/pessoa-dialog';
 
 /**
  * Testes unitários para o serviço {@link Dialog}.
@@ -21,8 +22,9 @@ describe('Dialog', () => {
    * Configura o ambiente de testes antes de cada 'it'.
    */
   beforeEach(() => {
-    const spy = jasmine.createSpyObj('MatDialog', ['open']);
+    const spy = jasmine.createSpyObj('MatDialog', ['open', 'getDialogById']);
     spy.open.and.returnValue(dialogRefSpy);
+    spy.getDialogById.and.returnValue(null);
 
     TestBed.configureTestingModule({
       providers: [Dialog, { provide: MatDialog, useValue: spy }],
@@ -61,7 +63,7 @@ describe('Dialog', () => {
       width: '400px',
       data: dadosErro,
       disableClose: true,
-      autoFocus: false,
+      autoFocus: 'first-tabbable',
       id: 'dialog-erro-global',
     });
   });
@@ -82,7 +84,7 @@ describe('Dialog', () => {
         textoBotao: 'Botão',
       },
       disableClose: true,
-      autoFocus: false,
+      autoFocus: 'first-tabbable',
       id: 'dialog-mensagem-global',
     });
   });
@@ -103,7 +105,7 @@ describe('Dialog', () => {
         textoBotao: 'Entendi',
       },
       disableClose: true,
-      autoFocus: false,
+      autoFocus: 'first-tabbable',
       id: 'dialog-mensagem-global',
     });
   });
@@ -124,7 +126,7 @@ describe('Dialog', () => {
         textoBotao: 'Fechar',
       },
       disableClose: true,
-      autoFocus: false,
+      autoFocus: 'first-tabbable',
       id: 'dialog-mensagem-global',
     });
   });
@@ -138,5 +140,92 @@ describe('Dialog', () => {
       expect(resultado).toBeTrue();
       done();
     });
+  });
+
+  /**
+   * Testa o método abrirFormularioPessoa() para inclusão.
+   * Verifica se abre o PessoaDialog com a ação 'cadastrar' e sem dados de pessoa.
+   */
+  it('deve abrir o PessoaDialog para cadastro (ação: cadastrar)', () => {
+    service.abrirFormularioPessoa('cadastrar');
+
+    const expectedData: DadosPessoaDialog = {
+      acao: 'cadastrar',
+      pessoa: undefined,
+    };
+
+    expect(matDialogSpy.open).toHaveBeenCalledWith(PessoaDialog, {
+      width: '500px',
+      data: expectedData,
+      disableClose: true,
+      autoFocus: 'first-tabbable',
+      id: 'dialog-formulario-pessoa',
+    });
+  });
+
+  /**
+   * Testa o método abrirFormularioPessoa() para edição.
+   * Verifica se passa o objeto pessoa e a ação 'editar' corretamente.
+   */
+  it('deve abrir o PessoaDialog para edição (ação: editar)', () => {
+    const mockPessoa = { id: '123', nome: 'Teste' };
+
+    service.abrirFormularioPessoa('editar', mockPessoa);
+
+    const expectedData: DadosPessoaDialog = {
+      acao: 'editar',
+      pessoa: mockPessoa,
+    };
+
+    expect(matDialogSpy.open).toHaveBeenCalledWith(PessoaDialog, {
+      width: '500px',
+      data: expectedData,
+      disableClose: true,
+      autoFocus: 'first-tabbable',
+      id: 'dialog-formulario-pessoa',
+    });
+  });
+
+  /**
+   * Testa o método abrirFormularioPessoa() para exclusão.
+   * Verifica se passa o objeto pessoa e a ação 'excluir'.
+   */
+  it('deve abrir o PessoaDialog para exclusão (ação: excluir)', () => {
+    const mockPessoa = { id: '999', nome: 'Para Deletar' };
+
+    service.abrirFormularioPessoa('excluir', mockPessoa);
+
+    const expectedData: DadosPessoaDialog = {
+      acao: 'excluir',
+      pessoa: mockPessoa,
+    };
+
+    expect(matDialogSpy.open).toHaveBeenCalledWith(PessoaDialog, {
+      width: '500px',
+      data: expectedData,
+      disableClose: true,
+      autoFocus: 'first-tabbable',
+      id: 'dialog-formulario-pessoa',
+    });
+  });
+
+  /**
+   * Testa a blindagem contra IDs duplicados.
+   * Cenário: Usuário aperta Insert/Botão várias vezes rápido.
+   * Resultado: Deve retornar a referência do dialog já aberto e NÃO abrir um novo.
+   */
+  it('não deve abrir novo dialog se já existir um aberto com mesmo ID', (done) => {
+    const dialogExistenteRef = jasmine.createSpyObj('MatDialogRef', ['afterClosed']);
+    dialogExistenteRef.afterClosed.and.returnValue(of('retorno-do-dialog-anterior'));
+
+    matDialogSpy.getDialogById.and.returnValue(dialogExistenteRef);
+
+    service.abrirFormularioPessoa('cadastrar').subscribe((resultado) => {
+      expect(resultado).toBe('retorno-do-dialog-anterior' as any);
+      done();
+    });
+
+    expect(matDialogSpy.open).not.toHaveBeenCalled();
+    expect(matDialogSpy.getDialogById).toHaveBeenCalledWith('dialog-formulario-pessoa');
   });
 });

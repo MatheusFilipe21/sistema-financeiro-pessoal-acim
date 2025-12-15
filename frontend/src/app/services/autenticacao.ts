@@ -8,6 +8,7 @@ import { DadosTokenJWTDTO } from '../dtos/autenticacao/DadosTokenJWTDTO';
 import { DadosRedefinicaoSenhaDTO } from '../dtos/autenticacao/DadosRedefinicaoSenhaDTO';
 import { Router } from '@angular/router';
 import { jwtDecode } from 'jwt-decode';
+import { Token as TokenService } from './token';
 
 /**
  * Serviço responsável pela comunicação com os endpoints
@@ -32,12 +33,15 @@ export class Autenticacao {
   private readonly CHAVE_TOKEN = 'sfp-acim-token-jwt';
 
   /**
-   * Signal que guarda o estado atual: true se logado e válido, false caso contrário.
+   * Signal que guarda o estado reativo da sessão.
+   * - `true`: Usuário autenticado e token válido.
+   * - `false`: Usuário deslogado ou token expirado.
    */
   public usuarioEstaLogado = signal(false);
 
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly tokenService = inject(TokenService);
 
   constructor() {
     this.usuarioEstaLogado.set(this.possuiTokenValido());
@@ -101,9 +105,8 @@ export class Autenticacao {
    * @param token O token JWT recebido da API após um login bem-sucedido.
    */
   public logar(token: string): void {
-    localStorage.setItem(this.CHAVE_TOKEN, token);
+    this.tokenService.salvar(token);
     this.usuarioEstaLogado.set(true);
-
     this.router.navigate(['/dashboard']);
   }
 
@@ -115,9 +118,8 @@ export class Autenticacao {
    * para prevenir acesso não autorizado via histórico do navegador.
    */
   public deslogar(): void {
-    localStorage.removeItem(this.CHAVE_TOKEN);
+    this.tokenService.remover();
     this.usuarioEstaLogado.set(false);
-
     this.router.navigate(['/login']);
   }
 
@@ -130,7 +132,7 @@ export class Autenticacao {
    * @returns O token JWT em formato string ou `null` se não houver sessão.
    */
   public obterToken(): string | null {
-    return localStorage.getItem(this.CHAVE_TOKEN);
+    return this.tokenService.obter();
   }
 
   /**

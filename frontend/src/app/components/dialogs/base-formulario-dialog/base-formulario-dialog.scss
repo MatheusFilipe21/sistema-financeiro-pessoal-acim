@@ -1,0 +1,60 @@
+#cabecalho-dialog {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-right: 8px;
+
+  h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+  }
+}
+
+#conteudo-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 350px;
+  padding-top: 10px !important;
+
+  @media (min-width: 600px) {
+    min-width: 450px;
+  }
+}
+
+.alerta-exclusao {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #fff3e0;
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid #ffe0b2;
+  margin-bottom: 16px;
+  color: #bf360c;
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  mat-icon {
+    flex-shrink: 0;
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    overflow: visible;
+  }
+}
+
+#rodape-dialog {
+  padding-bottom: 16px;
+  padding-right: 24px;
+  gap: 8px;
+
+  button {
+    min-width: 100px;
+  }
+}

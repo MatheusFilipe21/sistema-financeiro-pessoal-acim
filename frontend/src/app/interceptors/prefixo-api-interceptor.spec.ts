@@ -3,15 +3,22 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 
 import { prefixoApiInterceptor } from './prefixo-api-interceptor';
+import { Token as TokenService } from '../services/token';
 
 /**
  * Testes unitários para o prefixoApiInterceptor.
+ *
+ * Valida tanto a adição do prefixo "/api" quanto a injeção do Token JWT
+ * utilizando um Mock do TokenService.
  *
  * @author Matheus F. N. Pereira
  */
 describe('PrefixoApiInterceptor', () => {
   let httpMock: HttpTestingController;
   let httpClient: HttpClient;
+  let tokenService: TokenService;
+
+  const TOKEN_TESTE = 'token-jwt-simulado-123';
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -23,6 +30,7 @@ describe('PrefixoApiInterceptor', () => {
 
     httpMock = TestBed.inject(HttpTestingController);
     httpClient = TestBed.inject(HttpClient);
+    tokenService = TestBed.inject(TokenService);
   });
 
   afterEach(() => {
@@ -30,25 +38,43 @@ describe('PrefixoApiInterceptor', () => {
   });
 
   /**
-   * Testa se o interceptor adiciona o prefixo /api
-   * a uma chamada relativa (ex: /ola).
+   * Cenário: Usuário Logado + Rota Relativa.
+   * Deve adicionar "/api" E o cabeçalho Authorization.
    */
-  it('deve adicionar o prefixo /api a chamadas relativas', () => {
-    httpClient.get('/ola').subscribe();
+  it('deve adicionar prefixo /api e cabeçalho Authorization quando houver token', () => {
+    spyOn(tokenService, 'obter').and.returnValue(TOKEN_TESTE);
 
-    const req = httpMock.expectOne('/api/ola');
+    httpClient.get('/pessoas').subscribe();
+
+    const req = httpMock.expectOne('/api/pessoas');
     expect(req.request.method).toBe('GET');
-    req.flush('OK');
+    expect(req.request.headers.get('Authorization')).toBe(`Bearer ${TOKEN_TESTE}`);
   });
 
   /**
-   * Testa se o interceptor ignora URLs absolutas (https://...).
+   * Cenário: Usuário Deslogado + Rota Relativa (Ex: Login).
+   * Deve adicionar "/api" mas NÃO enviar cabeçalho Authorization.
    */
-  it('deve ignorar URLs absolutas', () => {
-    httpClient.get('https://google.com.br').subscribe();
+  it('deve adicionar prefixo /api mas NÃO enviar cabeçalho se não houver token', () => {
+    spyOn(tokenService, 'obter').and.returnValue(null);
 
-    const req = httpMock.expectOne('https://google.com.br');
+    httpClient.post('/autenticacao/login', {}).subscribe();
+
+    const req = httpMock.expectOne('/api/autenticacao/login');
+    expect(req.request.headers.has('Authorization')).toBeFalse();
+  });
+
+  /**
+   * Cenário: Usuário Logado + URL Absoluta (Ex: API Externa).
+   * Deve manter a URL original mas adicionar o Token (comportamento padrão).
+   */
+  it('deve ignorar prefixo em URLs absolutas mas adicionar token se existir', () => {
+    spyOn(tokenService, 'obter').and.returnValue(TOKEN_TESTE);
+
+    httpClient.get('https://api.externa.com/dados').subscribe();
+
+    const req = httpMock.expectOne('https://api.externa.com/dados');
     expect(req.request.method).toBe('GET');
-    req.flush('OK');
+    expect(req.request.headers.get('Authorization')).toBe(`Bearer ${TOKEN_TESTE}`);
   });
 });

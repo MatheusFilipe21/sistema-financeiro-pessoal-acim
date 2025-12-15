@@ -19,6 +19,16 @@
         <mat-icon matListItemIcon>dashboard</mat-icon>
         <span matListItemTitle id="txt-inicio">Início</span>
       </a>
+
+      <a
+        mat-list-item
+        routerLink="/dashboard/pessoas"
+        id="link-pessoas"
+        (click)="dispositivoMovel() ? drawer.close() : null"
+      >
+        <mat-icon matListItemIcon>group</mat-icon>
+        <span matListItemTitle id="txt-pessoas">Pessoas</span>
+      </a>
     </mat-nav-list>
   </mat-sidenav>
 

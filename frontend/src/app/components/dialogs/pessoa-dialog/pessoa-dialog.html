@@ -1,0 +1,19 @@
+<app-base-formulario-dialog
+  [titulo]="titulo"
+  [operacao]="operacao"
+  [formularioInvalido]="formulario.invalid && operacao !== 'excluir'"
+  [processando]="processando"
+  (confirmar)="confirmarAcao()"
+  (cancelar)="fechar()"
+>
+  <form [formGroup]="formulario" class="form-grid">
+    <mat-form-field appearance="outline">
+      <mat-label>Nome</mat-label>
+      <input matInput id="input-nome" formControlName="nome" placeholder="Digite seu nome" />
+
+      @if (formulario.get('nome')?.invalid && (formulario.get('nome')?.touched)) {
+      <mat-error>{{ obterMensagemErro('nome') }}</mat-error>
+      }
+    </mat-form-field>
+  </form>
+</app-base-formulario-dialog>
