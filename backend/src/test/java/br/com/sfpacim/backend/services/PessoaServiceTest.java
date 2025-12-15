@@ -48,6 +48,8 @@ class PessoaServiceTest {
 
     private static final String NOME = "Matheus Filipe do Nascimento Pereira";
     private static final String NOME_NOVO = "Ilka Fernanda Berenguer Paz";
+    private static final boolean TITULAR = true;
+    private static final boolean TITULAR_NOVO = false;
 
     private Usuario usuario;
     private Pessoa pessoa;
@@ -65,7 +67,7 @@ class PessoaServiceTest {
         pessoa = new Pessoa(NOME, usuario);
         pessoa.setId(UUID.randomUUID());
 
-        criarAtualizarPessoaDTO = new CriarAtualizarPessoaDTO(NOME);
+        criarAtualizarPessoaDTO = new CriarAtualizarPessoaDTO(NOME, TITULAR);
     }
 
     /**
@@ -80,7 +82,6 @@ class PessoaServiceTest {
     @Test
     @DisplayName("cadastrar: Quando dados válidos, deve vincular ao usuário e salvar")
     void testeCadastrar_QuandoDadosValidos_DeveSalvarPessoa() {
-
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
         when(pessoaRepository.save(any(Pessoa.class))).thenReturn(pessoa);
 
@@ -101,7 +102,6 @@ class PessoaServiceTest {
     @Test
     @DisplayName("cadastrar: Quando nome duplicado, deve lançar ViolacaoDadosException")
     void testeCadastrar_QuandoNomeDuplicado_DeveLancarExcecao() {
-
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
         when(pessoaRepository.save(any(Pessoa.class)))
                 .thenThrow(new DataIntegrityViolationException("Constraint Violation"));
@@ -120,7 +120,6 @@ class PessoaServiceTest {
     @Test
     @DisplayName("listar: Deve retornar apenas pessoas do usuário autenticado")
     void testeListar_DeveRetornarRegistrosDoUsuario() {
-
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
         when(pessoaRepository.findByUsuario(usuario)).thenReturn(List.of(pessoa));
 
@@ -142,7 +141,7 @@ class PessoaServiceTest {
     @Test
     @DisplayName("atualizar: Quando pessoa existe e pertence ao usuário, deve atualizar")
     void testeAtualizar_QuandoValido_DeveAtualizarNome() {
-        CriarAtualizarPessoaDTO criarAtualizarPessoaDTONovo = new CriarAtualizarPessoaDTO(NOME_NOVO);
+        CriarAtualizarPessoaDTO criarAtualizarPessoaDTONovo = new CriarAtualizarPessoaDTO(NOME_NOVO, TITULAR_NOVO);
 
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
         when(pessoaRepository.findById(pessoa.getId())).thenReturn(Optional.of(pessoa));
@@ -164,7 +163,6 @@ class PessoaServiceTest {
     @Test
     @DisplayName("atualizar: Quando pessoa pertence a outro usuário, deve lançar EntityNotFoundException")
     void testeAtualizar_QuandoPertenceOutroUsuario_DeveLancarExcecao() {
-
         Usuario outroUsuario = new Usuario("Outro", "outro@email.com", "123");
         outroUsuario.setId(UUID.randomUUID());
 
@@ -185,6 +183,29 @@ class PessoaServiceTest {
     }
 
     /**
+     * Testa o método {@link PessoaService#atualizar} quando o campo titular é nulo.
+     * Deve manter o valor original da entidade.
+     */
+    @SuppressWarnings("null")
+    @Test
+    @DisplayName("atualizar: Quando titular é nulo no DTO, deve manter valor original")
+    void testeAtualizar_QuandoTitularNulo_NaoDeveAlterarTitular() {
+        CriarAtualizarPessoaDTO dtoTitularNulo = new CriarAtualizarPessoaDTO(NOME_NOVO, null);
+        pessoa.setTitular(true);
+
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+        when(pessoaRepository.findById(pessoa.getId())).thenReturn(Optional.of(pessoa));
+        when(pessoaRepository.save(any(Pessoa.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PessoaDTO resultado = pessoaService.atualizar(pessoa.getId(), dtoTitularNulo);
+
+        assertEquals(NOME_NOVO, resultado.nome());
+        assertTrue(resultado.titular(), "O valor original (true) deveria ter sido mantido");
+
+        verify(pessoaRepository).save(pessoa);
+    }
+
+    /**
      * Testa o método {@link PessoaService#excluir(UUID)}.
      * Valida o cenário de sucesso.
      */
@@ -192,12 +213,85 @@ class PessoaServiceTest {
     @Test
     @DisplayName("excluir: Quando válido, deve remover o registro")
     void testeExcluir_QuandoValido_DeveDeletar() {
-
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
         when(pessoaRepository.findById(pessoa.getId())).thenReturn(Optional.of(pessoa));
 
         pessoaService.excluir(pessoa.getId());
 
         verify(pessoaRepository).delete(pessoa);
+    }
+
+    /**
+     * Testa a validação de unicidade (Collator) no cadastro.
+     * Deve lançar exceção se já existir nome igual (ignorando case/acento).
+     */
+    @SuppressWarnings("null")
+    @Test
+    @DisplayName("cadastrar: Quando nome existe (Case Insensitive), deve lançar ViolacaoDadosException")
+    void testeCadastrar_QuandoNomeDuplicadoLogicaService_DeveLancarExcecao() {
+        Pessoa pessoaExistente = new Pessoa("JOÃO", usuario);
+        pessoaExistente.setId(UUID.randomUUID());
+
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+
+        when(pessoaRepository.findByUsuario(usuario)).thenReturn(List.of(pessoaExistente));
+
+        CriarAtualizarPessoaDTO dtoDuplicado = new CriarAtualizarPessoaDTO("João", true);
+
+        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
+                () -> pessoaService.cadastrar(dtoDuplicado));
+
+        assertEquals("Já existe uma pessoa cadastrada com o nome 'João'.", excecao.getMessage());
+
+        verify(pessoaRepository, never()).save(any());
+    }
+
+    /**
+     * Testa a validação de unicidade na atualização.
+     * Deve permitir atualizar se o nome conflitante for do PRÓPRIO registro.
+     */
+    @SuppressWarnings("null")
+    @Test
+    @DisplayName("atualizar: Quando nome é igual ao próprio registro, deve permitir atualização")
+    void testeAtualizar_QuandoNomeIgualAoProprio_DevePermitir() {
+
+        when(pessoaRepository.findByUsuario(usuario)).thenReturn(List.of(pessoa));
+
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+        when(pessoaRepository.findById(pessoa.getId())).thenReturn(Optional.of(pessoa));
+        when(pessoaRepository.save(any(Pessoa.class))).thenReturn(pessoa);
+
+        CriarAtualizarPessoaDTO dtoMesmoNome = new CriarAtualizarPessoaDTO(NOME, false);
+
+        assertDoesNotThrow(() -> pessoaService.atualizar(pessoa.getId(), dtoMesmoNome));
+
+        verify(pessoaRepository).save(pessoa);
+    }
+
+    /**
+     * Testa a validação de unicidade na atualização (Erro).
+     * Deve bloquear se o nome pertencer a OUTRO registro.
+     */
+    @SuppressWarnings("null")
+    @Test
+    @DisplayName("atualizar: Quando nome pertence a outra pessoa, deve lançar exceção")
+    void testeAtualizar_QuandoNomeDuplicadoOutroId_DeveLancarExcecao() {
+
+        Pessoa outraPessoa = new Pessoa("Outra Pessoa", usuario);
+        outraPessoa.setId(UUID.randomUUID());
+
+        when(pessoaRepository.findByUsuario(usuario)).thenReturn(List.of(outraPessoa));
+
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+        when(pessoaRepository.findById(pessoa.getId())).thenReturn(Optional.of(pessoa));
+
+        CriarAtualizarPessoaDTO dtoConflito = new CriarAtualizarPessoaDTO("Outra Pessoa", false);
+
+        UUID idParaAtualizar = pessoa.getId();
+
+        assertThrows(ViolacaoDadosException.class,
+                () -> pessoaService.atualizar(idParaAtualizar, dtoConflito));
+
+        verify(pessoaRepository, never()).save(any());
     }
 }

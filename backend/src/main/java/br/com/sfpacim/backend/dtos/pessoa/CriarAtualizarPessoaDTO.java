@@ -21,5 +21,8 @@ public record CriarAtualizarPessoaDTO(
 
         @Schema(description = "Nome da pessoa.", example = "Matheus Filipe do Nascimento Pereira") //
         @NotBlank(message = "O nome é obrigatório.") //
-        String nome) {
+        String nome,
+
+        @Schema(description = "Define se a pessoa será titular de contas/cartões (Padrão: false).", example = "true") //
+        Boolean titular) {
 }

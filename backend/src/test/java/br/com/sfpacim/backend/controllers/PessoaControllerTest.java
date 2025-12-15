@@ -65,6 +65,7 @@ class PessoaControllerTest {
     private UserDetailsService userDetailsService;
 
     private static final String NOME = "Matheus Filipe do Nascimento Pereira";
+    private static final boolean TITULAR = true;
     private static final String NOME_INVALIDO_BRANCO = " ";
     private static final UUID ID_PESSOA = UUID.randomUUID();
 
@@ -80,8 +81,8 @@ class PessoaControllerTest {
     @Test
     @DisplayName("cadastrar: Quando dados válidos, deve retornar HTTP 201 Created")
     void testeCadastrar_QuandoDadosValidos_DeveRetornar201() throws Exception {
-        CriarAtualizarPessoaDTO dtoEntrada = new CriarAtualizarPessoaDTO(NOME);
-        PessoaDTO dtoSaida = new PessoaDTO(ID_PESSOA, NOME);
+        CriarAtualizarPessoaDTO dtoEntrada = new CriarAtualizarPessoaDTO(NOME, TITULAR);
+        PessoaDTO dtoSaida = new PessoaDTO(ID_PESSOA, NOME, TITULAR);
 
         when(pessoaService.cadastrar(any(CriarAtualizarPessoaDTO.class))).thenReturn(dtoSaida);
 
@@ -106,7 +107,7 @@ class PessoaControllerTest {
     @Test
     @DisplayName("cadastrar: Quando nome em branco (DTO Validation), deve retornar HTTP 422")
     void testeCadastrar_QuandoNomeInvalido_DeveRetornar422() throws Exception {
-        CriarAtualizarPessoaDTO dtoInvalido = new CriarAtualizarPessoaDTO(NOME_INVALIDO_BRANCO);
+        CriarAtualizarPessoaDTO dtoInvalido = new CriarAtualizarPessoaDTO(NOME_INVALIDO_BRANCO, TITULAR);
         String jsonRequisicao = objectMapper.writeValueAsString(dtoInvalido);
 
         mockMvc.perform(post("/pessoas")
@@ -126,7 +127,7 @@ class PessoaControllerTest {
     @Test
     @DisplayName("cadastrar: Quando nome duplicado, deve retornar HTTP 409 Conflict")
     void testeCadastrar_QuandoConflito_DeveRetornar409() throws Exception {
-        CriarAtualizarPessoaDTO dtoEntrada = new CriarAtualizarPessoaDTO(NOME);
+        CriarAtualizarPessoaDTO dtoEntrada = new CriarAtualizarPessoaDTO(NOME, TITULAR);
         String jsonRequisicao = objectMapper.writeValueAsString(dtoEntrada);
 
         when(pessoaService.cadastrar(any(CriarAtualizarPessoaDTO.class)))
@@ -146,7 +147,7 @@ class PessoaControllerTest {
     @Test
     @DisplayName("listar: Deve retornar HTTP 200 OK e a lista de pessoas")
     void testeListar_DeveRetornarLista() throws Exception {
-        List<PessoaDTO> lista = List.of(new PessoaDTO(ID_PESSOA, NOME));
+        List<PessoaDTO> lista = List.of(new PessoaDTO(ID_PESSOA, NOME, TITULAR));
 
         when(pessoaService.listar()).thenReturn(lista);
 
@@ -165,8 +166,8 @@ class PessoaControllerTest {
     @Test
     @DisplayName("atualizar: Quando válido, deve retornar HTTP 200 OK com dados atualizados")
     void testeAtualizar_QuandoValido_DeveRetornar200() throws Exception {
-        CriarAtualizarPessoaDTO dtoEntrada = new CriarAtualizarPessoaDTO("Novo Nome");
-        PessoaDTO dtoSaida = new PessoaDTO(ID_PESSOA, "Novo Nome");
+        CriarAtualizarPessoaDTO dtoEntrada = new CriarAtualizarPessoaDTO("Novo Nome", TITULAR);
+        PessoaDTO dtoSaida = new PessoaDTO(ID_PESSOA, "Novo Nome", TITULAR);
 
         when(pessoaService.atualizar(eq(ID_PESSOA), any(CriarAtualizarPessoaDTO.class))).thenReturn(dtoSaida);
 
@@ -189,7 +190,7 @@ class PessoaControllerTest {
     @Test
     @DisplayName("atualizar: Quando não encontrado, deve retornar HTTP 404")
     void testeAtualizar_QuandoNaoEncontrado_DeveRetornar404() throws Exception {
-        CriarAtualizarPessoaDTO dtoEntrada = new CriarAtualizarPessoaDTO(NOME);
+        CriarAtualizarPessoaDTO dtoEntrada = new CriarAtualizarPessoaDTO(NOME, TITULAR);
         String jsonRequisicao = objectMapper.writeValueAsString(dtoEntrada);
 
         when(pessoaService.atualizar(eq(ID_PESSOA), any(CriarAtualizarPessoaDTO.class)))

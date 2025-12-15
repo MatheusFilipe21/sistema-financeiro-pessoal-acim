@@ -1,6 +1,9 @@
 package br.com.sfpacim.backend.services;
 
+import java.text.Collator;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -24,6 +27,7 @@ public class PessoaService {
 
     private final PessoaRepository pessoaRepository;
     private final ContextoUsuarioService contextoUsuarioService;
+    private final Collator collator;
 
     /**
      * Construtor para Injeção de Dependências.
@@ -35,6 +39,9 @@ public class PessoaService {
     public PessoaService(PessoaRepository pessoaRepository, ContextoUsuarioService contextoUsuarioService) {
         this.pessoaRepository = pessoaRepository;
         this.contextoUsuarioService = contextoUsuarioService;
+
+        this.collator = Collator.getInstance(Locale.of("pt", "BR"));
+        this.collator.setStrength(Collator.PRIMARY);
     }
 
     /**
@@ -93,6 +100,10 @@ public class PessoaService {
         Pessoa pessoa = buscarPessoaValidada(id);
 
         pessoa.setNome(dto.nome());
+
+        if (dto.titular() != null) {
+            pessoa.setTitular(dto.titular());
+        }
 
         return paraDTO(this.salvarEntidade(pessoa));
     }
@@ -154,7 +165,10 @@ public class PessoaService {
      * @return A entidade pronta para persistência.
      */
     private Pessoa paraEntidade(CriarAtualizarPessoaDTO dto, Usuario usuario) {
-        return new Pessoa(dto.nome(), usuario);
+        Pessoa pessoa = new Pessoa(dto.nome(), usuario);
+        pessoa.setTitular(Boolean.TRUE.equals(dto.titular()));
+
+        return pessoa;
     }
 
     /**
@@ -172,10 +186,47 @@ public class PessoaService {
     @SuppressWarnings("null")
     private Pessoa salvarEntidade(Pessoa pessoa) throws ViolacaoDadosException {
         try {
+            validarUnicidadeNome(pessoa);
+
             return pessoaRepository.save(pessoa);
         } catch (DataIntegrityViolationException e) {
-            throw new ViolacaoDadosException(
-                    String.format("Já existe uma pessoa cadastrada com o nome '%s'.", pessoa.getNome()));
+            throw excecaoNomeDuplicado(pessoa.getNome());
         }
+    }
+
+    /**
+     * Valida se já existe uma pessoa com o mesmo nome para o usuário autenticado.
+     *
+     * <p>
+     * Utiliza um {@link Collator} configurado para ignorar diferenças de
+     * acentuação e caixa (ex: "João" == "joao").
+     *
+     * @param pessoa A entidade {@link Pessoa} contendo o nome e o ID (se houver) a
+     *               ser validada.
+     * @throws ViolacaoDadosException Caso o nome já esteja cadastrado para este
+     *                                usuário.
+     */
+    private void validarUnicidadeNome(Pessoa pessoa) {
+        List<Pessoa> pessoasDoUsuario = pessoaRepository.findByUsuario(pessoa.getUsuario());
+
+        boolean existeDuplicado = pessoasDoUsuario.stream()
+                .filter(p -> !Objects.equals(p.getId(), pessoa.getId()))
+                .anyMatch(p -> collator.equals(p.getNome().trim(), pessoa.getNome().trim()));
+
+        if (existeDuplicado) {
+            throw excecaoNomeDuplicado(pessoa.getNome());
+        }
+    }
+
+    /**
+     * Cria a instância da exceção de regra de negócio para nome duplicado.
+     * Centraliza a mensagem de erro para garantir consistência.
+     *
+     * @param nome O nome que causou o conflito de duplicidade.
+     * @return A exceção {@link ViolacaoDadosException} pronta para ser lançada.
+     */
+    private ViolacaoDadosException excecaoNomeDuplicado(String nome) {
+        return new ViolacaoDadosException(
+                String.format("Já existe uma pessoa cadastrada com o nome '%s'.", nome));
     }
 }

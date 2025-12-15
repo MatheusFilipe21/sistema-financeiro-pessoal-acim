@@ -60,6 +60,16 @@ public class Pessoa {
     private String nome;
 
     /**
+     * Define se esta pessoa pode ter contas bancárias e cartões vinculados.
+     * 
+     * <p>
+     * Se false, serve apenas para vincular em transações (ex: "Mãe", "Amigo").
+     * Se true, é um titular (ex: "Eu", "Esposa").
+     */
+    @Column(nullable = false)
+    private boolean titular = false;
+
+    /**
      * Usuário deste registro.
      * Define quem cadastrou e quem pode visualizar esta pessoa.
      */
@@ -77,5 +87,6 @@ public class Pessoa {
     public Pessoa(String nome, Usuario usuario) {
         this.nome = nome;
         this.usuario = usuario;
+        this.titular = false;
     }
 }
