@@ -3,7 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 
 import { ErroPadraoDTO } from '../dtos/erro/ErroPadraoDTO';
 import { ErroValidacaoDTO } from '../dtos/erro/ErroValidacaoDTO';
-import { ErroDialog, DadosErroDialog } from '../components/dialogs/erro-dialog/erro-dialog';
+import { DadosErroDialog } from '../components/dialogs/erro-dialog/erro-dialog';
 import { Dialog as DialogService } from '../services/dialog';
 
 /**

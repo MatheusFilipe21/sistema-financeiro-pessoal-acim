@@ -1,0 +1,10 @@
+.form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0;
+
+  mat-form-field {
+    width: 100%;
+  }
+}

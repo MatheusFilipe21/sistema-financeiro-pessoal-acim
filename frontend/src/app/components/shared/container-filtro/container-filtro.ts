@@ -25,6 +25,7 @@ export class ContainerFiltro {
 
   @Input({ required: true }) titulo: string = 'Filtros';
   @Input() textoBotaoBuscar: string = 'Buscar';
+  @Input() filtroInstantaneo = false;
 
   @Output() buscar = new EventEmitter<void>();
   @Output() limpar = new EventEmitter<void>();

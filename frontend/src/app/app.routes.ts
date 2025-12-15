@@ -30,7 +30,12 @@ export const routes: Routes = [
     path: 'dashboard',
     canActivate: [autenticacaoGuard],
     loadComponent: () => import('./components/pages/dashboard/dashboard').then((m) => m.Dashboard),
-    children: [],
+    children: [
+      {
+        path: 'pessoas',
+        loadComponent: () => import('./components/pages/pessoas/pessoas').then((m) => m.Pessoas),
+      },
+    ],
   },
   // Tem que ser o último.
   {

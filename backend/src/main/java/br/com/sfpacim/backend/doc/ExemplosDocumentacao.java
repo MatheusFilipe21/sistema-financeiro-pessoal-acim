@@ -5,7 +5,8 @@ package br.com.sfpacim.backend.doc;
  * usados na documentação do Swagger (OpenAPI).
  * 
  * <p>
- * Isso centraliza os exemplos e limpa as anotações nos Controladores.
+ * Centraliza os payloads de erro para garantir consistência na
+ * documentação da API.
  *
  * @author Matheus F. N. Pereira
  */
@@ -17,15 +18,41 @@ public final class ExemplosDocumentacao {
     }
 
     /**
-     * Exemplo de resposta para Erro 400 (Bad Request - E-mail duplicado).
+     * Exemplo de resposta para Erro 401 (Unauthorized).
      */
-    public static final String ERRO_EMAIL_DUPLICADO = """
+    public static final String ERRO_401 = """
             {
-              "status": 400,
-              "titulo": "Violação de Dados",
-              "mensagem": "O e-mail: matheus@email.com já está cadastrado.",
+              "status": 401,
+              "titulo": "Não Autorizado",
+              "mensagem": "Falha na autenticação. Token inválido ou expirado.",
               "dataHora": "11/11/2025 08:00",
-              "rota": "/api/autenticacao/cadastro"
+              "rota": "/api/recurso"
+            }
+            """;
+
+    /**
+     * Exemplo de resposta para Erro 404 (Not Found).
+     */
+    public static final String ERRO_404 = """
+            {
+              "status": 404,
+              "titulo": "Recurso Não Encontrado",
+              "mensagem": "O recurso solicitado não foi encontrado ou você não tem permissão para acessá-lo.",
+              "dataHora": "11/11/2025 08:00",
+              "rota": "/api/recurso/123"
+            }
+            """;
+
+    /**
+     * Exemplo de resposta para Erro 409 (Conflict).
+     */
+    public static final String ERRO_409 = """
+            {
+              "status": 409,
+              "titulo": "Conflito de Dados",
+              "mensagem": "Já existe um registro cadastrado com estes dados (ex: e-mail, nome).",
+                "dataHora": "11/11/2025 08:00",
+              "rota": "/api/recurso"
             }
             """;
 
@@ -33,23 +60,19 @@ public final class ExemplosDocumentacao {
      * Exemplo de resposta para Erro 422 (Unprocessable Entity - Falha de
      * Validação).
      */
-    public static final String ERRO_VALIDACAO_CADASTRO = """
+    public static final String ERRO_422 = """
             {
               "erro": {
                 "status": 422,
                 "titulo": "Erro de Validação",
                 "mensagem": "Um ou mais campos estão inválidos.",
                 "dataHora": "11/11/2025 08:00",
-                "rota": "/api/autenticacao/cadastro"
+                "rota": "/api/recurso"
               },
               "erros": [
                 {
-                  "campo": "senha",
-                  "mensagem": "A senha deve ter no mínimo 8 caracteres, contendo ao menos uma letra maiúscula, uma minúscula e um número."
-                },
-                {
-                  "campo": "email",
-                  "mensagem": "O formato do e-mail é inválido."
+                  "campo": "nome_do_campo",
+                  "mensagem": "A mensagem de erro da validação (ex: obrigatório, tamanho inválido)."
                 }
               ]
             }
@@ -58,7 +81,7 @@ public final class ExemplosDocumentacao {
     /**
      * Exemplo de resposta para Erro 500 (Internal Server Error).
      */
-    public static final String ERRO_INTERNO_SERVIDOR = """
+    public static final String ERRO_500 = """
             {
               "status": 500,
               "titulo": "Erro Interno",

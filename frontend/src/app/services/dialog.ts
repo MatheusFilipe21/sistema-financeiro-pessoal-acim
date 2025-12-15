@@ -4,6 +4,9 @@ import { MensagemDialog } from '../components/dialogs/mensagem-dialog/mensagem-d
 import { DadosErroDialog, ErroDialog } from '../components/dialogs/erro-dialog/erro-dialog';
 import { ComponentType } from '@angular/cdk/overlay';
 import { Observable } from 'rxjs';
+import { PessoaDTO } from '../dtos/pessoa/PessoaDTO';
+import { DadosPessoaDialog, PessoaDialog } from '../components/dialogs/pessoa-dialog/pessoa-dialog';
+import { TipoOperacao } from '../components/dialogs/base-formulario-dialog/base-formulario-dialog';
 
 /**
  * Serviço responsável por padronizar a abertura de dialogs
@@ -21,8 +24,10 @@ export class Dialog {
   private readonly dialog = inject(MatDialog);
 
   private readonly LARGURA_PADRAO = '400px';
+  private readonly LARGURA_FORMULARIO = '500px';
   private readonly ID_ERRO = 'dialog-erro-global';
   private readonly ID_MENSAGEM = 'dialog-mensagem-global';
+  private readonly ID_FORMULARIO_PESSOA = 'dialog-formulario-pessoa';
 
   /**
    * Abre o dialog de erro padronizado (ErroDialog).
@@ -100,6 +105,33 @@ export class Dialog {
   }
 
   /**
+   * Abre o formulário de gestão de Pessoa.
+   *
+   * @param acao O tipo de operação (cadastrar, editar, excluir).
+   * @param pessoa (Opcional) O objeto para edição/exclusão.
+   * @returns Observable que emite:
+   * - PessoaDTO: se salvou uma inclusão/edição.
+   * - boolean (true): se confirmou uma exclusão.
+   * - undefined: se cancelou.
+   */
+  abrirFormularioPessoa(
+    acao: TipoOperacao,
+    pessoa?: PessoaDTO
+  ): Observable<PessoaDTO | boolean | undefined> {
+    const dados: DadosPessoaDialog = {
+      acao: acao,
+      pessoa: pessoa,
+    };
+
+    return this.abrirDialog(
+      PessoaDialog,
+      dados,
+      this.LARGURA_FORMULARIO,
+      this.ID_FORMULARIO_PESSOA
+    );
+  }
+
+  /**
    * Método privado genérico que realiza a chamada ao MatDialog.
    *
    * @param componente O componente Angular a ser renderizado.
@@ -114,11 +146,17 @@ export class Dialog {
     width: string,
     id: string
   ): Observable<any> {
+    const dialogJaAberto = this.dialog.getDialogById(id);
+
+    if (dialogJaAberto) {
+      return dialogJaAberto.afterClosed();
+    }
+
     const dialogRef = this.dialog.open(componente, {
       width: width,
       data: dados,
       disableClose: true,
-      autoFocus: false,
+      autoFocus: 'first-tabbable',
       id: id,
     });
 

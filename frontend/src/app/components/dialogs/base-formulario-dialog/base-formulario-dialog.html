@@ -1,0 +1,52 @@
+<div id="cabecalho-dialog">
+  <h2 mat-dialog-title>{{ titulo }}</h2>
+
+  <button
+    mat-icon-button
+    id="btn-fechar"
+    (click)="aoCancelar()"
+    [disabled]="processando"
+    tabindex="-1"
+    aria-label="Fechar diálogo"
+  >
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content id="conteudo-dialog">
+  @if (operacao === 'excluir') {
+  <div class="alerta-exclusao">
+    <mat-icon color="warn">warning</mat-icon>
+    <p>Tem certeza que deseja remover este registro? Esta ação não pode ser desfeita.</p>
+  </div>
+  }
+
+  <ng-content></ng-content>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" id="rodape-dialog">
+  <button
+    mat-button
+    id="btn-cancelar"
+    (click)="aoCancelar()"
+    [disabled]="processando"
+    type="button"
+  >
+    Cancelar
+  </button>
+
+  <button
+    mat-flat-button
+    id="btn-confirmar"
+    [color]="corBotaoConfirmar"
+    (click)="aoConfirmar()"
+    [disabled]="formularioInvalido || processando"
+    type="submit"
+  >
+    @if (processando) {
+    <mat-spinner diameter="20" color="accent"></mat-spinner>
+    } @else {
+    {{ textoBotaoConfirmar }}
+    }
+  </button>
+</mat-dialog-actions>

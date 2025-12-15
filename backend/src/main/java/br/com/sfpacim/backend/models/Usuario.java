@@ -73,7 +73,7 @@ public class Usuario implements UserDetails {
      * @param nome          Nome do usuário.
      * @param email         E-mail único do usuário (usado para login).
      * @param senhaHasheada A senha já processada por um
-     *                      PasswordEncoder (BCrypt).D
+     *                      PasswordEncoder (BCrypt).
      */
     public Usuario(String nome, String email, String senhaHasheada) {
         this.nome = nome;
