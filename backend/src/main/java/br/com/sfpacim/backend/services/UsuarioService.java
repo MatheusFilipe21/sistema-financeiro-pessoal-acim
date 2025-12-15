@@ -3,11 +3,14 @@ package br.com.sfpacim.backend.services;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import br.com.sfpacim.backend.dtos.usuario.DadosCadastroUsuarioDTO;
 import br.com.sfpacim.backend.dtos.usuario.UsuarioDTO;
 import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
+import br.com.sfpacim.backend.models.Pessoa;
 import br.com.sfpacim.backend.models.Usuario;
+import br.com.sfpacim.backend.repositories.PessoaRepository;
 import br.com.sfpacim.backend.repositories.UsuarioRepository;
 
 /**
@@ -19,21 +22,25 @@ import br.com.sfpacim.backend.repositories.UsuarioRepository;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
-
+    private final PessoaRepository pessoaRepository;
     private final PasswordEncoder passwordEncoder;
 
     /**
      * Construtor para Injeção de Dependências.
-     * 
+     *
      * <p>
-     * O Spring injeta automaticamente as instâncias de UsuarioRepository
-     * e PasswordEncoder quando esta classe é criada.
+     * O Spring injeta automaticamente as instâncias necessárias quando esta
+     * classe é criada.
      *
      * @param usuarioRepository O repositório para acesso aos dados do usuário.
+     * @param pessoaRepository  O repositório para persistência da pessoa titular
+     *                          vinculada.
      * @param passwordEncoder   O bean para codificação de senhas (BCrypt).
      */
-    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
+    public UsuarioService(UsuarioRepository usuarioRepository, PessoaRepository pessoaRepository,
+            PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
+        this.pessoaRepository = pessoaRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -41,17 +48,22 @@ public class UsuarioService {
      * Processa o registro de um novo usuário no sistema.
      *
      * <p>
-     * Este método orquestra a conversão do DTO (RF06 - Hash BCrypt)
-     * e a persistência (RF04 - Verificação de duplicidade),
-     * retornando o usuário criado como um DTO de resposta.
+     * Este método orquestra a conversão do DTO (RF06 - Hash BCrypt),
+     * a persistência (RF04 - Verificação de duplicidade) e a criação automática
+     * da pessoa titular vinculada a este usuário.
      *
      * @param dados Os dados de cadastro (DTO) já validados pelo controller.
      * @return O {@link UsuarioDTO} contendo os dados públicos do usuário
      *         recém-criado.
      * @throws ViolacaoDadosException Se o e-mail já existir no banco (RF04).
      */
+    @Transactional
     public UsuarioDTO registrar(DadosCadastroUsuarioDTO dados) throws ViolacaoDadosException {
-        return paraDTO(this.salvarEntidade(paraEntidade(dados)));
+        Usuario usuario = this.salvarEntidade(paraEntidade(dados));
+
+        criarPessoaTitular(usuario);
+
+        return paraDTO(usuario);
     }
 
     /**
@@ -103,6 +115,7 @@ public class UsuarioService {
      * exceção de negócio mais clara (ViolacaoDadosException).
      *
      * @param usuario Entidade {@link Usuario} a ser salva.
+     * @return O usuário persistido.
      * @throws ViolacaoDadosException Caso o e-mail (unique=true) já esteja
      *                                cadastrado.
      */
@@ -114,5 +127,21 @@ public class UsuarioService {
             throw new ViolacaoDadosException(
                     String.format("O e-mail: %s já está cadastrado.", usuario.getEmail()));
         }
+    }
+
+    /**
+     * Cria e salva a Pessoa vinculada ao usuário recém-criado.
+     * 
+     * <p>
+     * Esta pessoa será marcada como "Titular", permitindo que contas e cartões
+     * sejam criados para ela imediatamente.
+     *
+     * @param usuario O usuário recém-cadastrado que será dono do registro.
+     */
+    private void criarPessoaTitular(Usuario usuario) {
+        Pessoa titular = new Pessoa(usuario.getNome(), usuario);
+        titular.setTitular(true);
+
+        pessoaRepository.save(titular);
     }
 }
