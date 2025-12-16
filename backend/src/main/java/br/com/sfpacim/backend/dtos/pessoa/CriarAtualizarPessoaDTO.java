@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 
 /**
  * DTO (Data Transfer Object) para recebimento de dados de criação e
- * atualização.
+ * atualização de pessoas.
  *
  * <p>
  * Este record é usado exclusivamente como corpo da requisição (@RequestBody)

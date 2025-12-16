@@ -56,7 +56,7 @@ public class Pessoa {
      * Nome da pessoa.
      * Obrigatório e deve ser único para o usuário.
      */
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false)
     private String nome;
 
     /**
