@@ -87,9 +87,13 @@ public class ContaService {
      *
      * <p>
      * O método percorre todas as pessoas do usuário, busca suas respectivas contas,
-     * agrupa tudo em uma única lista e ordena alfabeticamente pelo nome da conta.
+     * agrupa tudo em uma única lista e aplica uma ordenação composta:
+     * <ul>
+     * <li><b>1º Nível:</b> Nome do Titular (alfabética).</li>
+     * <li><b>2º Nível:</b> Nome da Conta (alfabética).</li>
+     * </ul>
      *
-     * @return Uma lista de {@link ContaDTO} ordenada por nome.
+     * @return Uma lista de {@link ContaDTO} ordenada por titular e nome da conta.
      */
     public List<ContaDTO> listar() {
         Usuario usuario = contextoUsuarioService.getUsuarioAutenticado();
@@ -98,7 +102,9 @@ public class ContaService {
                 .stream()
                 .map(contaRepository::findByPessoa)
                 .flatMap(List::stream)
-                .sorted(Comparator.comparing(Conta::getNome))
+                .sorted(Comparator
+                        .comparing((Conta c) -> c.getPessoa().getNome(), collator)
+                        .thenComparing(Conta::getNome, collator))
                 .map(this::paraDTO)
                 .toList();
     }
@@ -122,20 +128,26 @@ public class ContaService {
     public ContaDTO atualizar(UUID id, CriarAtualizarContaDTO dto) throws ViolacaoDadosException {
         Conta conta = buscarContaValidada(id);
 
-        if (!conta.getPessoa().getId().equals(dto.pessoaId())) {
+        Pessoa pessoaAlvo = conta.getPessoa();
+        boolean houveTrocaDeTitular = !conta.getPessoa().getId().equals(dto.pessoaId());
+
+        if (houveTrocaDeTitular) {
             Usuario usuario = contextoUsuarioService.getUsuarioAutenticado();
-            Pessoa novaPessoa = buscarPessoaDoUsuario(dto.pessoaId(), usuario);
-            validarTitularidade(novaPessoa);
-            conta.setPessoa(novaPessoa);
+            pessoaAlvo = buscarPessoaDoUsuario(dto.pessoaId(), usuario);
+            validarTitularidade(pessoaAlvo);
         }
 
-        validarUnicidadeNome(dto.nome(), conta.getPessoa(), id);
+        validarUnicidadeNome(dto.nome(), pessoaAlvo, id);
+
+        if (houveTrocaDeTitular) {
+            conta.setPessoa(pessoaAlvo);
+        }
 
         if (!conta.getSaldoInicial().equals(dto.saldoInicial())) {
             recalcularSaldoAtual(conta, dto.saldoInicial());
         }
 
-        conta.setNome(dto.nome());
+        conta.setNome(dto.nome().trim());
         conta.setInstituicao(dto.instituicao());
         conta.setSaldoInicial(dto.saldoInicial());
 
@@ -257,7 +269,7 @@ public class ContaService {
      * @return A entidade {@link Conta} instanciada (sem ID).
      */
     private Conta paraEntidade(CriarAtualizarContaDTO dto, Pessoa pessoa) {
-        return new Conta(dto.nome(), dto.instituicao(), dto.saldoInicial(), pessoa);
+        return new Conta(dto.nome().trim(), dto.instituicao(), dto.saldoInicial(), pessoa);
     }
 
     /**

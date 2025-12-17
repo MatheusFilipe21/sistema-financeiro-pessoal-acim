@@ -341,4 +341,47 @@ class ContaServiceTest {
 
         verify(contaRepository, never()).save(any());
     }
+
+    /**
+     * Testa a ordenação composta da listagem de contas.
+     * Critério 1: Nome do Titular (Pessoa)
+     * Critério 2: Nome da Conta
+     */
+    @Test
+    @DisplayName("listar: Deve ordenar por Nome do Titular e depois por Nome da Conta")
+    void testeListar_DeveRetornarOrdenadoPorTitularEConta() {
+        usuario = new Usuario("User", "user@email.com", "123");
+
+        Pessoa bruno = new Pessoa("Bruno", usuario);
+        bruno.setId(UUID.randomUUID());
+
+        Pessoa ana = new Pessoa("Ana", usuario);
+        ana.setId(UUID.randomUUID());
+
+        Conta contaBruno = new Conta("Conta Itaú", InstituicaoFinanceira.ITAU, BigDecimal.ZERO, bruno);
+
+        Conta contaAnaNubank = new Conta("Conta Nubank", InstituicaoFinanceira.NUBANK, BigDecimal.ZERO, ana);
+        Conta contaAnaInter = new Conta("Conta Inter", InstituicaoFinanceira.INTER, BigDecimal.ZERO, ana);
+
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+
+        when(pessoaRepository.findByUsuario(usuario)).thenReturn(List.of(bruno, ana));
+
+        when(contaRepository.findByPessoa(bruno)).thenReturn(List.of(contaBruno));
+
+        when(contaRepository.findByPessoa(ana)).thenReturn(List.of(contaAnaNubank, contaAnaInter));
+
+        List<ContaDTO> resultado = contaService.listar();
+
+        assertEquals(3, resultado.size());
+
+        assertEquals("Ana", resultado.get(0).pessoa().nome());
+        assertEquals("Conta Inter", resultado.get(0).nome());
+
+        assertEquals("Ana", resultado.get(1).pessoa().nome());
+        assertEquals("Conta Nubank", resultado.get(1).nome());
+
+        assertEquals("Bruno", resultado.get(2).pessoa().nome());
+        assertEquals("Conta Itaú", resultado.get(2).nome());
+    }
 }

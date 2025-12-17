@@ -22,6 +22,7 @@ import br.com.sfpacim.backend.dtos.pessoa.PessoaDTO;
 import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 import br.com.sfpacim.backend.models.Pessoa;
 import br.com.sfpacim.backend.models.Usuario;
+import br.com.sfpacim.backend.repositories.ContaRepository;
 import br.com.sfpacim.backend.repositories.PessoaRepository;
 import jakarta.persistence.EntityNotFoundException;
 
@@ -39,6 +40,9 @@ class PessoaServiceTest {
 
     @Mock
     private PessoaRepository pessoaRepository;
+
+    @Mock
+    private ContaRepository contaRepository;
 
     @Mock
     private ContextoUsuarioService contextoUsuarioService;
@@ -293,5 +297,52 @@ class PessoaServiceTest {
                 () -> pessoaService.atualizar(idParaAtualizar, dtoConflito));
 
         verify(pessoaRepository, never()).save(any());
+    }
+
+    /**
+     * Testa a ordenação da listagem.
+     * Deve retornar alfabeticamente (A-Z) independente da ordem do banco.
+     */
+    @Test
+    @DisplayName("listar: Deve retornar lista ordenada alfabeticamente por nome")
+    void testeListar_DeveRetornarOrdenadoPorNome() {
+        Pessoa p1 = new Pessoa("Zélia", usuario);
+        Pessoa p2 = new Pessoa("Ana", usuario);
+        Pessoa p3 = new Pessoa("Carlos", usuario);
+
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+        when(pessoaRepository.findByUsuario(usuario)).thenReturn(List.of(p1, p2, p3));
+
+        List<PessoaDTO> resultado = pessoaService.listar();
+
+        assertEquals(3, resultado.size());
+
+        assertEquals("Ana", resultado.get(0).nome());
+        assertEquals("Carlos", resultado.get(1).nome());
+        assertEquals("Zélia", resultado.get(2).nome());
+    }
+
+    /**
+     * Testa o bloqueio de exclusão quando a pessoa possui vínculos.
+     * Deve lançar ViolacaoDadosException se existirem contas vinculadas.
+     */
+    @SuppressWarnings("null")
+    @Test
+    @DisplayName("excluir: Quando existem contas vinculadas, deve lançar ViolacaoDadosException")
+    void testeExcluir_QuandoPossuiContas_DeveLancarExcecao() {
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+        when(pessoaRepository.findById(pessoa.getId())).thenReturn(Optional.of(pessoa));
+
+        when(contaRepository.findByPessoa(pessoa)).thenReturn(List.of(mock(br.com.sfpacim.backend.models.Conta.class)));
+
+        UUID idPessoa = pessoa.getId();
+
+        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
+                () -> pessoaService.excluir(idPessoa));
+
+        assertTrue(excecao.getMessage().contains("existem Contas vinculadas"),
+                "A mensagem deve informar sobre o vínculo com contas");
+
+        verify(pessoaRepository, never()).delete(any());
     }
 }
