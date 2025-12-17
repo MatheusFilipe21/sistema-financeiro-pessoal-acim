@@ -17,6 +17,20 @@
         placeholder="Busque por nome..."
       />
     </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>É Titular?</mat-label>
+      <mat-select
+        [(ngModel)]="filtro.titular"
+        (selectionChange)="filtrar()"
+        id="select-filtro-titular"
+        placeholder="Selecione..."
+      >
+        <mat-option [value]="null">Todos</mat-option>
+        <mat-option [value]="true">Sim</mat-option>
+        <mat-option [value]="false">Não</mat-option>
+      </mat-select>
+    </mat-form-field>
   </app-container-filtro>
 
   <section id="barra-controle-visualizacao">
@@ -36,6 +50,12 @@
         (editar)="aoEditar(pessoa)"
         (excluir)="aoExcluir(pessoa)"
       >
+        @if (pessoa.titular) {
+        <div class="selo-titular">
+          <mat-icon>verified</mat-icon>
+          <span>Titular</span>
+        </div>
+        }
       </app-card-base>
 
       } @empty {

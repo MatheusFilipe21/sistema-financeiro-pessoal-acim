@@ -10,11 +10,9 @@ import { BaseFormularioDialog } from './base-formulario-dialog';
 /**
  * Testes unitários para o componente {@link BaseFormularioDialog}.
  *
- * <p>
  * Verifica a renderização correta baseada no tipo de operação (cadastrar/editar/excluir),
  * o estado dos botões (loading/invalid) e a emissão de eventos, utilizando
  * seletores de ID para garantir a integridade da estrutura HTML.
- * </p>
  *
  * @author Matheus F. N. Pereira
  */

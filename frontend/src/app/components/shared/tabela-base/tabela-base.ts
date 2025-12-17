@@ -22,6 +22,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 export interface ColunaTabela {
   chave: string;
   titulo: string;
+  formatador?: (valor: any) => string;
 }
 
 /**

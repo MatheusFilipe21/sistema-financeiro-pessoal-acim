@@ -14,6 +14,7 @@ import { PessoaDTO } from '../../../dtos/pessoa/PessoaDTO';
 import { AlternadorVisualizacao } from '../../shared/alternador-visualizacao/alternador-visualizacao';
 import { BotaoAdicionar } from '../../shared/botao-adicionar/botao-adicionar';
 import { Dialog as DialogService } from '../../../services/dialog';
+import { MatSelectModule } from '@angular/material/select';
 
 /**
  * Componente de página responsável pela listagem e gestão de Pessoas.
@@ -33,6 +34,7 @@ import { Dialog as DialogService } from '../../../services/dialog';
     MatInputModule,
     MatButtonModule,
     MatIconModule,
+    MatSelectModule,
     ContainerFiltro,
     AlternadorVisualizacao,
     BotaoAdicionar,
@@ -71,12 +73,20 @@ export class Pessoas implements OnInit {
    */
   filtro = {
     nome: '',
+    titular: null as boolean | null,
   };
 
   /**
    * Configuração das colunas para o componente genérico de Tabela.
    */
-  colunasTabela: ColunaTabela[] = [{ chave: 'nome', titulo: 'Nome' }];
+  colunasTabela: ColunaTabela[] = [
+    { chave: 'nome', titulo: 'Nome' },
+    {
+      chave: 'titular',
+      titulo: 'É Titular?',
+      formatador: (valor: boolean) => (valor ? 'Sim' : 'Não'),
+    },
+  ];
 
   /**
    * Inicializa o componente carregando os dados do servidor.
@@ -102,18 +112,23 @@ export class Pessoas implements OnInit {
   /**
    * Filtra a lista localmente baseada no input do usuário.
    *
-   * <p>
    * Acionado pelo evento (ngModelChange) do input para feedback instantâneo.
    * A busca é insensível a maiúsculas/minúsculas (case-insensitive).
    */
   filtrar() {
     const termo = this.filtro.nome.trim().toLowerCase();
 
+    let resultado = this.pessoas;
+
     if (termo) {
-      this.pessoasFiltradas = this.pessoas.filter((p) => p.nome.toLowerCase().includes(termo));
-    } else {
-      this.pessoasFiltradas = [...this.pessoas];
+      resultado = resultado.filter((p) => p.nome.toLowerCase().includes(termo));
     }
+
+    if (this.filtro.titular !== null) {
+      resultado = resultado.filter((p) => p.titular === this.filtro.titular);
+    }
+
+    this.pessoasFiltradas = resultado;
   }
 
   /**
@@ -121,6 +136,7 @@ export class Pessoas implements OnInit {
    */
   limpar() {
     this.filtro.nome = '';
+    this.filtro.titular = null;
     this.filtrar();
   }
 

@@ -4,7 +4,6 @@ import { Token } from './token';
 /**
  * Testes unitários para o serviço {@link Token}.
  *
- * <p>
  * Verifica a manipulação do LocalStorage para salvar, recuperar e remover
  * o token JWT, além da verificação de existência.
  *

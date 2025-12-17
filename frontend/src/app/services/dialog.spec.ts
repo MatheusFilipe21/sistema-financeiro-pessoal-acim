@@ -168,7 +168,7 @@ describe('Dialog', () => {
    * Verifica se passa o objeto pessoa e a ação 'editar' corretamente.
    */
   it('deve abrir o PessoaDialog para edição (ação: editar)', () => {
-    const mockPessoa = { id: '123', nome: 'Teste' };
+    const mockPessoa = { id: '123', nome: 'Teste', titular: true };
 
     service.abrirFormularioPessoa('editar', mockPessoa);
 
@@ -191,7 +191,7 @@ describe('Dialog', () => {
    * Verifica se passa o objeto pessoa e a ação 'excluir'.
    */
   it('deve abrir o PessoaDialog para exclusão (ação: excluir)', () => {
-    const mockPessoa = { id: '999', nome: 'Para Deletar' };
+    const mockPessoa = { id: '999', nome: 'Para Deletar', titular: true };
 
     service.abrirFormularioPessoa('excluir', mockPessoa);
 

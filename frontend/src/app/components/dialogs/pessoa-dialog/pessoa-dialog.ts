@@ -12,6 +12,11 @@ import {
 import { Pessoa as PessoaService } from '../../../services/pessoa';
 import { CriarAtualizarPessoaDTO } from '../../../dtos/pessoa/CriarAtualizarPessoaDTO';
 import { finalize } from 'rxjs';
+import { Dialog as DialogService } from '../../../services/dialog';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 /**
  * Interface que define os dados esperados pelo Dialog ao ser aberto.
@@ -23,7 +28,7 @@ export interface DadosPessoaDialog {
 
 /**
  * Componente de Dialog responsável pelo formulário de criação, edição e exclusão de Pessoas.
- * * Utiliza o wrapper `app-base-formulario-dialog` para manter o layout padrão
+ * Utiliza o wrapper `app-base-formulario-dialog` para manter o layout padrão
  * e gerencia a lógica específica dos campos e integração com o serviço.
  *
  * @author Matheus F. N. Pereira
@@ -36,6 +41,10 @@ export interface DadosPessoaDialog {
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
+    MatCheckboxModule,
+    MatButtonModule,
+    MatIconModule,
+    MatTooltipModule,
     BaseFormularioDialog,
   ],
   templateUrl: './pessoa-dialog.html',
@@ -45,6 +54,7 @@ export class PessoaDialog implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly dialogRef = inject(MatDialogRef<PessoaDialog>);
   private readonly pessoaService = inject(PessoaService);
+  private readonly dialogService = inject(DialogService);
 
   /** Formulário reativo principal do componente. */
   formulario: FormGroup;
@@ -62,6 +72,7 @@ export class PessoaDialog implements OnInit {
     this.formulario = this.formBuilder.group({
       id: [null],
       nome: ['', [Validators.required]],
+      titular: [false],
     });
   }
 
@@ -172,5 +183,29 @@ export class PessoaDialog implements OnInit {
    */
   fechar() {
     this.dialogRef.close();
+  }
+
+  /**
+   * Abre o dialog informativo para explicar a regra de titularidade.
+   */
+  abrirInfoTitular(): void {
+    this.dialogService.mostrarInfo(
+      'Regra de Titularidade',
+      `Apenas pessoas marcadas como <b>Titulares</b> podem possuir <b>Contas Bancárias</b> e <b>Cartões de Crédito</b> no sistema.
+        
+        Pessoas <b>não Titulares</b> servem apenas para categorizar <b>quem gerou a Transação</b>.
+
+        <hr class="my-3 border-gray-200">
+        Exemplos Práticos:
+        <ul>
+          <li><b>Você</b> (Titular): É o dono da conta no Mercado Pago.</li>
+          <li><b>Cônjuge</b> (Titular): É o dono da conta no Itaú.</li>
+          <li><b>Seu Filho</b> (Não Titular): Não tem conta no sistema.</li>
+        </ul>
+        Se na sua casa o controle de gastos é centralizado, então você registra as contas de ambos (Você e Cônjuge) para organizar a vida financeira em conjunto.
+
+        Ao pagar a escola, você usa a sua Conta, mas marca que a despesa foi do seu filho. Assim, os relatórios mostram quanto você gastou com ele.`,
+      'Entendi'
+    );
   }
 }

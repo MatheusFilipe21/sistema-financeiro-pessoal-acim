@@ -14,13 +14,11 @@ export type TipoOperacao = 'cadastrar' | 'editar' | 'excluir';
 /**
  * Componente "Casca" (Wrapper) para padronizar dialogs de formulário de entidades.
  *
- * <p>
  * Responsabilidades:
  * 1. Gerenciar o layout padrão (Cabeçalho, Conteúdo, Rodapé).
  * 2. Exibir alertas contextuais (ex: aviso de exclusão).
  * 3. Gerenciar estados de carregamento (spinner) e bloqueio de botões.
  * 4. Padronizar a posição e cor dos botões de ação (Salvar/Excluir/Cancelar).
- * </p>
  *
  * O conteúdo específico do formulário é injetado via `<ng-content>`.
  *

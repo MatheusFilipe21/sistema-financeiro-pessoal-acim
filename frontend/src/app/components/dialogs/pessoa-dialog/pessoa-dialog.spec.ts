@@ -2,10 +2,10 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { of } from 'rxjs';
-
 import { PessoaDialog, DadosPessoaDialog } from './pessoa-dialog';
 import { Pessoa as PessoaService } from '../../../services/pessoa';
 import { PessoaDTO } from '../../../dtos/pessoa/PessoaDTO';
+import { Dialog as DialogService } from '../../../services/dialog';
 
 /**
  * Testes unitários para o componente {@link PessoaDialog}.
@@ -20,6 +20,7 @@ describe('PessoaDialog', () => {
   let fixture: ComponentFixture<PessoaDialog>;
   let pessoaServiceSpy: jasmine.SpyObj<PessoaService>;
   let dialogRefSpy: jasmine.SpyObj<MatDialogRef<PessoaDialog>>;
+  let dialogServiceSpy: jasmine.SpyObj<DialogService>;
 
   /**
    * Função auxiliar para recriar o componente com dados específicos (Injection Token).
@@ -30,6 +31,7 @@ describe('PessoaDialog', () => {
 
     pessoaServiceSpy = jasmine.createSpyObj('PessoaService', ['cadastrar', 'atualizar', 'excluir']);
     dialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['close']);
+    dialogServiceSpy = jasmine.createSpyObj('DialogService', ['mostrarInfo']);
 
     await TestBed.configureTestingModule({
       imports: [ReactiveFormsModule, PessoaDialog],
@@ -37,6 +39,7 @@ describe('PessoaDialog', () => {
         { provide: MAT_DIALOG_DATA, useValue: dados },
         { provide: MatDialogRef, useValue: dialogRefSpy },
         { provide: PessoaService, useValue: pessoaServiceSpy },
+        { provide: DialogService, useValue: dialogServiceSpy },
       ],
     }).compileComponents();
 
@@ -54,6 +57,8 @@ describe('PessoaDialog', () => {
     expect(component.titulo).toBe('Nova Pessoa');
     expect(component.operacao).toBe('cadastrar');
     expect(component.formulario.get('id')?.value).toBeNull();
+    expect(component.formulario.get('nome')?.value).toBe('');
+    expect(component.formulario.get('titular')?.value).toBeFalse();
   });
 
   /**
@@ -75,13 +80,13 @@ describe('PessoaDialog', () => {
   it('deve chamar serviço.cadastrar e fechar dialog ao salvar novo registro', async () => {
     await iniciarComponente({ acao: 'cadastrar' });
 
-    const novaPessoa: PessoaDTO = { id: '123', nome: 'Matheus' };
-    component.formulario.patchValue({ nome: 'Matheus' });
+    const novaPessoa: PessoaDTO = { id: '123', nome: 'Matheus', titular: true };
+    component.formulario.patchValue({ nome: 'Matheus', titular: true });
     pessoaServiceSpy.cadastrar.and.returnValue(of(novaPessoa));
 
     component.confirmarAcao();
 
-    expect(pessoaServiceSpy.cadastrar).toHaveBeenCalledWith({ nome: 'Matheus' });
+    expect(pessoaServiceSpy.cadastrar).toHaveBeenCalledWith({ nome: 'Matheus', titular: true });
     expect(dialogRefSpy.close).toHaveBeenCalledWith(novaPessoa);
   });
 
@@ -89,18 +94,18 @@ describe('PessoaDialog', () => {
    * Testa a inicialização em modo Edição.
    */
   it('deve iniciar em modo Edição e preencher formulário', async () => {
-    const pessoaExistente: PessoaDTO = { id: '123', nome: 'João' };
+    const pessoaExistente: PessoaDTO = { id: '123', nome: 'João', titular: true };
     await iniciarComponente({ acao: 'editar', pessoa: pessoaExistente });
 
     expect(component.titulo).toBe('Editar Pessoa');
-    expect(component.formulario.value).toEqual({ id: '123', nome: 'João' });
+    expect(component.formulario.value).toEqual({ id: '123', nome: 'João', titular: true });
   });
 
   /**
    * Testa o fluxo de sucesso na Edição.
    */
   it('deve chamar serviço.atualizar e fechar dialog ao salvar edição', async () => {
-    const pessoaExistente: PessoaDTO = { id: '123', nome: 'João' };
+    const pessoaExistente: PessoaDTO = { id: '123', nome: 'João', titular: true };
     await iniciarComponente({ acao: 'editar', pessoa: pessoaExistente });
 
     component.formulario.patchValue({ nome: 'João Silva' });
@@ -110,7 +115,10 @@ describe('PessoaDialog', () => {
 
     component.confirmarAcao();
 
-    expect(pessoaServiceSpy.atualizar).toHaveBeenCalledWith('123', { nome: 'João Silva' });
+    expect(pessoaServiceSpy.atualizar).toHaveBeenCalledWith('123', {
+      nome: 'João Silva',
+      titular: true,
+    });
     expect(dialogRefSpy.close).toHaveBeenCalledWith(pessoaAtualizada);
   });
 
@@ -118,7 +126,7 @@ describe('PessoaDialog', () => {
    * Testa a inicialização em modo Exclusão.
    */
   it('deve iniciar em modo Exclusão e desabilitar formulário', async () => {
-    const pessoaExistente: PessoaDTO = { id: '999', nome: 'Deletar' };
+    const pessoaExistente: PessoaDTO = { id: '999', nome: 'Deletar', titular: true };
     await iniciarComponente({ acao: 'excluir', pessoa: pessoaExistente });
 
     expect(component.titulo).toBe('Excluir Pessoa');
@@ -129,7 +137,7 @@ describe('PessoaDialog', () => {
    * Testa o fluxo de sucesso na Exclusão.
    */
   it('deve chamar serviço.excluir e fechar dialog retornando true', async () => {
-    const pessoaExistente: PessoaDTO = { id: '999', nome: 'Deletar' };
+    const pessoaExistente: PessoaDTO = { id: '999', nome: 'Deletar', titular: true };
     await iniciarComponente({ acao: 'excluir', pessoa: pessoaExistente });
 
     pessoaServiceSpy.excluir.and.returnValue(of(void 0));
@@ -193,5 +201,21 @@ describe('PessoaDialog', () => {
 
     expect(component.formulario.markAllAsTouched).toHaveBeenCalled();
     expect(pessoaServiceSpy.cadastrar).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Testa o método abrirInfoTitular.
+   * Verifica se o serviço de dialog é chamado com o título e texto corretos.
+   */
+  it('deve abrir dialog informativo com a explicação correta ao chamar abrirInfoTitular', async () => {
+    await iniciarComponente({ acao: 'cadastrar' });
+
+    component.abrirInfoTitular();
+
+    expect(dialogServiceSpy.mostrarInfo).toHaveBeenCalledWith(
+      'Regra de Titularidade',
+      jasmine.stringMatching('Apenas pessoas marcadas como <b>Titulares</b>'),
+      'Entendi'
+    );
   });
 });
