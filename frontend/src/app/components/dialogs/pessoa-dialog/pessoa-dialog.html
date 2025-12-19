@@ -15,5 +15,20 @@
       <mat-error>{{ obterMensagemErro('nome') }}</mat-error>
       }
     </mat-form-field>
+
+    <div id="checkbox-container">
+      <mat-checkbox id="checkbox-titular" formControlName="titular" color="primary">
+        É Titular da Conta?
+      </mat-checkbox>
+
+      <button
+        mat-icon-button
+        type="button"
+        (click)="abrirInfoTitular()"
+        matTooltip="Entenda a regra de titularidade"
+      >
+        <mat-icon>info</mat-icon>
+      </button>
+    </div>
   </form>
 </app-base-formulario-dialog>

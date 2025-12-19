@@ -56,8 +56,18 @@ public class Pessoa {
      * Nome da pessoa.
      * Obrigatório e deve ser único para o usuário.
      */
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false)
     private String nome;
+
+    /**
+     * Define se esta pessoa pode ter contas bancárias e cartões vinculados.
+     * 
+     * <p>
+     * Se false, serve apenas para vincular em transações (ex: "Mãe", "Amigo").
+     * Se true, é um titular (ex: "Eu", "Esposa").
+     */
+    @Column(nullable = false)
+    private boolean titular = false;
 
     /**
      * Usuário deste registro.
@@ -77,5 +87,6 @@ public class Pessoa {
     public Pessoa(String nome, Usuario usuario) {
         this.nome = nome;
         this.usuario = usuario;
+        this.titular = false;
     }
 }

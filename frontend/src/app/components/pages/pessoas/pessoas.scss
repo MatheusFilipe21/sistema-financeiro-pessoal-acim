@@ -15,6 +15,26 @@
 #area-conteudo-dados {
   flex: 1;
   overflow-y: auto;
+
+  .selo-titular {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--mat-sys-primary);
+
+    font-size: 0.75rem;
+    font-weight: 500;
+    background-color: var(--mat-sys-surface-variant);
+    padding: 2px 8px;
+    border-radius: 12px;
+    width: fit-content;
+
+    mat-icon {
+      font-size: 16px;
+      height: 16px;
+      width: 16px;
+    }
+  }
 }
 
 #txt-sem-registros {

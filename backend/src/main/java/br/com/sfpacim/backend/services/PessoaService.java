@@ -1,6 +1,9 @@
 package br.com.sfpacim.backend.services;
 
+import java.text.Collator;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -11,6 +14,7 @@ import br.com.sfpacim.backend.dtos.pessoa.PessoaDTO;
 import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 import br.com.sfpacim.backend.models.Pessoa;
 import br.com.sfpacim.backend.models.Usuario;
+import br.com.sfpacim.backend.repositories.ContaRepository;
 import br.com.sfpacim.backend.repositories.PessoaRepository;
 import jakarta.persistence.EntityNotFoundException;
 
@@ -23,18 +27,26 @@ import jakarta.persistence.EntityNotFoundException;
 public class PessoaService {
 
     private final PessoaRepository pessoaRepository;
+    private final ContaRepository contaRepository; // <--- Dependência Nova
     private final ContextoUsuarioService contextoUsuarioService;
+    private final Collator collator;
 
     /**
      * Construtor para Injeção de Dependências.
      * 
      * @param pessoaRepository       O repositório para acesso aos dados da pessoa.
+     * @param pessoaRepository       O repositório para acesso aos dados das contas.
      * @param contextoUsuarioService O serviço utilitário para recuperar o usuário
      *                               autenticado do contexto de segurança.
      */
-    public PessoaService(PessoaRepository pessoaRepository, ContextoUsuarioService contextoUsuarioService) {
+    public PessoaService(PessoaRepository pessoaRepository, ContaRepository contaRepository,
+            ContextoUsuarioService contextoUsuarioService) {
         this.pessoaRepository = pessoaRepository;
+        this.contaRepository = contaRepository;
         this.contextoUsuarioService = contextoUsuarioService;
+
+        this.collator = Collator.getInstance(Locale.of("pt", "BR"));
+        this.collator.setStrength(Collator.PRIMARY);
     }
 
     /**
@@ -71,6 +83,7 @@ public class PessoaService {
 
         return pessoaRepository.findByUsuario(usuario)
                 .stream()
+                .sorted((p1, p2) -> collator.compare(p1.getNome(), p2.getNome()))
                 .map(this::paraDTO)
                 .toList();
     }
@@ -92,7 +105,11 @@ public class PessoaService {
     public PessoaDTO atualizar(UUID id, CriarAtualizarPessoaDTO dto) throws ViolacaoDadosException {
         Pessoa pessoa = buscarPessoaValidada(id);
 
-        pessoa.setNome(dto.nome());
+        pessoa.setNome(dto.nome().trim());
+
+        if (dto.titular() != null) {
+            pessoa.setTitular(dto.titular());
+        }
 
         return paraDTO(this.salvarEntidade(pessoa));
     }
@@ -112,20 +129,26 @@ public class PessoaService {
     public void excluir(UUID id) {
         Pessoa pessoa = buscarPessoaValidada(id);
 
+        validarDependenciasParaExclusao(pessoa);
+
         pessoaRepository.delete(pessoa);
     }
 
     /**
-     * Busca uma pessoa pelo ID e valida se ela pertence ao usuário logado.
-     *
-     * <p>
-     * Este método centraliza a regra de segurança de acesso aos recursos.
-     * 
-     * @param id O UUID da pessoa.
-     * @return A entidade {@link Pessoa} carregada.
-     * 
-     * @throws EntityNotFoundException Caso não exista ou pertença a outro usuário.
+     * Verifica se a pessoa possui vínculos que impedem a exclusão (Contas, Cartões,
+     * etc).
      */
+    private void validarDependenciasParaExclusao(Pessoa pessoa) {
+        boolean possuiContas = !contaRepository.findByPessoa(pessoa).isEmpty();
+
+        if (possuiContas) {
+            throw new ViolacaoDadosException(
+                    String.format(
+                            "Não é possível excluir '%s' pois existem Contas vinculadas. Exclua as contas primeiro.",
+                            pessoa.getNome()));
+        }
+    }
+
     @SuppressWarnings("null")
     private Pessoa buscarPessoaValidada(UUID id) {
         Usuario usuario = contextoUsuarioService.getUsuarioAutenticado();
@@ -154,7 +177,10 @@ public class PessoaService {
      * @return A entidade pronta para persistência.
      */
     private Pessoa paraEntidade(CriarAtualizarPessoaDTO dto, Usuario usuario) {
-        return new Pessoa(dto.nome(), usuario);
+        Pessoa pessoa = new Pessoa(dto.nome().trim(), usuario);
+        pessoa.setTitular(Boolean.TRUE.equals(dto.titular()));
+
+        return pessoa;
     }
 
     /**
@@ -172,10 +198,51 @@ public class PessoaService {
     @SuppressWarnings("null")
     private Pessoa salvarEntidade(Pessoa pessoa) throws ViolacaoDadosException {
         try {
+            validarUnicidadeNome(pessoa);
+
             return pessoaRepository.save(pessoa);
         } catch (DataIntegrityViolationException e) {
-            throw new ViolacaoDadosException(
-                    String.format("Já existe uma pessoa cadastrada com o nome '%s'.", pessoa.getNome()));
+            throw excecaoNomeDuplicado(pessoa.getNome());
         }
+    }
+
+    /**
+     * Valida se já existe uma pessoa com o mesmo nome para o usuário autenticado.
+     *
+     * <p>
+     * A validação segue as seguintes regras de normalização:
+     * <ul>
+     * <li>Ignora diferenças de acentuação e caixa (via {@link Collator}).</li>
+     * <li>Ignora espaços em branco no início e fim (trim).</li>
+     * </ul>
+     * Exemplo: " joao " será considerado duplicado de "João".
+     *
+     * @param pessoa A entidade {@link Pessoa} contendo o nome e o ID (se houver) a
+     *               ser validada.
+     * @throws ViolacaoDadosException Caso o nome já esteja cadastrado para este
+     *                                usuário.
+     */
+    private void validarUnicidadeNome(Pessoa pessoa) {
+        List<Pessoa> pessoasDoUsuario = pessoaRepository.findByUsuario(pessoa.getUsuario());
+
+        boolean existeDuplicado = pessoasDoUsuario.stream()
+                .filter(p -> !Objects.equals(p.getId(), pessoa.getId()))
+                .anyMatch(p -> collator.equals(p.getNome().trim(), pessoa.getNome().trim()));
+
+        if (existeDuplicado) {
+            throw excecaoNomeDuplicado(pessoa.getNome());
+        }
+    }
+
+    /**
+     * Cria a instância da exceção de regra de negócio para nome duplicado.
+     * Centraliza a mensagem de erro para garantir consistência.
+     *
+     * @param nome O nome que causou o conflito de duplicidade.
+     * @return A exceção {@link ViolacaoDadosException} pronta para ser lançada.
+     */
+    private ViolacaoDadosException excecaoNomeDuplicado(String nome) {
+        return new ViolacaoDadosException(
+                String.format("Já existe uma pessoa cadastrada com o nome '%s'.", nome));
     }
 }

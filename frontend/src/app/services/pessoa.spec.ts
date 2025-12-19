@@ -51,8 +51,8 @@ describe('Pessoa', () => {
    */
   it('deve listar pessoas (GET /pessoas)', (done) => {
     const mockLista: PessoaDTO[] = [
-      { id: '1', nome: 'Matheus' },
-      { id: '2', nome: 'Ana' },
+      { id: '1', nome: 'Matheus', titular: true },
+      { id: '2', nome: 'Ana', titular: true },
     ];
 
     service.listar().subscribe((res) => {
@@ -72,8 +72,8 @@ describe('Pessoa', () => {
    * Deve realizar um POST em /pessoas com o corpo correto.
    */
   it('deve cadastrar uma pessoa (POST /pessoas)', (done) => {
-    const dtoEnvio: CriarAtualizarPessoaDTO = { nome: 'Nova Pessoa' };
-    const mockResposta: PessoaDTO = { id: '123-uuid', nome: 'Nova Pessoa' };
+    const dtoEnvio: CriarAtualizarPessoaDTO = { nome: 'Nova Pessoa', titular: true };
+    const mockResposta: PessoaDTO = { id: '123-uuid', nome: 'Nova Pessoa', titular: true };
 
     service.cadastrar(dtoEnvio).subscribe((res) => {
       expect(res).toEqual(mockResposta);
@@ -93,8 +93,8 @@ describe('Pessoa', () => {
    */
   it('deve atualizar uma pessoa (PUT /pessoas/{id})', (done) => {
     const id = '123-uuid';
-    const dtoEnvio: CriarAtualizarPessoaDTO = { nome: 'Nome Atualizado' };
-    const mockResposta: PessoaDTO = { id: id, nome: 'Nome Atualizado' };
+    const dtoEnvio: CriarAtualizarPessoaDTO = { nome: 'Nome Atualizado', titular: true };
+    const mockResposta: PessoaDTO = { id: id, nome: 'Nome Atualizado', titular: true };
 
     service.atualizar(id, dtoEnvio).subscribe((res) => {
       expect(res).toEqual(mockResposta);

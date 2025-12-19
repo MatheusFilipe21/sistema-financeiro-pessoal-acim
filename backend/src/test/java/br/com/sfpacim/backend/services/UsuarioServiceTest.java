@@ -2,6 +2,7 @@ package br.com.sfpacim.backend.services;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 import java.util.UUID;
@@ -19,6 +20,7 @@ import br.com.sfpacim.backend.dtos.usuario.DadosCadastroUsuarioDTO;
 import br.com.sfpacim.backend.dtos.usuario.UsuarioDTO;
 import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 import br.com.sfpacim.backend.models.Usuario;
+import br.com.sfpacim.backend.repositories.PessoaRepository;
 import br.com.sfpacim.backend.repositories.UsuarioRepository;
 
 /**
@@ -38,6 +40,9 @@ class UsuarioServiceTest {
 
     @Mock
     private UsuarioRepository usuarioRepository;
+
+    @Mock
+    private PessoaRepository pessoaRepository;
 
     @InjectMocks
     private UsuarioService usuarioService;
@@ -74,6 +79,9 @@ class UsuarioServiceTest {
 
         verify(passwordEncoder, times(1)).encode(SENHA);
         verify(usuarioRepository, times(1)).save(any(Usuario.class));
+
+        verify(pessoaRepository).save(argThat(pessoa -> pessoa.getNome().equals(NOME) &&
+                pessoa.isTitular() == true));
     }
 
     /**
@@ -99,6 +107,7 @@ class UsuarioServiceTest {
         });
 
         assertEquals(excecao.getMessage(), String.format("O e-mail: %s já está cadastrado.", EMAIL));
+        verify(pessoaRepository, never()).save(any());
     }
 
     /**

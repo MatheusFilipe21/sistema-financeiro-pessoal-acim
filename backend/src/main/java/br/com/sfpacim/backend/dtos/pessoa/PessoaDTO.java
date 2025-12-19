@@ -25,7 +25,10 @@ public record PessoaDTO(
         UUID id,
 
         @Schema(description = "Nome da pessoa.", example = "Matheus Filipe do Nascimento Pereira") //
-        String nome) {
+        String nome,
+
+        @Schema(description = "Indica se esta pessoa pode ser titular de contas/cartões.", example = "true") //
+        boolean titular) {
 
     /**
      * Construtor customizado para mapear/converter a entidade {@link Pessoa}
@@ -36,6 +39,7 @@ public record PessoaDTO(
     public PessoaDTO(Pessoa pessoa) {
         this(
                 pessoa.getId(),
-                pessoa.getNome());
+                pessoa.getNome(),
+                pessoa.isTitular());
     }
 }

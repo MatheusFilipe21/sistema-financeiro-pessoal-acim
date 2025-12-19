@@ -137,4 +137,64 @@ describe('TabelaBase', () => {
     expect(msgSemDados).toBeTruthy();
     expect(msgSemDados.textContent).toContain('Nenhum registro encontrado');
   });
+
+  /**
+   * Teste de Lógica Interna: Ordenação Personalizada (SortingDataAccessor).
+   * Verifica se a tabela consegue ler propriedades aninhadas (ex: pessoa.nome) para ordenar.
+   */
+  it('deve configurar o sortingDataAccessor para ler valores aninhados', () => {
+    const DADO_COMPLEXO = {
+      id: 99,
+      cargo: 'Dev',
+      empresa: { nome: 'Google', dados: { pais: 'EUA' } },
+    };
+
+    component.colunas = [
+      { chave: 'cargo', titulo: 'Cargo' },
+      { chave: 'empresa', titulo: 'Empresa', caminhoOrdenacao: 'empresa.nome' },
+      { chave: 'pais', titulo: 'País', caminhoOrdenacao: 'empresa.dados.pais' },
+    ];
+    component.dados = [DADO_COMPLEXO];
+
+    component.ngOnChanges({
+      dados: new SimpleChange(null, component.dados, true),
+      colunas: new SimpleChange(null, component.colunas, true),
+    });
+
+    const accessor = component.dataSource.sortingDataAccessor;
+
+    expect(accessor(DADO_COMPLEXO, 'cargo')).toBe('Dev');
+    expect(accessor(DADO_COMPLEXO, 'empresa')).toBe('Google');
+    expect(accessor(DADO_COMPLEXO, 'pais')).toBe('EUA');
+  });
+
+  it('deve retornar null (e não quebrar) ao tentar acessar propriedades de um objeto inexistente', () => {
+    const clienteCompleto = {
+      nome: 'Ana',
+      endereco: { cidade: 'Rio de Janeiro' },
+    };
+
+    const clienteSemEndereco = {
+      nome: 'Pedro',
+      endereco: null,
+    };
+
+    component.colunas = [
+      { chave: 'cidade', titulo: 'Cidade', caminhoOrdenacao: 'endereco.cidade' },
+    ];
+    component.dados = [clienteCompleto, clienteSemEndereco];
+
+    component.ngOnChanges({
+      dados: new SimpleChange(null, component.dados, true),
+      colunas: new SimpleChange(null, component.colunas, true),
+    });
+
+    const acessorOrdenacao = component.dataSource.sortingDataAccessor;
+
+    const resultadoSucesso = acessorOrdenacao(clienteCompleto, 'cidade');
+    expect(resultadoSucesso).toBe('Rio de Janeiro');
+
+    const resultadoNulo = acessorOrdenacao(clienteSemEndereco, 'cidade');
+    expect(resultadoNulo).toBeNull();
+  });
 });

@@ -53,7 +53,7 @@ public class TratadorDeErrosGlobal {
     /**
      * Manipula exceções de recurso não encontrado (EntityNotFoundException).
      * Retorna HTTP 404 (Not Found).
-     * *
+     *
      * <p>
      * Utilizado quando uma busca por ID (ex: Pessoa, Conta) não retorna resultados
      * ou quando o registro pertence a outro usuário (Isolamento de Dados).

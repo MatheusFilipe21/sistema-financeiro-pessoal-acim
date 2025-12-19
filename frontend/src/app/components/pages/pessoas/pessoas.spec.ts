@@ -21,9 +21,9 @@ describe('Pessoas', () => {
   let dialogServiceSpy: jasmine.SpyObj<DialogService>;
 
   const listaPessoasMock: PessoaDTO[] = [
-    { id: '1', nome: 'Ana Silva' },
-    { id: '2', nome: 'Bruno Costa' },
-    { id: '3', nome: 'Carlos Souza' },
+    { id: '1', nome: 'Ana Silva', titular: true },
+    { id: '2', nome: 'Bruno Costa', titular: true },
+    { id: '3', nome: 'Carlos Souza', titular: false },
   ];
 
   beforeEach(async () => {
@@ -65,24 +65,41 @@ describe('Pessoas', () => {
   });
 
   /**
-   * Teste de Filtragem Local.
+   * Teste Unificado de Filtragem (Nome e Titular).
+   * Cobre os IFs de filtro de nome e filtro de titularidade.
    */
-  it('deve filtrar a lista localmente pelo nome', () => {
+  it('deve filtrar corretamente por nome e titularidade', () => {
     component.filtro.nome = 'ana';
+    component.filtrar();
+    expect(component.pessoasFiltradas.length).toBe(1);
+
+    component.filtro.nome = '';
+    component.filtro.titular = true;
+    component.filtrar();
+
+    expect(component.pessoasFiltradas.length).toBe(2);
+    expect(component.pessoasFiltradas.every((p) => p.titular === true)).toBeTrue();
+
+    component.filtro.titular = false;
     component.filtrar();
 
     expect(component.pessoasFiltradas.length).toBe(1);
-    expect(component.pessoasFiltradas[0].nome).toBe('Ana Silva');
+    expect(component.pessoasFiltradas[0].titular).toBeFalse();
   });
 
-  it('deve restaurar a lista completa ao limpar o filtro', () => {
-    component.filtro.nome = 'ana';
+  /**
+   * Teste de Reset.
+   * Garante que o filtro de titular volta para null (Todos).
+   */
+  it('deve limpar os filtros e restaurar a lista completa', () => {
+    component.filtro.nome = 'teste';
+    component.filtro.titular = true;
     component.filtrar();
-    expect(component.pessoasFiltradas.length).toBe(1);
 
     component.limpar();
 
     expect(component.filtro.nome).toBe('');
+    expect(component.filtro.titular).toBeNull();
     expect(component.pessoasFiltradas.length).toBe(3);
   });
 
@@ -102,7 +119,7 @@ describe('Pessoas', () => {
    * Teste do Fluxo de Adicionar (RF46).
    */
   it('deve abrir dialog de cadastro e atualizar lista ao confirmar', () => {
-    const novaPessoa: PessoaDTO = { id: '4', nome: 'Nova Pessoa' };
+    const novaPessoa: PessoaDTO = { id: '4', nome: 'Nova Pessoa', titular: true };
 
     dialogServiceSpy.abrirFormularioPessoa.and.returnValue(of(novaPessoa));
 

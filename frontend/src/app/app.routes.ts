@@ -35,6 +35,10 @@ export const routes: Routes = [
         path: 'pessoas',
         loadComponent: () => import('./components/pages/pessoas/pessoas').then((m) => m.Pessoas),
       },
+      {
+        path: 'contas',
+        loadComponent: () => import('./components/pages/contas/contas').then((m) => m.Contas),
+      },
     ],
   },
   // Tem que ser o último.

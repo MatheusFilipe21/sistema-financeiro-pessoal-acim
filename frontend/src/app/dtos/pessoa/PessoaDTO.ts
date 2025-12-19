@@ -14,4 +14,9 @@ export interface PessoaDTO {
    * O nome da pessoa.
    */
   nome: string;
+
+  /**
+   * Indica se a pessoa pode ser titular de contas.
+   */
+  titular: boolean;
 }

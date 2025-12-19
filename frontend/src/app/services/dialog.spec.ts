@@ -5,6 +5,9 @@ import { Dialog } from './dialog';
 import { MensagemDialog } from '../components/dialogs/mensagem-dialog/mensagem-dialog';
 import { ErroDialog, DadosErroDialog } from '../components/dialogs/erro-dialog/erro-dialog';
 import { DadosPessoaDialog, PessoaDialog } from '../components/dialogs/pessoa-dialog/pessoa-dialog';
+import { ContaDialog, DadosContaDialog } from '../components/dialogs/conta-dialog/conta-dialog';
+import { ContaDTO } from '../dtos/conta/ContaDTO';
+import { InstituicaoFinanceira } from '../enums/InstituicaoFinanceira';
 
 /**
  * Testes unitários para o serviço {@link Dialog}.
@@ -168,7 +171,7 @@ describe('Dialog', () => {
    * Verifica se passa o objeto pessoa e a ação 'editar' corretamente.
    */
   it('deve abrir o PessoaDialog para edição (ação: editar)', () => {
-    const mockPessoa = { id: '123', nome: 'Teste' };
+    const mockPessoa = { id: '123', nome: 'Teste', titular: true };
 
     service.abrirFormularioPessoa('editar', mockPessoa);
 
@@ -191,7 +194,7 @@ describe('Dialog', () => {
    * Verifica se passa o objeto pessoa e a ação 'excluir'.
    */
   it('deve abrir o PessoaDialog para exclusão (ação: excluir)', () => {
-    const mockPessoa = { id: '999', nome: 'Para Deletar' };
+    const mockPessoa = { id: '999', nome: 'Para Deletar', titular: true };
 
     service.abrirFormularioPessoa('excluir', mockPessoa);
 
@@ -206,6 +209,86 @@ describe('Dialog', () => {
       disableClose: true,
       autoFocus: 'first-tabbable',
       id: 'dialog-formulario-pessoa',
+    });
+  });
+
+  /**
+   * Testa o método abrirFormularioConta() para inclusão.
+   * Verifica se abre o ContaDialog com a ação 'cadastrar'.
+   */
+  it('deve abrir o ContaDialog para cadastro (ação: cadastrar)', () => {
+    service.abrirFormularioConta('cadastrar');
+
+    const expectedData: DadosContaDialog = {
+      acao: 'cadastrar',
+      conta: undefined,
+    };
+
+    expect(matDialogSpy.open).toHaveBeenCalledWith(ContaDialog, {
+      width: '500px',
+      data: expectedData,
+      disableClose: true,
+      autoFocus: 'first-tabbable',
+      id: 'dialog-formulario-conta',
+    });
+  });
+
+  /**
+   * Testa o método abrirFormularioConta() para edição.
+   * Verifica se passa o objeto conta e a ação 'editar'.
+   */
+  it('deve abrir o ContaDialog para edição (ação: editar)', () => {
+    const mockConta: ContaDTO = {
+      id: '1',
+      nome: 'Conta Teste',
+      instituicao: InstituicaoFinanceira.MERCADO_PAGO,
+      saldoInicial: 0,
+      saldoAtual: 0,
+      pessoa: { id: '1', nome: 'Titular', titular: true },
+    };
+
+    service.abrirFormularioConta('editar', mockConta);
+
+    const expectedData: DadosContaDialog = {
+      acao: 'editar',
+      conta: mockConta,
+    };
+
+    expect(matDialogSpy.open).toHaveBeenCalledWith(ContaDialog, {
+      width: '500px',
+      data: expectedData,
+      disableClose: true,
+      autoFocus: 'first-tabbable',
+      id: 'dialog-formulario-conta',
+    });
+  });
+
+  /**
+   * Testa o método abrirFormularioConta() para exclusão.
+   */
+  it('deve abrir o ContaDialog para exclusão (ação: excluir)', () => {
+    const mockConta: ContaDTO = {
+      id: '1',
+      nome: 'Conta Excluir',
+      instituicao: InstituicaoFinanceira.BB,
+      saldoInicial: 0,
+      saldoAtual: 0,
+      pessoa: { id: '1', nome: 'Titular', titular: true },
+    };
+
+    service.abrirFormularioConta('excluir', mockConta);
+
+    const expectedData: DadosContaDialog = {
+      acao: 'excluir',
+      conta: mockConta,
+    };
+
+    expect(matDialogSpy.open).toHaveBeenCalledWith(ContaDialog, {
+      width: '500px',
+      data: expectedData,
+      disableClose: true,
+      autoFocus: 'first-tabbable',
+      id: 'dialog-formulario-conta',
     });
   });
 

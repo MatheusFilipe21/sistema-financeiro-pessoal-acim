@@ -22,6 +22,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 export interface ColunaTabela {
   chave: string;
   titulo: string;
+  formatador?: (valor: any) => string;
+  caminhoOrdenacao?: string;
 }
 
 /**
@@ -63,7 +65,7 @@ export class TabelaBase implements AfterViewInit, OnChanges {
    */
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['dados']) {
-      this.dataSource.data = this.dados;
+      this.atualizarFonteDados();
     }
 
     if (changes['colunas']) {
@@ -91,5 +93,36 @@ export class TabelaBase implements AfterViewInit, OnChanges {
    */
   aoExcluir(item: any) {
     this.excluir.emit(item);
+  }
+
+  /**
+   * Recria o DataSource com os novos dados recebidos e configura a lógica de ordenação personalizada.
+   */
+  private atualizarFonteDados() {
+    this.dataSource = new MatTableDataSource(this.dados);
+
+    this.dataSource.sortingDataAccessor = (item: any, property: string) => {
+      const coluna = this.colunas.find((c) => c.chave === property);
+
+      if (coluna?.caminhoOrdenacao) {
+        return this.obterValorAninhado(item, coluna.caminhoOrdenacao);
+      }
+
+      return item[property];
+    };
+
+    this.dataSource.sort = this.sort;
+  }
+
+  /**
+   * Função auxiliar para acessar propriedades profundas dentro de objetos (ex: 'categoria.nome').
+   * Utilizada pelo sortingDataAccessor para permitir ordenar colunas que exibem objetos.
+   *
+   * @param objeto O objeto da linha atual (ex: ContaDTO).
+   * @param caminho O caminho da propriedade separado por pontos (ex: 'pessoa.nome').
+   * @returns O valor final encontrado (string/number) ou null se o caminho for inválido.
+   */
+  private obterValorAninhado(objeto: any, caminho: string): string | number {
+    return caminho.split('.').reduce((acc, part) => (acc ? acc[part] : null), objeto);
   }
 }

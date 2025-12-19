@@ -7,6 +7,8 @@ import { Observable } from 'rxjs';
 import { PessoaDTO } from '../dtos/pessoa/PessoaDTO';
 import { DadosPessoaDialog, PessoaDialog } from '../components/dialogs/pessoa-dialog/pessoa-dialog';
 import { TipoOperacao } from '../components/dialogs/base-formulario-dialog/base-formulario-dialog';
+import { ContaDialog, DadosContaDialog } from '../components/dialogs/conta-dialog/conta-dialog';
+import { ContaDTO } from '../dtos/conta/ContaDTO';
 
 /**
  * Serviço responsável por padronizar a abertura de dialogs
@@ -28,6 +30,7 @@ export class Dialog {
   private readonly ID_ERRO = 'dialog-erro-global';
   private readonly ID_MENSAGEM = 'dialog-mensagem-global';
   private readonly ID_FORMULARIO_PESSOA = 'dialog-formulario-pessoa';
+  private readonly ID_FORMULARIO_CONTA = 'dialog-formulario-conta';
 
   /**
    * Abre o dialog de erro padronizado (ErroDialog).
@@ -129,6 +132,28 @@ export class Dialog {
       this.LARGURA_FORMULARIO,
       this.ID_FORMULARIO_PESSOA
     );
+  }
+
+  /**
+   * Abre o formulário de gestão de Conta.
+   *
+   * @param acao O tipo de operação (cadastrar, editar, excluir).
+   * @param conta (Opcional) O objeto para edição/exclusão.
+   * @returns Observable que emite:
+   * - ContaDTO: se salvou uma inclusão/edição.
+   * - boolean (true): se confirmou uma exclusão.
+   * - undefined: se cancelou.
+   */
+  abrirFormularioConta(
+    acao: TipoOperacao,
+    conta?: ContaDTO
+  ): Observable<ContaDTO | boolean | undefined> {
+    const dados: DadosContaDialog = {
+      acao: acao,
+      conta: conta,
+    };
+
+    return this.abrirDialog(ContaDialog, dados, this.LARGURA_FORMULARIO, this.ID_FORMULARIO_CONTA);
   }
 
   /**

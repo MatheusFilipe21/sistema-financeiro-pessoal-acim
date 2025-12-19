@@ -29,6 +29,16 @@
         <mat-icon matListItemIcon>group</mat-icon>
         <span matListItemTitle id="txt-pessoas">Pessoas</span>
       </a>
+
+      <a
+        mat-list-item
+        routerLink="/dashboard/contas"
+        id="link-contas"
+        (click)="dispositivoMovel() ? drawer.close() : null"
+      >
+        <mat-icon matListItemIcon>account_balance</mat-icon>
+        <span matListItemTitle id="txt-contas">Contas</span>
+      </a>
     </mat-nav-list>
   </mat-sidenav>
 
