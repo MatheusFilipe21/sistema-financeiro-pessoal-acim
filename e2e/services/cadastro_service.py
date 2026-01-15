@@ -26,25 +26,18 @@ class CadastroService(BaseService):
         """
         self.cadastro_page.visitar()
 
-    def verificar_mensagem_sucesso(self, nome_esperado: str) -> None:
+    def verificar_mensagem_sucesso(self, titulo: str, mensagem: str) -> None:
         """
         Verifica se a mensagem de sucesso está correta após o cadastro,
         incluindo a validação do nome do usuário.
 
         Args:
-            nome_esperado: O nome do usuário que deve aparecer na mensagem.
+            titulo: O título da mensagem de sucesso.
+            mensagem: A mensagem de sucesso esperada.
 
         :author: Matheus F. N. Pereira
         """
-        mensagem_bruta = self.cadastro_page.obter_texto_de_elemento_visivel(
-            self.cadastro_page.MENSAGEM_SUCESSO
-        )
-
-        mensagem_real = mensagem_bruta.split('\n')[0].strip()
-
-        mensagem_esperada = f"Usuário {nome_esperado} cadastrado com sucesso!"
-
-        assert mensagem_real == mensagem_esperada, f"Esperado: '{mensagem_esperada}', Obtido: '{mensagem_real}'"
+        self.verificar_dialog_global('sucesso', titulo, mensagem)
 
     def verificar_mensagem_erro_email_duplicado(self, email_duplicado: str) -> None:
         """
@@ -56,7 +49,7 @@ class CadastroService(BaseService):
 
         :author: Matheus F. N. Pereira
         """
-        titulo = "Violação de Dados1"
-        mensagem = f"O e-mail: {email_duplicado} já está cadastrado.1"
+        titulo = "Dados Inválidos"
+        mensagem = f"O e-mail: {email_duplicado} já está cadastrado."
 
-        self.verificar_erro_global(titulo, mensagem)
+        self.verificar_dialog_global('erro', titulo, mensagem)

@@ -25,7 +25,6 @@ class CadastroPage(BasePage):
         self.CAMPO_SENHA = (By.ID, "input-senha")
         self.CAMPO_CONFIRMAR_SENHA = (By.ID, "input-confirmar-senha")
         self.BOTAO_CADASTRAR = (By.ID, "btn-cadastrar")
-        self.MENSAGEM_SUCESSO = (By.CLASS_NAME, "snackbar-sucesso-cadastro")
 
     def preencher_formulario(self, nome: str, email: str, senha: str, confirmar_senha: str) -> None:
         """

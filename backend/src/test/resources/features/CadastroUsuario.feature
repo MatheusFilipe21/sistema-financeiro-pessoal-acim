@@ -7,7 +7,7 @@ Funcionalidade: Cadastro de Novo Usuário
   Para criar uma nova conta e receber os detalhes do usuário criado.
 
   @limparUsuarios
-  Cenário: Cadastro de usuário com todos os campos válidos
+  Cenário: CT001 - Cadastro de usuário com todos os campos válidos
     Dado que eu tenho os seguintes dados válidos para o novo usuário
       """
       {
@@ -22,7 +22,7 @@ Funcionalidade: Cadastro de Novo Usuário
     E o campo "email" na resposta deve ser "matheusfnpereira@gmail.com"
 
   @limparUsuarios
-  Cenário: Tentativa de cadastro com email duplicado
+  Cenário: CT002 - Tentativa de cadastro com email duplicado
     Dado que já existe um usuário cadastrado com email "matheusfnpereira@gmail.com"
     E que eu tenho os seguintes dados válidos para o novo usuário
       """

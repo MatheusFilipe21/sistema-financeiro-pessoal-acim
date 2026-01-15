@@ -32,7 +32,8 @@ def step_given_usuario_ja_cadastrado(context: Context) -> None:
     context.cadastro_page.preencher_formulario(nome, email, senha, senha)
     context.cadastro_page.clicar_cadastrar()
 
-    context.cadastro_service.verificar_mensagem_sucesso(nome)
+    context.cadastro_service.verificar_mensagem_sucesso(
+        "Cadastro realizado com sucesso!", f"O usuário {nome} foi cadastrado, acesse a tela de login ou clique no OK para ser redirecionado e acessar o sistema.")
 
     context.cadastro_service.navegar_para_cadastro()
 
@@ -82,17 +83,18 @@ def step_when_tento_cadastrar_novamente(context: Context) -> None:
     context.cadastro_page.clicar_cadastrar()
 
 
-@then('uma mensagem de sucesso deve ser exibida com o texto "Usuário {nome_esperado} cadastrado com sucesso!"')
-def step_then_mensagem_sucesso_exibida(context: Context, nome_esperado: str) -> None:
+@then('deve ser exibido uma mensagem de sucesso com título "{titulo}" e mensagem "{mensagem}"')
+def step_then_mensagem_sucesso_exibida(context: Context, titulo: str, mensagem: str) -> None:
     """
     Verifica a mensagem de sucesso chamando o Service.
 
     Args:
-        nome_esperado: O nome do usuário esperado na mensagem de sucesso.
+        titulo: O título esperado da mensagem de sucesso.
+        mensagem: A mensagem de sucesso esperada.
 
     :author: Matheus F. N. Pereira
     """
-    context.cadastro_service.verificar_mensagem_sucesso(nome_esperado)
+    context.cadastro_service.verificar_mensagem_sucesso(titulo, mensagem)
 
 
 @then('uma mensagem de erro deve ser exibida informando que o email ja esta cadastrado')
@@ -122,4 +124,5 @@ def step_then_validar_erro_explicito(context: Context, titulo: str, mensagem: st
     email_real = context.email_gerado
     mensagem_formatada = mensagem.format(email=email_real)
 
-    context.cadastro_service.verificar_erro_global(titulo, mensagem_formatada)
+    context.cadastro_service.verificar_dialog_global(
+        'erro', titulo, mensagem_formatada)

@@ -24,9 +24,12 @@ class BasePage:
 
         self.espera = WebDriverWait(driver, 10)
 
-        self.DIALOG_GLOBAL = (By.ID, "dialog-erro-global")
+        self.ERRO_DIALOG_GLOBAL = (By.ID, "dialog-erro-global")
         self.TITULO_ERRO_DIALOG_GLOBAL = (By.ID, "titulo-erro")
         self.MENSAGEM_ERRO_DIALOG_GLOBAL = (By.ID, "mensagem-erro")
+        self.MENSAGEM_DIALOG_GLOBAL = (By.ID, "dialog-mensagem-global")
+        self.TITULO_MENSAGEM_DIALOG_GLOBAL = (By.ID, "mensagem-titulo")
+        self.MENSAGEM_MENSAGEM_DIALOG_GLOBAL = (By.ID, "mensagem-mensagem")
 
     def visitar(self) -> None:
         """
