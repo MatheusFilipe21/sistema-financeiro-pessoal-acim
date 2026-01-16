@@ -7,6 +7,7 @@ import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import org.junit.jupiter.api.Assertions;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -135,5 +136,28 @@ public abstract class BaseApiContext {
         assertEquals(valorEsperado, valorReal,
                 String.format("O campo '%s' tem valor '%s', mas deveria ser '%s'.",
                         campo, valorReal, valorEsperado));
+    }
+
+    /**
+     * Verifica se uma lista no corpo JSON contém um valor específico.
+     * Suporta listas simples ou projeções (ex: "usuarios.nome").
+     * 
+     * @param campo         O caminho do campo lista no JSON (ex: "erros" ou
+     *                      "usuarios.email").
+     * 
+     * @param valorEsperado O valor que deve estar presente dentro desta lista.
+     */
+    public void verificarListaContemValor(String campo, String valorEsperado) {
+        java.util.List<String> lista = this.getJsonPath().getList(campo, String.class);
+
+        if (lista == null) {
+            throw new AssertionError(String.format("O campo '%s' não foi encontrado ou não é uma lista.", campo));
+        }
+
+        boolean contemValor = lista.contains(valorEsperado);
+
+        Assertions.assertTrue(contemValor,
+                String.format("A lista no campo '%s' deveria conter o valor '%s', mas a lista atual é: %s",
+                        campo, valorEsperado, lista.toString()));
     }
 }

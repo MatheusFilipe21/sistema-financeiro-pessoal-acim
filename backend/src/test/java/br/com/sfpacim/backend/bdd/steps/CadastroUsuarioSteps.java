@@ -13,12 +13,12 @@ public class CadastroUsuarioSteps {
     private CadastroUsuarioContext context;
 
     /**
-     * Step: "Dado que eu tenho os seguintes dados válidos para o novo usuário"
+     * Step: "Dado que eu tenho os seguintes dados para o novo usuário"
      *
      * @param jsonPayload A String JSON capturada do Gherkin.
      */
-    @Dado("que eu tenho os seguintes dados válidos para o novo usuário")
-    public void queEuTenhoOsSeguintesDadosValidosParaONovoUsuario(String jsonPayload) {
+    @Dado("que eu tenho os seguintes dados para o novo usuário")
+    public void queEuTenhoOsSeguintesDadosParaONovoUsuario(String jsonPayload) {
         context.definirCorpoRequisicao(jsonPayload);
     }
 
@@ -67,5 +67,16 @@ public class CadastroUsuarioSteps {
     @Então("o campo {string} na resposta deve ser {string}")
     public void oCampoNaRespostaDeveSer(String campo, String valorEsperado) {
         context.verificarValorCampoResposta(campo, valorEsperado);
+    }
+
+    /**
+     * Step: "E o campo {string} deve conter o item {string}"
+     * 
+     * @param campo         O nome do campo lista (ex: "erros").
+     * @param valorEsperado O valor que deve constar na lista.
+     */
+    @Então("o campo {string} deve conter o item {string}")
+    public void oCampoDeveConterOItem(String campo, String valorEsperado) {
+        context.verificarListaContemValor(campo, valorEsperado);
     }
 }

@@ -8,7 +8,7 @@ Funcionalidade: Cadastro de Novo Usuário
 
   @limparUsuarios
   Cenário: CT001 - Cadastro de usuário com todos os campos válidos
-    Dado que eu tenho os seguintes dados válidos para o novo usuário
+    Dado que eu tenho os seguintes dados para o novo usuário
       """
       {
         "nome": "Matheus Filipe do Nascimento Pereira",
@@ -24,7 +24,7 @@ Funcionalidade: Cadastro de Novo Usuário
   @limparUsuarios
   Cenário: CT002 - Tentativa de cadastro com email duplicado
     Dado que já existe um usuário cadastrado com email "matheusfnpereira@gmail.com"
-    E que eu tenho os seguintes dados válidos para o novo usuário
+    E que eu tenho os seguintes dados para o novo usuário
       """
       {
         "nome": "Matheus Filipe do Nascimento Pereira",
@@ -38,3 +38,24 @@ Funcionalidade: Cadastro de Novo Usuário
     E o campo "mensagem" na resposta deve ser "O e-mail: matheusfnpereira@gmail.com já está cadastrado."
     E o campo "rota" na resposta deve ser "/api/autenticacao/cadastro"
     E o corpo da resposta deve conter o campo "dataHora"
+
+    Cenário: CT003 - Tentativa de cadastro com campos inválidos
+    Dado que eu tenho os seguintes dados para o novo usuário
+        """
+        {
+            "nome": "Matheus",
+            "email": "email.invalido@",
+            "senha": "senha_invalida"
+        }
+        """
+    Quando o cliente faz uma requisição POST para "/api/autenticacao/cadastro"
+    Então o status da resposta deve ser 422
+    E o campo "erro.titulo" na resposta deve ser "Dados Inválidos"
+    E o campo "erro.mensagem" na resposta deve ser "Um ou mais campos estão inválidos."
+    E o campo "erro.rota" na resposta deve ser "/api/autenticacao/cadastro"
+    E o corpo da resposta deve conter o campo "erro.dataHora"
+    E o corpo da resposta deve conter o campo "erros"
+    E o campo "erros.campo" deve conter o item "email"
+    E o campo "erros.mensagem" deve conter o item "O formato do e-mail é inválido."
+    E o campo "erros.campo" deve conter o item "senha"
+    E o campo "erros.mensagem" deve conter o item "A senha deve ter no mínimo 8 caracteres, contendo ao menos uma letra maiúscula, uma minúscula e um número."
