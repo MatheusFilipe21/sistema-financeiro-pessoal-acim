@@ -85,3 +85,21 @@ Cenário: CT004 - Validar campos obrigatórios
     E o campo "erros.campo" deve conter o item "nome"
     E o campo "erros.mensagem" deve conter o item "O nome é obrigatório."
 
+Cenário: CT005 - Validar regra da senha
+    Dado que eu tenho os seguintes dados para o novo usuário
+        """
+        {
+            "nome": "Ilka Berenguer",
+            "email": "ifbp@cesar.school",
+            "senha": "abdf1234"
+        }
+        """
+    Quando o cliente faz uma requisição POST para "/api/autenticacao/cadastro"
+    Então o status da resposta deve ser 422
+    E o campo "erro.titulo" na resposta deve ser "Dados Inválidos"
+    E o campo "erro.mensagem" na resposta deve ser "Um ou mais campos estão inválidos."
+    E o campo "erro.rota" na resposta deve ser "/api/autenticacao/cadastro"
+    E o corpo da resposta deve conter o campo "erro.dataHora"
+    E o corpo da resposta deve conter o campo "erros"
+    E o campo "erros.campo" deve conter o item "senha"
+    E o campo "erros.mensagem" deve conter o item "A senha deve ter no mínimo 8 caracteres, contendo ao menos uma letra maiúscula, uma minúscula e um número."
