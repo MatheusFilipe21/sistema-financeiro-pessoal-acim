@@ -1,16 +1,12 @@
 package br.com.sfpacim.backend.bdd.contexts;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.annotation.Import;
 
-import br.com.sfpacim.backend.config.SegurancaConfig;
-import br.com.sfpacim.backend.exceptions.TratadorDeErrosGlobal;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.UsuarioRepository;
 import io.cucumber.java.After;
-import io.cucumber.spring.CucumberContextConfiguration;
+import io.cucumber.spring.ScenarioScope;
 import io.restassured.RestAssured;
 import jakarta.annotation.PostConstruct;
 
@@ -24,9 +20,7 @@ import jakarta.annotation.PostConstruct;
  *
  * @author Matheus F. N. Pereira
  */
-@CucumberContextConfiguration
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import({ SegurancaConfig.class, TratadorDeErrosGlobal.class })
+@ScenarioScope
 public class CadastroUsuarioContext extends BaseApiContext {
 
     /**

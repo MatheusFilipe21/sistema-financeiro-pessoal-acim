@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.Assertions;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import br.com.sfpacim.backend.services.interfaces.EmailService;
@@ -22,10 +21,6 @@ import br.com.sfpacim.backend.services.interfaces.EmailService;
  *
  * @author Matheus F. N. Pereira
  */
-@TestPropertySource(properties = {
-        "api.security.token.secret=chave-secreta-de-teste-minimo-32-bytes-para-jjwt",
-        "api.security.token.expiration-ms=3600000"
-})
 public abstract class BaseApiContext {
 
     @MockitoBean
