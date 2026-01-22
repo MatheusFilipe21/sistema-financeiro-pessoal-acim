@@ -23,7 +23,7 @@ Funcionalidade: Cadastro de Novo Usuário
 
   @limparUsuarios
   Cenário: CT002 - Tentativa de cadastro com email duplicado
-    Dado que já existe um usuário cadastrado com email "matheusfnpereira@gmail.com"
+    Dado que já existe um usuário cadastrado com nome "Matheus Filipe do Nascimento Pereira" e email "matheusfnpereira@gmail.com"
     E que eu tenho os seguintes dados para o novo usuário
       """
       {
