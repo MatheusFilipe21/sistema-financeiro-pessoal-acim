@@ -1,0 +1,46 @@
+spring:
+  # =======================================================
+  # CONFIGURAÇÕES DO BANCO DE DADOS
+  # =======================================================
+  datasource:
+    # Define a URL de conexão JDBC para o ambiente de desenvolvimento.
+    # Usa 'host.docker.internal' (DNS especial do Docker) para permitir
+    # que o Spring (rodando no Dev Container) acesse o Postgres
+    # (rodando no Host Docker, exposto na porta 5433).
+    url: jdbc:postgresql://host.docker.internal:5433/sfpacim_db
+    # Define o usuário do banco (deve ser o mesmo do docker-compose.yml).
+    username: user
+    # Define a senha do banco (deve ser a mesma do docker-compose.yml).
+    password: password
+    # Especifica a classe exata do driver do Postgres.
+    driver-class-name: org.postgresql.Driver
+
+  # =======================================================
+  # CONFIGURAÇÕES DO JPA
+  # =======================================================
+  jpa:
+    hibernate:
+      # Define a estratégia de Geração de Schema (DDL) do Hibernate.
+      ddl-auto: update
+
+    # Habilita a exibição dos comandos SQL gerados no console.
+    show-sql: true
+    properties:
+      hibernate:
+        # Formata a saída do SQL para ser legível (com quebra de linhas).
+        "[format_sql]": true
+        # Informa ao Hibernate qual "dialeto" SQL ele deve usar.
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+# =======================================================
+# CONFIGURAÇÕES DA API (SFP-ACIM)
+# =======================================================
+api:
+  security:
+    token:
+      # Chave secreta para assinar o JWT.
+      secret: "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970"
+
+      # Tempo de expiração do token (em milissegundos)
+      # Ex: 28800000 = 8 horas
+      expiration-ms: 28800000

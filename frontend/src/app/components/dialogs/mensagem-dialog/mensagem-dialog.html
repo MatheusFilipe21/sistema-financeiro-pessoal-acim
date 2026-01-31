@@ -1,0 +1,16 @@
+<div id="mensagem-dialog" [class]="'tipo-' + dados.tipo">
+  <h1 mat-dialog-title id="titulo-dialog">
+    <mat-icon>{{ getIcone() }}</mat-icon>
+    <span id="titulo-mensagem">{{ dados.titulo }}</span>
+  </h1>
+
+  <mat-dialog-content id="conteudo-dialog">
+    <p id="mensagem-mensagem" [innerHTML]="dados.mensagem"></p>
+  </mat-dialog-content>
+
+  <mat-dialog-actions id="acoes-dialog" align="end">
+    <button mat-flat-button mat-dialog-close [color]="dados.tipo === 'aviso' ? 'warn' : 'primary'">
+      {{ dados.textoBotao || 'Fechar' }}
+    </button>
+  </mat-dialog-actions>
+</div>

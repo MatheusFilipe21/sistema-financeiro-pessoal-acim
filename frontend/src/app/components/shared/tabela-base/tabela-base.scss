@@ -1,0 +1,55 @@
+#estrutura-tabela-fixa {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--mat-sys-surface);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+#container-scroll-tabela {
+  flex: 1;
+  overflow: auto;
+  width: 100%;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+
+    td,
+    th {
+      white-space: nowrap;
+      padding: 0 16px;
+    }
+
+    th {
+      background-color: var(--mat-sys-surface);
+      z-index: 10;
+      top: 0;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    }
+  }
+}
+
+mat-paginator {
+  flex: 0 0 auto;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  z-index: 20;
+}
+
+.coluna-acoes-header {
+  width: 100px;
+  text-align: center;
+}
+
+.coluna-acoes-celula {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.celula-sem-dados {
+  padding: 24px;
+  text-align: center;
+  font-style: italic;
+  color: var(--mat-sys-on-surface-variant);
+}

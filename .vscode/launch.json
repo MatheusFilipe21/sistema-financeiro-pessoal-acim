@@ -9,8 +9,8 @@
       "cwd": "${workspaceFolder}",
       "mainClass": "br.com.sfpacim.backend.BackendApplication",
       "projectName": "backend",
-      "args": "",
-      "envFile": "${workspaceFolder}/.env"
+      "envFile": "${workspaceFolder}/.env",
+      "args": ["--spring.profiles.active=dev"]
     },
     // --- Configuração do Frontend (Angular ng serve) ---
     {

@@ -1,0 +1,97 @@
+main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+
+  section {
+    width: 100%;
+    max-width: 400px;
+    padding: 32px;
+    border-radius: 8px;
+    background: white;
+    box-shadow: var(--mat-sys-elevation-level4);
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 500;
+      margin-top: 0;
+      text-align: center;
+    }
+
+    h2 {
+      font-size: 1rem;
+      font-weight: 200;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    mat-form-field {
+      width: 100%;
+      margin-bottom: 10px;
+
+      #btn-alternar-senha,
+      #btn-alternar-confirmar-senha {
+        margin-right: 4px;
+      }
+    }
+
+    #requisitos-senha {
+      font-size: 13px;
+      margin-top: -5px;
+      margin-bottom: 15px;
+      padding-left: 4px;
+      line-height: 1.5;
+
+      div {
+        display: flex;
+        align-items: center;
+        color: var(--mat-sys-error);
+        font-size: 1rem;
+
+        &.valid {
+          color: #4caf50;
+        }
+
+        .icone-requisito-senha {
+          display: inline-block;
+          font-weight: bold;
+          margin-right: 8px;
+          font-size: 1.5rem;
+        }
+      }
+    }
+
+    #acoes {
+      display: block;
+      margin-top: 16px;
+
+      button {
+        width: 100%;
+        height: 48px;
+        font-size: 1rem;
+      }
+    }
+
+    #link-login {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 0.9rem;
+
+      p {
+        display: inline;
+        margin-right: 4px;
+      }
+
+      a {
+        color: var(--mat-sys-primary);
+        text-decoration: none;
+        font-weight: 500;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+}

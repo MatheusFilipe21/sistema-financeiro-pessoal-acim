@@ -1,0 +1,99 @@
+<div id="container-pagina-contas">
+  <app-container-filtro
+    titulo="Gestão de Contas"
+    textoBotaoBuscar="Pesquisar"
+    [filtroInstantaneo]="true"
+    (buscar)="filtrar()"
+    (limpar)="limpar()"
+  >
+    <mat-form-field appearance="outline">
+      <mat-label>Nome</mat-label>
+      <input
+        matInput
+        [(ngModel)]="filtro.nome"
+        (ngModelChange)="filtrar()"
+        name="nome"
+        id="input-filtro-nome"
+        placeholder="Busque por nome..."
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Titulares</mat-label>
+      <mat-select
+        multiple
+        [(ngModel)]="filtro.pessoasIds"
+        (selectionChange)="filtrar()"
+        placeholder="Selecione..."
+      >
+        @for (pessoa of opcoesPessoas; track pessoa.id) {
+        <mat-option [value]="pessoa.id">{{ pessoa.nome }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Instituições</mat-label>
+      <mat-select
+        multiple
+        [(ngModel)]="filtro.instituicoes"
+        (selectionChange)="filtrar()"
+        placeholder="Selecione..."
+      >
+        @for (inst of opcoesInstituicoes; track inst.valor) {
+        <mat-option [value]="inst.valor">{{ inst.nome }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </app-container-filtro>
+
+  <section id="barra-controle-visualizacao">
+    <app-alternador-visualizacao [(emCards)]="visualizacaoEmCards"> </app-alternador-visualizacao>
+  </section>
+
+  <section id="area-conteudo-dados">
+    @if (visualizacaoEmCards) {
+
+    <app-grid-base identificador="grid-contas">
+      @for (conta of contasFiltradas; track conta.id) {
+
+      <app-card-base
+        [identificador]="conta.id"
+        [titulo]="conta.nome"
+        [subtitulo]="conta.pessoa.nome"
+        [icone]="conta.instituicao | instituicaoIcone"
+        (editar)="aoEditar(conta)"
+        (excluir)="aoExcluir(conta)"
+      >
+        <div class="conteudo-card-conta">
+          <div class="badge-banco" [ngStyle]="conta.instituicao | instituicaoEstilo">
+            {{ conta.instituicao | instituicaoNome }}
+          </div>
+
+          <div class="saldo-destaque" [class.negativo]="conta.saldoAtual < 0">
+            Saldo Atual: {{ conta.saldoAtual | currency : 'BRL' }}
+          </div>
+        </div>
+      </app-card-base>
+
+      } @empty {
+      <p id="txt-sem-registros">Nenhuma conta encontrada.</p>
+      }
+    </app-grid-base>
+
+    } @else {
+
+    <app-tabela-base
+      [colunas]="colunasTabela"
+      [dados]="contasFiltradas"
+      (editar)="aoEditar($event)"
+      (excluir)="aoExcluir($event)"
+    >
+    </app-tabela-base>
+
+    }
+  </section>
+
+  <app-botao-adicionar [temRodape]="!visualizacaoEmCards" (adicionar)="aoAdicionar()">
+  </app-botao-adicionar>
+</div>

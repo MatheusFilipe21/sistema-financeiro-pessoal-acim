@@ -1,0 +1,21 @@
+#titulo-dialog {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--mat-sys-error);
+  padding: 1rem;
+}
+
+#conteudo-dialog {
+  min-width: 300px;
+  max-width: 450px;
+
+  #lista-erros-validacao {
+    margin-top: 1rem;
+    padding-left: 1.25rem;
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+  }
+}

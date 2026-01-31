@@ -1,0 +1,34 @@
+<app-base-formulario-dialog
+  [titulo]="titulo"
+  [operacao]="operacao"
+  [formularioInvalido]="formulario.invalid && operacao !== 'excluir'"
+  [processando]="processando"
+  (confirmar)="confirmarAcao()"
+  (cancelar)="fechar()"
+>
+  <form [formGroup]="formulario" class="form-grid">
+    <mat-form-field appearance="outline">
+      <mat-label>Nome</mat-label>
+      <input matInput id="input-nome" formControlName="nome" placeholder="Digite seu nome" />
+
+      @if (formulario.get('nome')?.invalid && (formulario.get('nome')?.touched)) {
+      <mat-error>{{ obterMensagemErro('nome') }}</mat-error>
+      }
+    </mat-form-field>
+
+    <div id="checkbox-container">
+      <mat-checkbox id="checkbox-titular" formControlName="titular" color="primary">
+        É Titular da Conta?
+      </mat-checkbox>
+
+      <button
+        mat-icon-button
+        type="button"
+        (click)="abrirInfoTitular()"
+        matTooltip="Entenda a regra de titularidade"
+      >
+        <mat-icon>info</mat-icon>
+      </button>
+    </div>
+  </form>
+</app-base-formulario-dialog>

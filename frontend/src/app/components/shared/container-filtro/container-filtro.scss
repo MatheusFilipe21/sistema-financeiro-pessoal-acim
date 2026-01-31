@@ -1,0 +1,145 @@
+#container-principal-filtros {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+#cabecalho-filtros {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+
+  #titulo-pagina {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--mat-sys-on-surface);
+  }
+}
+
+#titulo-sessao-filtros {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  color: var(--mat-sys-on-surface-variant);
+
+  @media (max-width: 959px) {
+    display: none;
+  }
+}
+
+#area-conteudo-filtros {
+  background-color: var(--mat-sys-surface);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  overflow-y: auto;
+
+  #container-campos-injetados {
+    display: flex;
+    gap: 16px;
+    flex: 1;
+    flex-wrap: wrap;
+    align-items: center;
+
+    ::ng-deep mat-form-field {
+      margin-bottom: 0 !important;
+
+      .mat-mdc-form-field-subscript-wrapper {
+        display: none;
+      }
+    }
+  }
+
+  #container-botoes-acao {
+    display: flex;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 959px) {
+  #fundo-escuro-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 900;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    display: block;
+    animation: aparecerSuave 0.3s;
+  }
+
+  #area-conteudo-filtros {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 280px;
+    max-width: 80vw;
+    background: white;
+    z-index: 1000;
+    padding: 24px;
+
+    flex-direction: column;
+    align-items: stretch;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+    overflow-y: auto;
+
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+
+    &.aberto {
+      transform: translateX(0);
+    }
+
+    #container-campos-injetados {
+      flex-direction: column;
+      flex: 1;
+      align-items: stretch;
+
+      ::ng-deep mat-form-field {
+        width: 100%;
+        margin-bottom: 16px !important;
+      }
+    }
+
+    #container-botoes-acao {
+      flex-direction: column-reverse;
+      margin-top: auto;
+    }
+  }
+}
+
+#cabecalho-mobile-filtros {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+
+  h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+}
+
+@keyframes aparecerSuave {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

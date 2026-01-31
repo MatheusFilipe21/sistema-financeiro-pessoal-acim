@@ -5,3 +5,22 @@ spring:
 server:
   servlet:
     context-path: /api
+
+# =======================================================
+# CONFIGURAÇÕES CUSTOMIZADAS DA APLICAÇÃO
+# =======================================================
+app:
+  frontend:
+    # Lê a variável de ambiente APP_FRONTEND_URL (do Docker Compose).
+    # Se ela não existir, usa 'http://localhost:4200' (Padrão Angular local).
+    url: ${APP_FRONTEND_URL:http://localhost:4200}
+
+# =======================================================
+# CONFIGURAÇÕES DO SWAGGER / SPRINGDOC
+# =======================================================
+springdoc:
+  swagger-ui:
+    # Ordena os Controllers (Tags) em ordem alfabética (A-Z)
+    tags-sorter: alpha
+    # Ordena os Métodos em ordem alfabética (A-Z)
+    operations-sorter: alpha

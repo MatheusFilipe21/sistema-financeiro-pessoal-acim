@@ -1,0 +1,13 @@
+#btn-adicionar {
+  position: fixed;
+  right: 16px;
+  z-index: 1000;
+  transition: bottom 0.3s cubic-bezier(0.35, 0, 0.25, 1);
+  background-color: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+  bottom: 16px;
+
+  &.com-rodape {
+    bottom: 90px;
+  }
+}
