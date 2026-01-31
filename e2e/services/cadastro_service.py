@@ -1,11 +1,16 @@
 from pages.cadastro_page import CadastroPage
 from services.base_service import BaseService
+from typing import Dict
 
 
 class CadastroService(BaseService):
     """
-    Camada de Serviço/Contexto: Orquestra a lógica de teste para a funcionalidade de Cadastro.
-    Contém as ações de alto nível e as asserções.
+    Camada de Serviço: Orquestra a lógica de negócios para a funcionalidade de Cadastro.
+
+    Responsabilidades:
+    - Agrupar ações atômicas da Page em fluxos de negócio (ex: realizar cadastro).
+    - Realizar validações específicas do domínio de cadastro.
+    - Traduzir dados de teste (ex: tabelas do Gherkin) para interações com a UI.
     """
 
     def __init__(self, cadastro_page: CadastroPage) -> None:
@@ -20,36 +25,78 @@ class CadastroService(BaseService):
 
     def navegar_para_cadastro(self) -> None:
         """
-        Ação de navegação de alto nível.
+        Navega para a URL da tela de cadastro.
 
         :author: Matheus F. N. Pereira
         """
         self.cadastro_page.visitar()
 
-    def verificar_mensagem_sucesso(self, titulo: str, mensagem: str) -> None:
+    def realizar_cadastro(self, nome: str, email: str, senha: str, confirmar_senha: str) -> None:
         """
-        Verifica se a mensagem de sucesso está correta após o cadastro,
-        incluindo a validação do nome do usuário.
-
-        Args:
-            titulo: O título da mensagem de sucesso.
-            mensagem: A mensagem de sucesso esperada.
+        Fluxo completo: Preenche o formulário e clica em cadastrar.
 
         :author: Matheus F. N. Pereira
         """
-        self.verificar_dialog_global('sucesso', titulo, mensagem)
+        self.cadastro_page.preencher_formulario(
+            nome, email, senha, confirmar_senha)
+        self.cadastro_page.clicar_cadastrar()
 
-    def verificar_mensagem_erro_email_duplicado(self, email_duplicado: str) -> None:
+    def preencher_campos_dinamicos(self, dados_tabela: Dict[str, str]) -> None:
         """
-        Verifica se o Dialog de erro apareceu com a mensagem correta de duplicidade.
-        Utiliza o verificador genérico herdado de BaseService.
+        Preenche o formulário baseado em um dicionário (útil para Data Tables do BDD).
+
+        Mapeia os nomes das colunas do BDD para os argumentos do método da Page.
 
         Args:
-            email_duplicado: O e-mail que gerou o conflito.
+            dados_tabela: Dict com chaves como 'nome', 'email', 'senha', etc.
 
         :author: Matheus F. N. Pereira
         """
-        titulo = "Dados Inválidos"
-        mensagem = f"O e-mail: {email_duplicado} já está cadastrado."
+        self.cadastro_page.preencher_formulario(
+            nome=dados_tabela.get('nome', ''),
+            email=dados_tabela.get('email', ''),
+            senha=dados_tabela.get('senha', ''),
+            confirmar_senha=dados_tabela.get('confirmar_senha', '')
+        )
 
-        self.verificar_dialog_global('erro', titulo, mensagem)
+    def verificar_sucesso_cadastro(self, nome_usuario: str) -> None:
+        """
+        Verifica se o cadastro foi concluído com sucesso.
+        Valida: Título do dialog, mensagem contendo o nome e a cor verde (sucesso).
+
+        :author: Matheus F. N. Pereira
+        """
+        titulo_esperado = "Cadastro realizado com sucesso!"
+        mensagem_parcial = f"O usuário {nome_usuario} foi cadastrado"
+        self.verificar_dialog_global(
+            tipo_dialog='mensagem',
+            titulo_esperado=titulo_esperado,
+            mensagem_esperada=mensagem_parcial,
+            tipo_visual_esperado='sucesso'
+        )
+
+    def verificar_erro_email_duplicado(self, email: str) -> None:
+        """
+        Valida o cenário de tentativa de cadastro com e-mail já existente.
+
+        :author: Matheus F. N. Pereira
+        """
+        titulo_esperado = "Dados Inválidos"
+        mensagem_esperada = f"O e-mail: {email} já está cadastrado."
+
+        self.verificar_dialog_global(
+            tipo_dialog='erro',
+            titulo_esperado=titulo_esperado,
+            mensagem_esperada=mensagem_esperada
+        )
+
+    def validar_botao_cadastrar_desabilitado(self) -> None:
+        """
+        Regra de Negócio: O botão cadastrar deve permanecer desabilitado 
+        se o formulário estiver inválido.
+
+        :author: Matheus F. N. Pereira
+        """
+        esta_habilitado = self.cadastro_page.is_botao_cadastrar_habilitado()
+        assert esta_habilitado is False, \
+            "Falha de validação: O botão 'Cadastrar' deveria estar desabilitado, mas está ativo."

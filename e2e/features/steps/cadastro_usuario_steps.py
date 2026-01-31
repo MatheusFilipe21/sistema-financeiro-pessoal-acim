@@ -1,128 +1,133 @@
 from behave import given, when, then
 from behave.runner import Context
-from pages.cadastro_page import CadastroPage
-from services.cadastro_service import CadastroService
 
 
 @given('que estou na página de cadastro')
 def step_given_estou_na_pagina_de_cadastro(context: Context) -> None:
     """
-    Inicializa as camadas Page Object e Service e navega para a página.
+    Navega para a página de cadastro.
+
+    Inicializa o fluxo garantindo que o Service navegue para a URL correta
+    definida na Page Object.
+
+    Args:
+        context: O contexto de execução do Behave.
 
     :author: Matheus F. N. Pereira
     """
-    context.cadastro_page = CadastroPage(context.driver, context.url_base)
-    context.cadastro_service = CadastroService(context.cadastro_page)
     context.cadastro_service.navegar_para_cadastro()
 
 
 @given('que já existe um usuário cadastrado com o email gerado')
 def step_given_usuario_ja_cadastrado(context: Context) -> None:
     """
-    Cadastra um usuário para usar o e-mail no banco de dados.
+    Pré-condição: Cadastra um usuário real via UI para "queimar" o e-mail no banco.
+
+    Este passo realiza um cadastro completo (preenchimento e submit) para garantir
+    que, ao tentar usar este e-mail novamente no teste, o sistema acuse duplicidade.
+
+    Args:
+        context: O contexto de execução do Behave.
 
     :author: Matheus F. N. Pereira
     """
-    step_given_estou_na_pagina_de_cadastro(context)
+    context.cadastro_service.navegar_para_cadastro()
 
-    email = context.email_gerado
-    nome = context.nome_padrao
-    senha = context.senha_padrao
+    context.cadastro_service.realizar_cadastro(
+        nome=context.nome_padrao,
+        email=context.email_gerado,
+        senha=context.senha_padrao,
+        confirmar_senha=context.senha_padrao
+    )
 
-    context.cadastro_page.preencher_formulario(nome, email, senha, senha)
-    context.cadastro_page.clicar_cadastrar()
-
-    context.cadastro_service.verificar_mensagem_sucesso(
-        "Cadastro realizado com sucesso!", f"O usuário {nome} foi cadastrado, acesse a tela de login ou clique no OK para ser redirecionado e acessar o sistema.")
+    context.cadastro_service.verificar_sucesso_cadastro(context.nome_padrao)
 
     context.cadastro_service.navegar_para_cadastro()
 
 
 @when('preencho "{nome}", o email gerado, e senhas "{senha}" e "{confirmar_senha}"')
-def step_when_preencho_formulario(context: Context, nome: str, senha: str, confirmar_senha: str) -> None:
+def step_when_preencho_sucesso(context: Context, nome: str, senha: str, confirmar_senha: str) -> None:
     """
-    Preenche os campos do formulário, injetando o e-mail gerado.
+    Preenche o formulário usando o e-mail randômico armazenado no contexto.
 
     Args:
-        nome: Nome vindo do Gherkin.
-        senha: Senha vinda do Gherkin.
-        confirmar_senha: Confirmação de senha vinda do Gherkin.
+        context: O contexto de execução do Behave.
+        nome: Nome vindo do step Gherkin.
+        senha: Senha vinda do step Gherkin.
+        confirmar_senha: Confirmação de senha vinda do step Gherkin.
 
     :author: Matheus F. N. Pereira
     """
-    # Recupera o e-mail aleatório gerado pelo Faker no environment.py
-    email = context.email_gerado
+    context.cadastro_service.cadastro_page.preencher_formulario(
+        nome=nome,
+        email=context.email_gerado,
+        senha=senha,
+        confirmar_senha=confirmar_senha
+    )
 
-    context.cadastro_page.preencher_formulario(
-        nome, email, senha, confirmar_senha)
 
-
-@when('clico no botão "Cadastrar"')
-def step_when_clico_em_cadastrar(context: Context) -> None:
+@when('preencho o formulário de cadastro com')
+def step_when_preencho_tabela(context: Context) -> None:
     """
-    Clica no botão de cadastrar.
+    Preenche o formulário usando uma Data Table do Gherkin.
 
-    :author: Matheus F. N. Pereira
+    Útil para testes de validação (CT003) onde múltiplos cenários de dados
+    são testados em sequência. O método converte a linha da tabela em um
+    dicionário para o Service.
+
+    Exemplo Gherkin:
+      | nome | email           | senha | confirmar_senha |
+      | John | email.invalido@ | 123   | 123             |
+
+    Args:
+        context: O contexto de execução do Behave (contém context.table).
+
+    :author: Alexandre Orlando Gracio
     """
-    context.cadastro_page.clicar_cadastrar()
+    row = context.table[0]
+
+    context.cadastro_service.preencher_campos_dinamicos(row.as_dict())
 
 
 @when('tento me cadastrar novamente com o mesmo email gerado')
-def step_when_tento_cadastrar_novamente(context: Context) -> None:
+def step_when_tento_cadastrar_duplicado(context: Context) -> None:
     """
-    Tenta cadastrar usando o mesmo e-mail do passo anterior.
-
-    :author: Matheus F. N. Pereira
-    """
-    email_duplicado = context.email_gerado
-    nome = context.nome_padrao
-    senha = context.senha_padrao
-
-    context.cadastro_page.preencher_formulario(
-        nome, email_duplicado, senha, senha)
-    context.cadastro_page.clicar_cadastrar()
-
-
-@then('deve ser exibido uma mensagem de sucesso com título "{titulo}" e mensagem "{mensagem}"')
-def step_then_mensagem_sucesso_exibida(context: Context, titulo: str, mensagem: str) -> None:
-    """
-    Verifica a mensagem de sucesso chamando o Service.
+    Fluxo de exceção: Tenta realizar um novo cadastro utilizando exatamente
+    os mesmos dados (principalmente o e-mail) do @given anterior.
 
     Args:
-        titulo: O título esperado da mensagem de sucesso.
-        mensagem: A mensagem de sucesso esperada.
+        context: O contexto de execução do Behave.
 
     :author: Matheus F. N. Pereira
     """
-    context.cadastro_service.verificar_mensagem_sucesso(titulo, mensagem)
+    context.cadastro_service.realizar_cadastro(
+        nome=context.nome_padrao,
+        email=context.email_gerado,
+        senha=context.senha_padrao,
+        confirmar_senha=context.senha_padrao
+    )
 
 
-@then('uma mensagem de erro deve ser exibida informando que o email ja esta cadastrado')
-def step_then_mensagem_erro_duplicidade(context: Context) -> None:
+@then('a mensagem deve conter o texto "{texto_parcial}"')
+def step_then_validar_conteudo_mensagem(context: Context, texto_parcial: str) -> None:
     """
-    Verifica se o Dialog de erro aparece com a mensagem correta.
+    Valida se o corpo do dialog contém um trecho de texto específico.
 
-    :author: Matheus F. N. Pereira
-    """
-    email_duplicado = context.email_gerado
-    context.cadastro_service.verificar_mensagem_erro_email_duplicado(
-        email_duplicado)
-
-
-@then('deve ser exibido um erro com título "{titulo}" e mensagem "{mensagem}"')
-def step_then_validar_erro_explicito(context: Context, titulo: str, mensagem: str) -> None:
-    """
-    Valida o erro global usando os textos fornecidos no Gherkin.
-    Substitui o placeholder '{email}' pelo valor real gerado no teste.
+    Este step depende do estado (tipo e título do dialog) ter sido validado
+    no passo anterior.
 
     Args:
-        titulo: O título esperado do Dialog.
-        mensagem_template: A mensagem esperada, podendo conter '{email}'.
+        context: O contexto de execução do Behave.
+        texto_parcial: O trecho do texto que deve estar presente na mensagem.
 
     :author: Matheus F. N. Pereira
     """
-    email_real = context.email_gerado
-    mensagem_formatada = mensagem.format(email=email_real)
+    tipo_salvo = getattr(context, 'ultimo_tipo_dialog', 'mensagem')
+    titulo_salvo = getattr(context, 'ultimo_titulo_dialog', '')
 
-    context.cadastro_service.verificar_dialog_global(
-        'erro', titulo, mensagem_formatada)
+    context.base_service.verificar_dialog_global(
+        tipo_dialog=tipo_salvo,
+        titulo_esperado=titulo_salvo,
+        mensagem_esperada=texto_parcial,
+        ignore_mensagem=False
+    )
