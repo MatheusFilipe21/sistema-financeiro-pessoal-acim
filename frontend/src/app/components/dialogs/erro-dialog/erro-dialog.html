@@ -1,22 +1,24 @@
-<h1 id="titulo-dialog" mat-dialog-title>
-  <mat-icon>error_outline</mat-icon>
-  <span id="erro-titulo">{{ dados.erroPadrao.titulo }}</span>
-</h1>
+<div class="erro-dialog">
+  <h1 id="titulo-dialog" mat-dialog-title>
+    <mat-icon>error_outline</mat-icon>
+    <span id="titulo-erro">{{ dados.erroPadrao.titulo }}</span>
+  </h1>
 
-<mat-dialog-content id="conteudo-dialog">
-  <p id="erro-mensagem">{{ dados.erroPadrao.mensagem }}</p>
+  <mat-dialog-content id="conteudo-dialog">
+    <p id="mensagem-erro">{{ dados.erroPadrao.mensagem }}</p>
 
-  @if (dados.listaErros.length > 0) {
-  <ul id="lista-erros-validacao">
-    @for (erro of dados.listaErros; track $index) {
-    <li>
-      <strong>{{ erro.campo }}:</strong> {{ erro.mensagem }}
-    </li>
+    @if (dados.listaErros.length > 0) {
+      <ul id="lista-erros-validacao">
+        @for (erro of dados.listaErros; track $index) {
+          <li>
+            <strong>{{ erro.campo }}:</strong> {{ erro.mensagem }}
+          </li>
+        }
+      </ul>
     }
-  </ul>
-  }
-</mat-dialog-content>
+  </mat-dialog-content>
 
-<mat-dialog-actions id="acoes-dialog" align="end">
-  <button mat-raised-button color="red" mat-dialog-close>Fechar</button>
-</mat-dialog-actions>
+  <mat-dialog-actions id="acoes-dialog" align="end">
+    <button mat-raised-button color="red" mat-dialog-close>Fechar</button>
+  </mat-dialog-actions>
+</div>
