@@ -3,6 +3,7 @@ package br.com.sfpacim.backend.bdd.contexts;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import br.com.sfpacim.backend.models.Usuario;
+import br.com.sfpacim.backend.repositories.PessoaRepository;
 import br.com.sfpacim.backend.repositories.UsuarioRepository;
 import io.cucumber.java.After;
 
@@ -20,6 +21,9 @@ public class BancoDadosContext {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Autowired
+    private PessoaRepository pessoaRepository;
+
     /**
      * Remove todos os registros de usuários do banco de dados.
      * <p>
@@ -28,6 +32,7 @@ public class BancoDadosContext {
      */
     @After("@limparUsuarios")
     public void limparTodosOsUsuarios() {
+        pessoaRepository.deleteAll();
         usuarioRepository.deleteAll();
     }
 

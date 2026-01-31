@@ -122,7 +122,7 @@ public class UsuarioService {
     @SuppressWarnings("null")
     private Usuario salvarEntidade(Usuario usuario) throws ViolacaoDadosException {
         try {
-            return usuarioRepository.save(usuario);
+            return usuarioRepository.saveAndFlush(usuario);
         } catch (DataIntegrityViolationException e) {
             throw new ViolacaoDadosException(
                     String.format("O e-mail: %s já está cadastrado.", usuario.getEmail()));
@@ -142,6 +142,6 @@ public class UsuarioService {
         Pessoa titular = new Pessoa(usuario.getNome(), usuario);
         titular.setTitular(true);
 
-        pessoaRepository.save(titular);
+        pessoaRepository.saveAndFlush(titular);
     }
 }

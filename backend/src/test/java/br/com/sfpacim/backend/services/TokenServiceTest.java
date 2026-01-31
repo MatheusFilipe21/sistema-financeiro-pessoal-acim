@@ -105,7 +105,7 @@ class TokenServiceTest {
     void testeValidarToken_QuandoTokenExpirado_DeveLancarExcecao() {
         TokenService tokenServiceExpirado = new TokenService();
         ReflectionTestUtils.setField(tokenServiceExpirado, "chaveSecreta", CHAVE_SECRETA_TESTE);
-        ReflectionTestUtils.setField(tokenServiceExpirado, "tempoExpiracaoMs", 1L);
+        ReflectionTestUtils.setField(tokenServiceExpirado, "tempoExpiracaoMs", -14400000L);
 
         String tokenExpirado = tokenServiceExpirado.gerarToken(usuarioMock);
 

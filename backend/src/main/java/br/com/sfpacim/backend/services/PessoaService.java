@@ -200,7 +200,7 @@ public class PessoaService {
         try {
             validarUnicidadeNome(pessoa);
 
-            return pessoaRepository.save(pessoa);
+            return pessoaRepository.saveAndFlush(pessoa);
         } catch (DataIntegrityViolationException e) {
             throw excecaoNomeDuplicado(pessoa.getNome());
         }

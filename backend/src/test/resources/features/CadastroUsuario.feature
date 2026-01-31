@@ -33,8 +33,8 @@ Funcionalidade: Cadastro de Novo Usuário
       }
       """
     Quando o cliente faz uma requisição POST para "/api/autenticacao/cadastro"
-    Então o status da resposta deve ser 400
-    E o campo "titulo" na resposta deve ser "Dados Inválidos"
+    Então o status da resposta deve ser 409
+    E o campo "titulo" na resposta deve ser "Conflito de Dados"
     E o campo "mensagem" na resposta deve ser "O e-mail: matheusfnpereira@gmail.com já está cadastrado."
     E o campo "rota" na resposta deve ser "/api/autenticacao/cadastro"
     E o corpo da resposta deve conter o campo "dataHora"
