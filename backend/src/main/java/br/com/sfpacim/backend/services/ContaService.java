@@ -295,7 +295,7 @@ public class ContaService {
     @SuppressWarnings("null")
     private Conta salvarEntidade(Conta conta) {
         try {
-            return contaRepository.save(conta);
+            return contaRepository.saveAndFlush(conta);
         } catch (DataIntegrityViolationException e) {
             throw excecaoNomeDuplicado(conta.getNome(), conta.getPessoa().getNome());
         }

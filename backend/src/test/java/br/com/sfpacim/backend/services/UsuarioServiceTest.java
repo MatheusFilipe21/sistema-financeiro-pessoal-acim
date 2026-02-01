@@ -57,7 +57,7 @@ class UsuarioServiceTest {
      * Valida o cenário de sucesso.
      * 
      * <p>
-     * Verifica se o serviço chama o PasswordEncoder e o Repository.save()
+     * Verifica se o serviço chama o PasswordEncoder e o Repository.saveAndFlush()
      * corretamente e retorna o DTO esperado.
      */
     @SuppressWarnings("null")
@@ -69,7 +69,7 @@ class UsuarioServiceTest {
         Usuario usuarioSalvo = new Usuario(UUID.randomUUID(), NOME, EMAIL, SENHA_HASH);
 
         when(passwordEncoder.encode(SENHA)).thenReturn(SENHA_HASH);
-        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioSalvo);
+        when(usuarioRepository.saveAndFlush(any(Usuario.class))).thenReturn(usuarioSalvo);
 
         UsuarioDTO resultadoDTO = usuarioService.registrar(dadosCadastro);
 
@@ -78,9 +78,9 @@ class UsuarioServiceTest {
         assertEquals(EMAIL, resultadoDTO.email(), "O e-mail no DTO de resposta deve ser o mesmo da entrada");
 
         verify(passwordEncoder, times(1)).encode(SENHA);
-        verify(usuarioRepository, times(1)).save(any(Usuario.class));
+        verify(usuarioRepository, times(1)).saveAndFlush(any(Usuario.class));
 
-        verify(pessoaRepository).save(argThat(pessoa -> pessoa.getNome().equals(NOME) &&
+        verify(pessoaRepository).saveAndFlush(argThat(pessoa -> pessoa.getNome().equals(NOME) &&
                 pessoa.isTitular() == true));
     }
 
@@ -99,7 +99,7 @@ class UsuarioServiceTest {
         DadosCadastroUsuarioDTO dadosCadastro = new DadosCadastroUsuarioDTO(NOME, EMAIL, SENHA);
 
         when(passwordEncoder.encode(SENHA)).thenReturn(SENHA_HASH);
-        when(usuarioRepository.save(any(Usuario.class)))
+        when(usuarioRepository.saveAndFlush(any(Usuario.class)))
                 .thenThrow(new DataIntegrityViolationException("E-mail duplicado"));
 
         ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class, () -> {
@@ -107,7 +107,7 @@ class UsuarioServiceTest {
         });
 
         assertEquals(excecao.getMessage(), String.format("O e-mail: %s já está cadastrado.", EMAIL));
-        verify(pessoaRepository, never()).save(any());
+        verify(pessoaRepository, never()).saveAndFlush(any());
     }
 
     /**
@@ -132,6 +132,6 @@ class UsuarioServiceTest {
         assertEquals(novoHash, usuarioMock.getSenha(), "A senha do objeto deve ser atualizada para o novo hash");
 
         verify(passwordEncoder).encode(novaSenha);
-        verify(usuarioRepository).save(usuarioMock);
+        verify(usuarioRepository).saveAndFlush(usuarioMock);
     }
 }

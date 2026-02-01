@@ -99,7 +99,7 @@ class ContaServiceTest {
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
         when(pessoaRepository.findById(pessoaTitular.getId())).thenReturn(Optional.of(pessoaTitular));
         when(contaRepository.findByPessoa(pessoaTitular)).thenReturn(Collections.emptyList());
-        when(contaRepository.save(any(Conta.class))).thenReturn(conta);
+        when(contaRepository.saveAndFlush(any(Conta.class))).thenReturn(conta);
 
         ContaDTO resultado = contaService.cadastrar(criarAtualizarContaDTO);
 
@@ -107,7 +107,7 @@ class ContaServiceTest {
         assertEquals(NOME_CONTA, resultado.nome());
         assertEquals(SALDO_INICIAL, resultado.saldoAtual());
 
-        verify(contaRepository).save(any(Conta.class));
+        verify(contaRepository).saveAndFlush(any(Conta.class));
     }
 
     /**
@@ -130,7 +130,7 @@ class ContaServiceTest {
         assertTrue(excecao.getMessage().contains("não é um titular habilitado"),
                 "A mensagem deve informar sobre a titularidade");
 
-        verify(contaRepository, never()).save(any());
+        verify(contaRepository, never()).saveAndFlush(any());
     }
 
     /**
@@ -151,7 +151,7 @@ class ContaServiceTest {
         assertTrue(excecao.getMessage().contains("Já existe uma conta"),
                 "A mensagem deve indicar duplicidade de nome");
 
-        verify(contaRepository, never()).save(any());
+        verify(contaRepository, never()).saveAndFlush(any());
     }
 
     /**
@@ -186,7 +186,7 @@ class ContaServiceTest {
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
         when(contaRepository.findById(conta.getId())).thenReturn(Optional.of(conta));
         when(contaRepository.findByPessoa(pessoaTitular)).thenReturn(List.of(conta));
-        when(contaRepository.save(any(Conta.class))).thenReturn(conta);
+        when(contaRepository.saveAndFlush(any(Conta.class))).thenReturn(conta);
 
         ContaDTO resultado = contaService.atualizar(conta.getId(), dtoNovo);
 
@@ -213,7 +213,7 @@ class ContaServiceTest {
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
         when(contaRepository.findById(conta.getId())).thenReturn(Optional.of(conta));
         when(contaRepository.findByPessoa(pessoaTitular)).thenReturn(List.of(conta));
-        when(contaRepository.save(any(Conta.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(contaRepository.saveAndFlush(any(Conta.class))).thenAnswer(i -> i.getArguments()[0]);
 
         contaService.atualizar(conta.getId(), dtoSaldoAlterado);
 
@@ -242,7 +242,7 @@ class ContaServiceTest {
         assertThrows(EntityNotFoundException.class,
                 () -> contaService.atualizar(idContaIntrusa, criarAtualizarContaDTO));
 
-        verify(contaRepository, never()).save(any());
+        verify(contaRepository, never()).saveAndFlush(any());
     }
 
     /**
@@ -277,7 +277,7 @@ class ContaServiceTest {
 
         when(contaRepository.findByPessoa(pessoaTitular)).thenReturn(Collections.emptyList());
 
-        when(contaRepository.save(any(Conta.class)))
+        when(contaRepository.saveAndFlush(any(Conta.class)))
                 .thenThrow(new DataIntegrityViolationException("Duplicate entry"));
 
         ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
@@ -310,7 +310,7 @@ class ContaServiceTest {
         when(contaRepository.findById(conta.getId())).thenReturn(Optional.of(conta));
         when(pessoaRepository.findById(novaPessoa.getId())).thenReturn(Optional.of(novaPessoa));
         when(contaRepository.findByPessoa(novaPessoa)).thenReturn(Collections.emptyList());
-        when(contaRepository.save(any(Conta.class))).thenReturn(conta);
+        when(contaRepository.saveAndFlush(any(Conta.class))).thenReturn(conta);
 
         ContaDTO resultado = contaService.atualizar(conta.getId(), dtoTransferencia);
 
@@ -339,7 +339,7 @@ class ContaServiceTest {
 
         assertTrue(excecao.getMessage().contains("não encontrada ou acesso negado"));
 
-        verify(contaRepository, never()).save(any());
+        verify(contaRepository, never()).saveAndFlush(any());
     }
 
     /**

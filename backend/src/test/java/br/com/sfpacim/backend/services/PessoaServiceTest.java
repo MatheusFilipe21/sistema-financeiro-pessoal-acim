@@ -87,7 +87,7 @@ class PessoaServiceTest {
     @DisplayName("cadastrar: Quando dados válidos, deve vincular ao usuário e salvar")
     void testeCadastrar_QuandoDadosValidos_DeveSalvarPessoa() {
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(pessoaRepository.save(any(Pessoa.class))).thenReturn(pessoa);
+        when(pessoaRepository.saveAndFlush(any(Pessoa.class))).thenReturn(pessoa);
 
         PessoaDTO resultado = pessoaService.cadastrar(criarAtualizarPessoaDTO);
 
@@ -95,7 +95,7 @@ class PessoaServiceTest {
         assertEquals(NOME, resultado.nome(), "O nome deve ser preservado");
 
         verify(contextoUsuarioService).getUsuarioAutenticado();
-        verify(pessoaRepository).save(any(Pessoa.class));
+        verify(pessoaRepository).saveAndFlush(any(Pessoa.class));
     }
 
     /**
@@ -107,7 +107,7 @@ class PessoaServiceTest {
     @DisplayName("cadastrar: Quando nome duplicado, deve lançar ViolacaoDadosException")
     void testeCadastrar_QuandoNomeDuplicado_DeveLancarExcecao() {
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(pessoaRepository.save(any(Pessoa.class)))
+        when(pessoaRepository.saveAndFlush(any(Pessoa.class)))
                 .thenThrow(new DataIntegrityViolationException("Constraint Violation"));
 
         ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
@@ -149,14 +149,14 @@ class PessoaServiceTest {
 
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
         when(pessoaRepository.findById(pessoa.getId())).thenReturn(Optional.of(pessoa));
-        when(pessoaRepository.save(any(Pessoa.class))).thenReturn(pessoa);
+        when(pessoaRepository.saveAndFlush(any(Pessoa.class))).thenReturn(pessoa);
 
         PessoaDTO resultado = pessoaService.atualizar(pessoa.getId(), criarAtualizarPessoaDTONovo);
 
         assertEquals(NOME_NOVO, resultado.nome(), "O nome retornado deve ser o novo");
         assertEquals(NOME_NOVO, pessoa.getNome(), "A entidade deve ter sido alterada");
 
-        verify(pessoaRepository).save(pessoa);
+        verify(pessoaRepository).saveAndFlush(pessoa);
     }
 
     /**
@@ -183,7 +183,7 @@ class PessoaServiceTest {
 
         assertTrue(excecao.getMessage().contains("acesso negado"),
                 "A mensagem deve indicar acesso negado ou não encontrado");
-        verify(pessoaRepository, never()).save(any());
+        verify(pessoaRepository, never()).saveAndFlush(any());
     }
 
     /**
@@ -199,14 +199,14 @@ class PessoaServiceTest {
 
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
         when(pessoaRepository.findById(pessoa.getId())).thenReturn(Optional.of(pessoa));
-        when(pessoaRepository.save(any(Pessoa.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(pessoaRepository.saveAndFlush(any(Pessoa.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         PessoaDTO resultado = pessoaService.atualizar(pessoa.getId(), dtoTitularNulo);
 
         assertEquals(NOME_NOVO, resultado.nome());
         assertTrue(resultado.titular(), "O valor original (true) deveria ter sido mantido");
 
-        verify(pessoaRepository).save(pessoa);
+        verify(pessoaRepository).saveAndFlush(pessoa);
     }
 
     /**
@@ -247,7 +247,7 @@ class PessoaServiceTest {
 
         assertEquals("Já existe uma pessoa cadastrada com o nome 'João'.", excecao.getMessage());
 
-        verify(pessoaRepository, never()).save(any());
+        verify(pessoaRepository, never()).saveAndFlush(any());
     }
 
     /**
@@ -263,13 +263,13 @@ class PessoaServiceTest {
 
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
         when(pessoaRepository.findById(pessoa.getId())).thenReturn(Optional.of(pessoa));
-        when(pessoaRepository.save(any(Pessoa.class))).thenReturn(pessoa);
+        when(pessoaRepository.saveAndFlush(any(Pessoa.class))).thenReturn(pessoa);
 
         CriarAtualizarPessoaDTO dtoMesmoNome = new CriarAtualizarPessoaDTO(NOME, false);
 
         assertDoesNotThrow(() -> pessoaService.atualizar(pessoa.getId(), dtoMesmoNome));
 
-        verify(pessoaRepository).save(pessoa);
+        verify(pessoaRepository).saveAndFlush(pessoa);
     }
 
     /**
@@ -296,7 +296,7 @@ class PessoaServiceTest {
         assertThrows(ViolacaoDadosException.class,
                 () -> pessoaService.atualizar(idParaAtualizar, dtoConflito));
 
-        verify(pessoaRepository, never()).save(any());
+        verify(pessoaRepository, never()).saveAndFlush(any());
     }
 
     /**

@@ -128,7 +128,7 @@ describe('MensagemDialog', () => {
     component.dados = dadosHtml;
     fixture.detectChanges();
 
-    const titulo = el.querySelector('#mensagem-titulo')?.textContent;
+    const titulo = el.querySelector('#titulo-mensagem')?.textContent;
     const mensagem = el.querySelector('#mensagem-mensagem')?.innerHTML;
 
     expect(titulo).toBe('Teste Título');
