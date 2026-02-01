@@ -94,7 +94,7 @@ class CategoriaServiceTest {
     void testeCadastrar_QuandoDadosValidos_DeveSalvarCategoria() {
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
         when(categoriaRepository.existsByNomeAndUsuarioConflitoCadastro(NOME_CATEGORIA, usuario)).thenReturn(false);
-        when(categoriaRepository.save(any(Categoria.class))).thenReturn(categoriaUsuario);
+        when(categoriaRepository.saveAndFlush(any(Categoria.class))).thenReturn(categoriaUsuario);
 
         CategoriaDTO resultado = categoriaService.cadastrar(criarAtualizarDTO);
 
@@ -102,7 +102,7 @@ class CategoriaServiceTest {
         assertEquals(NOME_CATEGORIA, resultado.nome());
         assertEquals(TIPO, resultado.tipo());
 
-        verify(categoriaRepository).save(any(Categoria.class));
+        verify(categoriaRepository).saveAndFlush(any(Categoria.class));
     }
 
     /**
@@ -122,7 +122,7 @@ class CategoriaServiceTest {
         assertTrue(excecao.getMessage().contains("Já existe uma categoria"),
                 "A mensagem deve indicar duplicidade de nome");
 
-        verify(categoriaRepository, never()).save(any());
+        verify(categoriaRepository, never()).saveAndFlush(any());
     }
 
     /**
@@ -139,7 +139,7 @@ class CategoriaServiceTest {
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
         when(categoriaRepository.existsByNomeAndUsuarioConflitoCadastro(NOME_CATEGORIA, usuario)).thenReturn(false);
 
-        when(categoriaRepository.save(any(Categoria.class)))
+        when(categoriaRepository.saveAndFlush(any(Categoria.class)))
                 .thenThrow(new DataIntegrityViolationException("Duplicate entry"));
 
         ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
@@ -182,7 +182,7 @@ class CategoriaServiceTest {
         when(categoriaRepository.findById(categoriaUsuario.getId())).thenReturn(Optional.of(categoriaUsuario));
         when(categoriaRepository.existsByNomeAndUsuarioConflito(NOME_CATEGORIA_NOVO, usuario, categoriaUsuario.getId()))
                 .thenReturn(false);
-        when(categoriaRepository.save(any(Categoria.class))).thenReturn(categoriaUsuario);
+        when(categoriaRepository.saveAndFlush(any(Categoria.class))).thenReturn(categoriaUsuario);
 
         CategoriaDTO resultado = categoriaService.atualizar(categoriaUsuario.getId(), dtoNovo);
 
@@ -207,7 +207,7 @@ class CategoriaServiceTest {
         assertTrue(excecao.getMessage().contains("não podem ser alteradas"),
                 "A mensagem deve informar sobre a imutabilidade do sistema");
 
-        verify(categoriaRepository, never()).save(any());
+        verify(categoriaRepository, never()).saveAndFlush(any());
     }
 
     /**
@@ -230,7 +230,7 @@ class CategoriaServiceTest {
         assertTrue(excecao.getMessage().contains("Já existe uma categoria"),
                 "A mensagem deve indicar duplicidade");
 
-        verify(categoriaRepository, never()).save(any());
+        verify(categoriaRepository, never()).saveAndFlush(any());
     }
 
     /**
@@ -253,7 +253,7 @@ class CategoriaServiceTest {
         assertThrows(EntityNotFoundException.class,
                 () -> categoriaService.atualizar(idIntruso, criarAtualizarDTO));
 
-        verify(categoriaRepository, never()).save(any());
+        verify(categoriaRepository, never()).saveAndFlush(any());
     }
 
     /**

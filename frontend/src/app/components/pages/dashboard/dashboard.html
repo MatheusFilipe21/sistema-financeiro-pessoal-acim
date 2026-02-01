@@ -39,21 +39,31 @@
         <mat-icon matListItemIcon>account_balance</mat-icon>
         <span matListItemTitle id="txt-contas">Contas</span>
       </a>
+
+      <a
+        mat-list-item
+        routerLink="/dashboard/categorias"
+        id="link-categorias"
+        (click)="dispositivoMovel() ? drawer.close() : null"
+      >
+        <mat-icon matListItemIcon>category</mat-icon>
+        <span matListItemTitle id="txt-categorias">Categorias</span>
+      </a>
     </mat-nav-list>
   </mat-sidenav>
 
   <mat-sidenav-content id="conteudo">
     <mat-toolbar color="primary" id="menu-superior">
       @if (dispositivoMovel()) {
-      <button
-        type="button"
-        mat-icon-button
-        id="btn-alternar-menu"
-        aria-label="Abrir menu"
-        (click)="drawer.toggle()"
-      >
-        <mat-icon>menu</mat-icon>
-      </button>
+        <button
+          type="button"
+          mat-icon-button
+          id="btn-alternar-menu"
+          aria-label="Abrir menu"
+          (click)="drawer.toggle()"
+        >
+          <mat-icon>menu</mat-icon>
+        </button>
       }
 
       <span id="titulo-sistema">Sistema Financeiro Pessoal - ACIM</span>

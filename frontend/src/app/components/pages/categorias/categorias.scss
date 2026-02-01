@@ -1,0 +1,54 @@
+#container-pagina-categorias {
+  padding: 24px;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+#barra-controle-visualizacao {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+#area-conteudo-dados {
+  flex: 1;
+  overflow-y: auto;
+
+  .badges-container {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .selo-tipo,
+  .selo-sistema {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 12px;
+    width: fit-content;
+
+    mat-icon {
+      font-size: 16px;
+      height: 16px;
+      width: 16px;
+    }
+  }
+
+  .selo-sistema {
+    background-color: var(--mat-sys-surface-variant);
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+#txt-sem-registros {
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+  margin-top: 32px;
+  grid-column: 1 / -1;
+}

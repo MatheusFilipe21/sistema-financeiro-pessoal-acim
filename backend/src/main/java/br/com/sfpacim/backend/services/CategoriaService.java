@@ -171,7 +171,7 @@ public class CategoriaService {
     @SuppressWarnings("null")
     private Categoria salvarEntidade(Categoria categoria) {
         try {
-            return categoriaRepository.save(categoria);
+            return categoriaRepository.saveAndFlush(categoria);
         } catch (DataIntegrityViolationException e) {
             throw excecaoNomeDuplicado(categoria.getNome());
         }

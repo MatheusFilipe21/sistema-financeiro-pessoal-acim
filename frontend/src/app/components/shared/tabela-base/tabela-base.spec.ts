@@ -197,4 +197,35 @@ describe('TabelaBase', () => {
     const resultadoNulo = acessorOrdenacao(clienteSemEndereco, 'cidade');
     expect(resultadoNulo).toBeNull();
   });
+
+  /**
+   * Verifica se os botões de ação respeitam a função condicional de bloqueio.
+   */
+  it('deve desabilitar os botões de ação quando a função desabilitarAcoes retornar true', () => {
+    component.desabilitarAcoes = (item: any) => item.id === 1;
+
+    component.ngOnChanges({
+      dados: new SimpleChange(null, DADOS_MOCK, false),
+    });
+
+    fixture.detectChanges();
+
+    const btnEditarJoao = fixture.nativeElement.querySelector('#btn-editar-1') as HTMLButtonElement;
+    const btnExcluirJoao = fixture.nativeElement.querySelector(
+      '#btn-excluir-1',
+    ) as HTMLButtonElement;
+
+    const btnEditarMaria = fixture.nativeElement.querySelector(
+      '#btn-editar-2',
+    ) as HTMLButtonElement;
+    const btnExcluirMaria = fixture.nativeElement.querySelector(
+      '#btn-excluir-2',
+    ) as HTMLButtonElement;
+
+    expect(btnEditarJoao.disabled).toBeTrue();
+    expect(btnExcluirJoao.disabled).toBeTrue();
+
+    expect(btnEditarMaria.disabled).toBeFalse();
+    expect(btnExcluirMaria.disabled).toBeFalse();
+  });
 });
