@@ -39,6 +39,11 @@ export const routes: Routes = [
         path: 'contas',
         loadComponent: () => import('./components/pages/contas/contas').then((m) => m.Contas),
       },
+      {
+        path: 'categorias',
+        loadComponent: () =>
+          import('./components/pages/categorias/categorias').then((m) => m.Categorias),
+      },
     ],
   },
   // Tem que ser o último.

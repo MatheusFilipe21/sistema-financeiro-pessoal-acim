@@ -1,0 +1,71 @@
+<app-base-formulario-dialog
+  [titulo]="titulo"
+  [operacao]="operacao"
+  [formularioInvalido]="formulario.invalid && operacao !== 'excluir'"
+  [processando]="processando"
+  (confirmar)="confirmarAcao()"
+  (cancelar)="fechar()"
+>
+  <form [formGroup]="formulario" class="form-grid">
+    <div class="row-2-col">
+      <mat-form-field appearance="outline">
+        <mat-label>Nome</mat-label>
+        <input matInput formControlName="nome" placeholder="Ex: Alimentação" />
+        @if (formulario.get('nome')?.invalid && formulario.get('nome')?.touched) {
+          <mat-error>{{ obterMensagemErro('nome') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Tipo</mat-label>
+        <mat-select formControlName="tipo" placeholder="Selecione...">
+          @for (opcao of opcoesTipo; track opcao.valor) {
+            <mat-option [value]="opcao.valor">{{ opcao.nome }}</mat-option>
+          }
+        </mat-select>
+        @if (formulario.get('tipo')?.invalid && formulario.get('tipo')?.touched) {
+          <mat-error>{{ obterMensagemErro('tipo') }}</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <fieldset class="grupo-selecao">
+      <legend class="rotulo">Cor:</legend>
+      <div class="lista-horizontal">
+        @for (cor of coresDisponiveis; track cor) {
+          <button
+            type="button"
+            class="item-cor"
+            [style.background-color]="cor"
+            [class.selecionado]="formulario.get('cor')?.value === cor"
+            [disabled]="operacao === 'excluir'"
+            (click)="selecionarCor(cor)"
+            [attr.aria-label]="'Selecionar cor ' + cor"
+          >
+            @if (formulario.get('cor')?.value === cor) {
+              <mat-icon>check</mat-icon>
+            }
+          </button>
+        }
+      </div>
+    </fieldset>
+
+    <fieldset class="grupo-selecao">
+      <legend class="rotulo">Ícone:</legend>
+      <div class="grid-icones">
+        @for (icone of iconesDisponiveis; track icone) {
+          <button
+            type="button"
+            class="item-icone"
+            [class.selecionado]="formulario.get('icone')?.value === icone"
+            [disabled]="operacao === 'excluir'"
+            (click)="selecionarIcone(icone)"
+            [attr.aria-label]="'Selecionar ícone ' + icone"
+          >
+            <mat-icon>{{ icone }}</mat-icon>
+          </button>
+        }
+      </div>
+    </fieldset>
+  </form>
+</app-base-formulario-dialog>

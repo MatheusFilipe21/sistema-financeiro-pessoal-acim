@@ -9,6 +9,11 @@ import { DadosPessoaDialog, PessoaDialog } from '../components/dialogs/pessoa-di
 import { TipoOperacao } from '../components/dialogs/base-formulario-dialog/base-formulario-dialog';
 import { ContaDialog, DadosContaDialog } from '../components/dialogs/conta-dialog/conta-dialog';
 import { ContaDTO } from '../dtos/conta/ContaDTO';
+import { CategoriaDTO } from '../dtos/categoria/CategoriaDTO';
+import {
+  CategoriaDialog,
+  DadosCategoriaDialog,
+} from '../components/dialogs/categoria-dialog/categoria-dialog';
 
 /**
  * Serviço responsável por padronizar a abertura de dialogs
@@ -31,6 +36,7 @@ export class Dialog {
   private readonly ID_MENSAGEM = 'dialog-mensagem-global';
   private readonly ID_FORMULARIO_PESSOA = 'dialog-formulario-pessoa';
   private readonly ID_FORMULARIO_CONTA = 'dialog-formulario-conta';
+  private readonly ID_FORMULARIO_CATEGORIA = 'dialog-formulario-categoria';
 
   /**
    * Abre o dialog de erro padronizado (ErroDialog).
@@ -59,7 +65,7 @@ export class Dialog {
         textoBotao,
       },
       this.LARGURA_PADRAO,
-      this.ID_MENSAGEM
+      this.ID_MENSAGEM,
     );
   }
 
@@ -81,7 +87,7 @@ export class Dialog {
         textoBotao,
       },
       this.LARGURA_PADRAO,
-      this.ID_MENSAGEM
+      this.ID_MENSAGEM,
     );
   }
 
@@ -103,7 +109,7 @@ export class Dialog {
         textoBotao,
       },
       this.LARGURA_PADRAO,
-      this.ID_MENSAGEM
+      this.ID_MENSAGEM,
     );
   }
 
@@ -119,7 +125,7 @@ export class Dialog {
    */
   abrirFormularioPessoa(
     acao: TipoOperacao,
-    pessoa?: PessoaDTO
+    pessoa?: PessoaDTO,
   ): Observable<PessoaDTO | boolean | undefined> {
     const dados: DadosPessoaDialog = {
       acao: acao,
@@ -130,7 +136,7 @@ export class Dialog {
       PessoaDialog,
       dados,
       this.LARGURA_FORMULARIO,
-      this.ID_FORMULARIO_PESSOA
+      this.ID_FORMULARIO_PESSOA,
     );
   }
 
@@ -146,7 +152,7 @@ export class Dialog {
    */
   abrirFormularioConta(
     acao: TipoOperacao,
-    conta?: ContaDTO
+    conta?: ContaDTO,
   ): Observable<ContaDTO | boolean | undefined> {
     const dados: DadosContaDialog = {
       acao: acao,
@@ -154,6 +160,33 @@ export class Dialog {
     };
 
     return this.abrirDialog(ContaDialog, dados, this.LARGURA_FORMULARIO, this.ID_FORMULARIO_CONTA);
+  }
+
+  /**
+   * Abre o formulário de gestão de Categoria.
+   *
+   * @param acao O tipo de operação (cadastrar, editar, excluir).
+   * @param categoria (Opcional) O objeto para edição/exclusão.
+   * @returns Observable que emite:
+   * - CategoriaDTO: se salvou uma inclusão/edição.
+   * - boolean (true): se confirmou uma exclusão.
+   * - undefined: se cancelou.
+   */
+  abrirFormularioCategoria(
+    acao: TipoOperacao,
+    categoria?: CategoriaDTO,
+  ): Observable<CategoriaDTO | boolean | undefined> {
+    const dados: DadosCategoriaDialog = {
+      acao: acao,
+      categoria: categoria,
+    };
+
+    return this.abrirDialog(
+      CategoriaDialog,
+      dados,
+      this.LARGURA_FORMULARIO,
+      this.ID_FORMULARIO_CATEGORIA,
+    );
   }
 
   /**
@@ -169,7 +202,7 @@ export class Dialog {
     componente: ComponentType<T>,
     dados: any,
     width: string,
-    id: string
+    id: string,
   ): Observable<any> {
     const dialogJaAberto = this.dialog.getDialogById(id);
 

@@ -8,6 +8,12 @@ import { DadosPessoaDialog, PessoaDialog } from '../components/dialogs/pessoa-di
 import { ContaDialog, DadosContaDialog } from '../components/dialogs/conta-dialog/conta-dialog';
 import { ContaDTO } from '../dtos/conta/ContaDTO';
 import { InstituicaoFinanceira } from '../enums/InstituicaoFinanceira';
+import {
+  DadosCategoriaDialog,
+  CategoriaDialog,
+} from '../components/dialogs/categoria-dialog/categoria-dialog';
+import { CategoriaDTO } from '../dtos/categoria/CategoriaDTO';
+import { TipoCategoria } from '../enums/TipoCategoria';
 
 /**
  * Testes unitários para o serviço {@link Dialog}.
@@ -310,5 +316,85 @@ describe('Dialog', () => {
 
     expect(matDialogSpy.open).not.toHaveBeenCalled();
     expect(matDialogSpy.getDialogById).toHaveBeenCalledWith('dialog-formulario-pessoa');
+  });
+
+  /**
+   * Testa o método abrirFormularioCategoria() para inclusão.
+   * Verifica se abre o CategoriaDialog com a ação 'cadastrar'.
+   */
+  it('deve abrir o CategoriaDialog para cadastro (ação: cadastrar)', () => {
+    service.abrirFormularioCategoria('cadastrar');
+
+    const expectedData: DadosCategoriaDialog = {
+      acao: 'cadastrar',
+      categoria: undefined,
+    };
+
+    expect(matDialogSpy.open).toHaveBeenCalledWith(CategoriaDialog, {
+      width: '500px',
+      data: expectedData,
+      disableClose: true,
+      autoFocus: 'first-tabbable',
+      id: 'dialog-formulario-categoria',
+    });
+  });
+
+  /**
+   * Testa o método abrirFormularioCategoria() para edição.
+   * Verifica se passa o objeto categoria e a ação 'editar'.
+   */
+  it('deve abrir o CategoriaDialog para edição (ação: editar)', () => {
+    const mockCategoria: CategoriaDTO = {
+      id: '123',
+      nome: 'Alimentação',
+      tipo: TipoCategoria.DESPESA,
+      icone: 'restaurant',
+      cor: '#FF0000',
+      sistema: false,
+    };
+
+    service.abrirFormularioCategoria('editar', mockCategoria);
+
+    const expectedData: DadosCategoriaDialog = {
+      acao: 'editar',
+      categoria: mockCategoria,
+    };
+
+    expect(matDialogSpy.open).toHaveBeenCalledWith(CategoriaDialog, {
+      width: '500px',
+      data: expectedData,
+      disableClose: true,
+      autoFocus: 'first-tabbable',
+      id: 'dialog-formulario-categoria',
+    });
+  });
+
+  /**
+   * Testa o método abrirFormularioCategoria() para exclusão.
+   */
+  it('deve abrir o CategoriaDialog para exclusão (ação: excluir)', () => {
+    const mockCategoria: CategoriaDTO = {
+      id: '999',
+      nome: 'Excluir Me',
+      tipo: TipoCategoria.RECEITA,
+      icone: 'work',
+      cor: '#00FF00',
+      sistema: false,
+    };
+
+    service.abrirFormularioCategoria('excluir', mockCategoria);
+
+    const expectedData: DadosCategoriaDialog = {
+      acao: 'excluir',
+      categoria: mockCategoria,
+    };
+
+    expect(matDialogSpy.open).toHaveBeenCalledWith(CategoriaDialog, {
+      width: '500px',
+      data: expectedData,
+      disableClose: true,
+      autoFocus: 'first-tabbable',
+      id: 'dialog-formulario-categoria',
+    });
   });
 });

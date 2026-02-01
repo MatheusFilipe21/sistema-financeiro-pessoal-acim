@@ -23,6 +23,7 @@ export interface ColunaTabela {
   chave: string;
   titulo: string;
   formatador?: (valor: any) => string;
+  obterEstilo?: (valor: any) => { [klass: string]: any };
   caminhoOrdenacao?: string;
 }
 
@@ -50,6 +51,8 @@ export interface ColunaTabela {
 export class TabelaBase implements AfterViewInit, OnChanges {
   @Input({ required: true }) colunas: ColunaTabela[] = [];
   @Input({ required: true }) dados: any[] = [];
+
+  @Input() desabilitarAcoes?: (item: any) => boolean;
 
   @Output() editar = new EventEmitter<any>();
   @Output() excluir = new EventEmitter<any>();
@@ -79,6 +82,13 @@ export class TabelaBase implements AfterViewInit, OnChanges {
   ngAfterViewInit() {
     this.dataSource.paginator = this.paginator;
     this.dataSource.sort = this.sort;
+  }
+
+  /**
+   * Verifica se a ação deve estar desabilitada para o item atual.
+   */
+  verificarAcaoDesabilitada(item: any): boolean {
+    return this.desabilitarAcoes ? this.desabilitarAcoes(item) : false;
   }
 
   /**

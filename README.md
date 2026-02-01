@@ -120,7 +120,7 @@ Para garantir performance e compatibilidade, utilizaremos o Docker Desktop integ
     ```
 2.  **Instalar Docker Engine:**
     ```bash
-    curl -fsSL [https://get.docker.com](https://get.docker.com) -o get-docker.sh
+    curl -fsSL https://get.docker.com -o get-docker.sh
     sudo sh get-docker.sh
     ```
 3.  **Configurar permissões (para rodar sem `sudo`):**

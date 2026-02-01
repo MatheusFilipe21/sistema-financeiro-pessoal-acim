@@ -1,0 +1,47 @@
+<div id="container-pagina-categorias">
+  <app-container-filtro
+    titulo="Gestão de Categorias"
+    textoBotaoBuscar="Pesquisar"
+    [filtroInstantaneo]="true"
+    (buscar)="filtrar()"
+    (limpar)="limpar()"
+  >
+    <mat-form-field appearance="outline">
+      <mat-label>Nome</mat-label>
+      <input
+        matInput
+        [(ngModel)]="filtro.nome"
+        (ngModelChange)="filtrar()"
+        name="nome"
+        placeholder="Busque por nome..."
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Tipo</mat-label>
+      <mat-select
+        [(ngModel)]="filtro.tipo"
+        (selectionChange)="filtrar()"
+        placeholder="Selecione..."
+      >
+        <mat-option [value]="null">Todos</mat-option>
+        @for (opcao of opcoesTipo; track opcao.valor) {
+          <mat-option [value]="opcao.valor">{{ opcao.nome }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </app-container-filtro>
+
+  <section id="area-conteudo-dados">
+    <app-tabela-base
+      [colunas]="colunasTabela"
+      [dados]="categoriasFiltradas"
+      [desabilitarAcoes]="verificarBloqueioAcao"
+      (editar)="aoEditar($event)"
+      (excluir)="aoExcluir($event)"
+    >
+    </app-tabela-base>
+  </section>
+
+  <app-botao-adicionar [temRodape]="true" (adicionar)="aoAdicionar()"> </app-botao-adicionar>
+</div>
