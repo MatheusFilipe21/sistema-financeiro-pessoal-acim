@@ -1,4 +1,9 @@
 {
-"java.compile.nullAnalysis.mode": "automatic",
-"java.configuration.updateBuildConfiguration": "automatic"
+  "java.compile.nullAnalysis.mode": "automatic",
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "files.associations": {
+    "*.feature": "cucumber"
+  },
+  "cucumber.features": ["e2e/features/**/*.feature"],
+  "cucumber.glue": ["e2e/features/steps/**/*.py"]
 }

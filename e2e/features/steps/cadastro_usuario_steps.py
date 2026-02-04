@@ -45,7 +45,7 @@ def step_given_usuario_ja_cadastrado(context: Context) -> None:
     context.cadastro_service.navegar_para_cadastro()
 
 
-@when('preencho "{nome}", o email gerado, e senhas "{senha}" e "{confirmar_senha}"')
+@when('preencho "{}", o email gerado, e senhas "{}" e "{}"')
 def step_when_preencho_sucesso(context: Context, nome: str, senha: str, confirmar_senha: str) -> None:
     """
     Preenche o formulário usando o e-mail randômico armazenado no contexto.
@@ -108,7 +108,7 @@ def step_when_tento_cadastrar_duplicado(context: Context) -> None:
     )
 
 
-@then('a mensagem deve conter o texto "{texto_parcial}"')
+@then('a mensagem deve conter o texto "{}"')
 def step_then_validar_conteudo_mensagem(context: Context, texto_parcial: str) -> None:
     """
     Valida se o corpo do dialog contém um trecho de texto específico.

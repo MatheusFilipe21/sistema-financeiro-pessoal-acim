@@ -68,7 +68,8 @@
         "esbenp.prettier-vscode",
         "ms-vscode.live-server",
         "github.vscode-github-actions",
-        "ms-azuretools.vscode-containers"
+        "ms-azuretools.vscode-containers",
+        "CucumberOpen.cucumber-official"
       ]
     }
   },

@@ -11,7 +11,7 @@ MAPA_TIPO_DIALOG = {
 }
 
 
-@step('clico no botão "{nome_botao}"')
+@step('clico no botão "{}"')
 def step_clicar_botao_generico(context: Context, nome_botao: str) -> None:
     """
     Clica em um botão baseado no seu nome visível ou identificador.
@@ -25,7 +25,7 @@ def step_clicar_botao_generico(context: Context, nome_botao: str) -> None:
     context.base_page.clicar_botao_dinamico(nome_botao)
 
 
-@then('o botão "{nome_botao}" deve estar "{estado}"')
+@then('o botão "{}" deve estar "{}"')
 def step_validar_estado_botao(context: Context, nome_botao: str, estado: str) -> None:
     """
     Valida se um botão está habilitado ou desabilitado.
@@ -41,7 +41,7 @@ def step_validar_estado_botao(context: Context, nome_botao: str, estado: str) ->
         nome_botao, deve_estar_habilitado)
 
 
-@then('deve ser exibido um dialog de "{tipo}" com título "{titulo}"')
+@then('deve ser exibido um dialog de "{}" com título "{}"')
 def step_validar_titulo_dialog_generico(context: Context, tipo: str, titulo: str) -> None:
     """
     Valida a presença e o título de um dialog global.
@@ -68,7 +68,7 @@ def step_validar_titulo_dialog_generico(context: Context, tipo: str, titulo: str
     context.ultimo_tipo_visual = tipo_visual
 
 
-@then('a mensagem do dialog deve ser "{mensagem}"')
+@then('a mensagem do dialog deve ser "{}"')
 def step_validar_mensagem_dialog(context: Context, mensagem: str) -> None:
     """
     Valida o corpo da mensagem do dialog que foi verificado no passo anterior.
@@ -111,7 +111,7 @@ def step_validar_mensagem_dialog(context: Context, mensagem: str) -> None:
     )
 
 
-@then('deve ser exibida a mensagem de erro "{mensagem}" no campo "{campo}"')
+@then('deve ser exibida a mensagem de erro "{}" no campo "{}"')
 def step_validar_erro_campo(context: Context, mensagem: str, campo: str) -> None:
     """
     Valida a mensagem de erro de validação (form validation) associada a um input.
