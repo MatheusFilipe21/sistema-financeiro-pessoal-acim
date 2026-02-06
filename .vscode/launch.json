@@ -10,6 +10,7 @@
       "mainClass": "br.com.sfpacim.backend.BackendApplication",
       "projectName": "backend",
       "envFile": "${workspaceFolder}/.env",
+      "vmArgs": "-Xms256m -Xmx512m",
       "args": ["--spring.profiles.active=dev"]
     },
     // --- Configuração do Frontend (Angular ng serve) ---
@@ -19,6 +20,7 @@
       "request": "launch",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "start"],
+      "env": { "NODE_OPTIONS": "--max-old-space-size=1024" },
       "cwd": "${workspaceFolder}/frontend",
       "console": "integratedTerminal"
     },

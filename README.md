@@ -192,6 +192,24 @@ Assim que você abrir a pasta do projeto no VS Code (seguindo os passos acima):
     - _Caso a notificação não apareça:_ Pressione `F1` e digite/selecione `Dev Containers: Reopen in Container`.
 3.  Aguarde a construção do ambiente (pode demorar alguns minutos na primeira vez enquanto baixa as imagens do Java, Node, Chrome, etc).
 
+### ⚠️ Otimização de Performance (Recomendado para máquinas com 8GB de RAM)
+
+Se o seu computador apresentar lentidão ou travamentos ao rodar o projeto, siga os ajustes abaixo. Eles reduzem o consumo das ferramentas do VS Code e do Docker, garantindo que o navegador e o sistema operacional continuem fluidos.
+
+#### 1. Limitar recursos do Docker (Apenas Windows)
+
+O Docker Desktop pode reservar até 50% da sua RAM total, o que causa lentidão no Windows. Para limitar isso:
+
+1. Pressione `Win + R`, digite `%USERPROFILE%` e dê Enter.
+2. Crie (ou edite) um arquivo chamado `.wslconfig`.
+3. Adicione o seguinte conteúdo:
+   ```ini
+   [wsl2]
+   memory=4GB   # Limita o Linux a 4GB de RAM
+   processors=4 # Limita o uso de CPU (evita 100% de uso no build)
+   ```
+4. Reinicie o Docker Desktop para aplicar.
+
 ### 4. Comandos Principais no VS Code (Run and Debug)
 
 O fluxo de trabalho no VS Code é dividido em dois menus principais:

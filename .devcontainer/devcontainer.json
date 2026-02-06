@@ -1,8 +1,10 @@
 {
   "name": "Dev Container (Java/Angular)",
-  "image": "mcr.microsoft.com/devcontainers/java:21",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
 
-  // Define o Fuso Horário
+  // Define variáveis de ambiente globais dentro do container
   "containerEnv": {
     "TZ": "America/Sao_Paulo"
   },
@@ -17,10 +19,11 @@
       // Isso instrui a feature a usar 'docker-ce-cli' em vez de 'moby-cli'
       "moby": false
     },
-    // Instala o Node.js v22 (requerido pelo SonarLint e necessário para o Angular)
+    // Node.js: Versão 22 LTS para Angular e ferramentas de análise
     "ghcr.io/devcontainers/features/node:1": {
       "version": "22"
     },
+    // Python: Para automação e testes E2E com Selenium/Cucumber
     "ghcr.io/devcontainers/features/python:1": {
       "version": "3.12"
     }
@@ -28,49 +31,59 @@
 
   // Argumentos de execução para o container
   "runArgs": [
-    // Conecta o container a uma rede Docker customizada
+    // Permite que o container se comunique com o host local
+    "--add-host=host.docker.internal:host-gateway",
+    // Mapeamento de portas (Backend e Frontend)
     "-p",
     "8080:8080",
     "-p",
     "4200:4200"
   ],
 
-  // Comando executado após a criação do container
-  // Responsável por instalar todas as ferramentas de sistema (Maven, Git-Flow, Chrome)
-  // e as dependências de projeto (Angular CLI, npm ci, pip install).
-  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y maven git-flow vim tree lsof wget gnupg && sudo wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg && sudo sh -c 'echo \"deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main\" > /etc/apt/sources.list.d/google-chrome.list' && sudo apt-get update && sudo apt-get install -y google-chrome-stable && sudo apt-get clean && sudo rm -rf /var/lib/apt/lists/* && npm prefix -g | xargs sudo chown -R vscode:vscode && npm install -g @angular/cli@20 && echo 'source <(ng completion script)' >> /home/vscode/.bashrc && (cd frontend && npm ci) && pip install -r e2e/requirements.txt",
+  // Comando de Pós-Criação
+  // 1. Garante permissão ao usuário vscode na pasta do projeto e instala o Angular CLI globalmente
+  // 2. Adiciona o script de autocompletar do Angular ao bashrc
+  // 3. Instala as dependências do frontend (npm ci) e do ambiente de testes E2E (pip)
+  "postCreateCommand": "sudo chown -R vscode:vscode . && npm install -g @angular/cli@20 && echo 'source <(ng completion script)' >> /home/vscode/.bashrc && (cd frontend && npm ci) && pip install -r e2e/requirements.txt",
 
   // Customizações específicas do VS Code
   "customizations": {
     "vscode": {
       // Extensões que serão instaladas dentro do container
       "extensions": [
-        // Pacotes de Java e Spring
-        "vscjava.vscode-java-pack",
-        "vmware.vscode-boot-dev-pack",
-        "redhat.vscode-xml", // Suporte a pom.xml
-        // Angular
-        "angular.ng-template",
-        "dbaeumer.vscode-eslint",
-        // Selenium (Python)
-        "ms-python.python",
-        "ms-python.vscode-pylance",
-        "littlefoxteam.vscode-python-test-adapter",
-
-        // Suporte a BDD (Cucumber)
-        "cucumber.cucumber",
-
-        // DevOps, QA e Git
-        "ms-azuretools.vscode-docker",
-        "SonarSource.sonarlint-vscode", // Integração SonarQube
-        "ryanluker.vscode-coverage-gutters", // Exibe cobertura de testes
-        "eamodio.gitlens",
-        "esbenp.prettier-vscode",
-        "ms-vscode.live-server",
-        "github.vscode-github-actions",
-        "ms-azuretools.vscode-containers",
-        "CucumberOpen.cucumber-official"
-      ]
+        "vscjava.vscode-java-pack", // Suporte completo ao ecossistema Java e Maven.
+        "vmware.vscode-boot-dev-pack", // Ferramentas para desenvolvimento Spring Boot.
+        "redhat.vscode-xml", // Suporte avançado e validação de arquivos XML.
+        "angular.ng-template", // Inteligência de código e autocomplete para Angular.
+        "dbaeumer.vscode-eslint", // Identificação e correção de problemas no TypeScript.
+        "esbenp.prettier-vscode", // Formatador de código para manter o estilo visual.
+        "ms-python.python", // Suporte completo à linguagem Python.
+        "ms-python.vscode-pylance", // Servidor de linguagem de alta performance para Python.
+        "littlefoxteam.vscode-python-test-adapter", // Interface para execução e gestão de testes Python.
+        "CucumberOpen.cucumber-official", // Suporte ao BDD e integração com arquivos .feature.
+        "SonarSource.sonarlint-vscode", // Analisador de qualidade de código em tempo real.
+        "ryanluker.vscode-coverage-gutters", // Exibe a cobertura de testes diretamente no editor.
+        "ms-azuretools.vscode-docker", // Gestão de imagens e containers Docker.
+        "ms-azuretools.vscode-containers", // Extensão base para gestão de Dev Containers.
+        "github.vscode-github-actions", // Integração e gestão de fluxos do GitHub Actions.
+        "eamodio.gitlens", // Histórico avançado e visualização de autoria do Git.
+        "ms-vscode.live-server" // Servidor local para recarregamento automático de páginas.
+      ],
+      // Customizações específicas do VS Code
+      "settings": {
+        // Trava o interpretador no Python instalado pela Feature para evitar conflitos com o sistema
+        "python.defaultInterpreterPath": "/usr/local/python/current/bin/python3",
+        "python.interpreterPath": "/usr/local/python/current/bin/python3",
+        // Força o uso do interpretador global do container, ignorando detecção de ambientes virtuais (venv)
+        "python-envs.defaultEnvManager": "ms-python.python:system",
+        "python.terminal.activateEnvInSelectedTerminal": false,
+        // Limita o Language Server do Java (JDT.LS) para não "sequestrar" a RAM do sistema
+        "java.jdt.ls.vmargs": "-Xmx1G",
+        // Otimiza o suporte ao Spring Boot: reduz heap e desativa otimizações pesadas de CPU (Tiered Compilation)
+        "spring-boot.ls.java.vmargs": ["-Xmx256m", "-XX:TieredStopAtLevel=1"],
+        // Limita o consumo do SonarLint em segundo plano, garantindo fluidez na edição de código
+        "sonarlint.ls.vmargs": "-Xmx256m"
+      }
     }
   },
   // Define o usuário padrão como não-root
