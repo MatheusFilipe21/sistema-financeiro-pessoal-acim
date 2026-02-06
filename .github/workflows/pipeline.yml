@@ -69,6 +69,7 @@ jobs:
           path: |
             backend/target/site/jacoco/jacoco.xml
             backend/target/surefire-reports/
+            backend/target/cucumber-reports.html
             backend/target/classes/
             backend/target/dependency-jars
 

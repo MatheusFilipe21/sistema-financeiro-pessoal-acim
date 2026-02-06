@@ -1,9 +1,8 @@
 {
   "java.compile.nullAnalysis.mode": "automatic",
   "java.configuration.updateBuildConfiguration": "automatic",
-  "files.associations": {
-    "*.feature": "cucumber"
-  },
-  "cucumber.features": ["e2e/features/**/*.feature"],
-  "cucumber.glue": ["e2e/features/steps/**/*.py"]
+  "cucumberautocomplete.steps": [
+    "backend/src/test/java/br/com/sfpacim/backend/bdd/**/*.java"
+  ],
+  "cucumberautocomplete.syncfeatures": "backend/src/test/resources/features/**/*.feature"
 }
