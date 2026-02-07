@@ -123,3 +123,15 @@ def step_validar_erro_campo(context: Context, mensagem: str, campo: str) -> None
     :author: Matheus F. N. Pereira
     """
     context.base_service.verificar_mensagem_erro_validacao(mensagem, campo)
+
+@then('devo ser direcionado para a página de "{}"')
+def step_devo_ser_direcionado_para_pagina (context: Context, caminho_esperado: str) -> None:
+    """
+    Verifica se a URL atual do navegador corresponde à página esperada.
+
+    Args:
+        caminho_esperado: O caminho relativo esperado na URL (ex: 'dashboard', 'recuperar-senha').
+
+    :author: Alexandre Orlando Gracio
+    """
+    context.base_service.verificar_pagina_atual(caminho_esperado)

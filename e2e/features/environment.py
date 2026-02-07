@@ -6,8 +6,10 @@ from faker import Faker
 # Imports das classes de Página e Serviço
 from pages.base_page import BasePage
 from pages.cadastro_page import CadastroPage
+from pages.recuperar_senha_page import RecuperarSenhaPage
 from services.base_service import BaseService
 from services.cadastro_service import CadastroService
+from services.recuperar_senha_service import RecuperarSenhaService
 
 # A URL do frontend (Angular)
 ANGULAR_URL_BASE = os.environ.get("FRONTEND_URL", "http://localhost:4200")
@@ -49,6 +51,8 @@ def before_all(context):
     context.cadastro_page = CadastroPage(context.driver, context.url_base)
     context.cadastro_service = CadastroService(context.cadastro_page)
 
+    context.recuperar_senha_page = RecuperarSenhaPage(context.driver, context.url_base)
+    context.recuperar_senha_service = RecuperarSenhaService(context.recuperar_senha_page)
 
 def before_scenario(context, scenario):
     """
@@ -65,6 +69,12 @@ def before_scenario(context, scenario):
         print(f"\n--- Cenário: {scenario.name} ---")
         print(f"Dados gerados -> E-mail: {context.email_gerado}")
 
+    if 'recuperarSenha' in scenario.tags:
+        # Gera um e-mail para o teste de recuperação de senha.
+        context.email_gerado = fake.unique.email()
+
+        print(f"\n--- Cenário: {scenario.name} ---")
+        print(f"Dados gerados -> E-mail: {context.email_gerado}")
 
 def after_all(context):
     """
