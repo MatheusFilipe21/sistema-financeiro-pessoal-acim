@@ -16,15 +16,17 @@ Funcionalidade: Recuperar Senha
     Quando clico no botão "Ok"
     Então devo ser direcionado para a página de "login"
 
-  @recuperarSenha
-  Cenário: CT002 - Bloquear envio do link enquanto o e-mail for inválido
-    Quando preencho o formulário de recuperar senha com
-      | email           |
-      | email.invalido@ |
-    Então o botão "Enviar Link" deve estar "desabilitado"
-
-  Cenário: CT003 - Bloquear botão de envio do link sem preencher o e-mail
+  Cenário: CT002 - Validação de campo obrigatório para recuperação de senha
     Quando preencho o formulário de recuperar senha com
       | email           |
       |                 |
-    Então o botão "Enviar Link" deve estar "desabilitado"
+    Então deve ser exibida a mensagem de erro "Este campo é obrigatório." no campo "email"
+    E o botão "Enviar Link" deve estar "desabilitado"
+
+  @recuperarSenha
+  Cenário: CT003 - Bloquear envio do link enquanto o e-mail for inválido
+    Quando preencho o formulário de recuperar senha com
+      | email           |
+      | email.invalido@ |
+    Então deve ser exibida a mensagem de erro "Formato de e-mail inválido." no campo "email"
+    E o botão "Enviar Link" deve estar "desabilitado"

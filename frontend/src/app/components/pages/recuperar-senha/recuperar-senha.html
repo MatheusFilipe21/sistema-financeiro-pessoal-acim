@@ -15,7 +15,7 @@
         />
 
         @if (formulario.get('email')?.invalid && (formulario.get('email')?.touched)) {
-        <mat-error>{{ obterMensagemErro('email') }}</mat-error>
+        <mat-error id="erro-email">{{ obterMensagemErro('email') }}</mat-error>
         }
       </mat-form-field>
 
