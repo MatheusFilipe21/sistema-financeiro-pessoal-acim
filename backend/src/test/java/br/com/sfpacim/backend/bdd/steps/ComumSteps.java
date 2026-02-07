@@ -46,6 +46,7 @@ public class ComumSteps {
      *                    .feature.
      */
     @Dado("que eu tenho os seguintes dados para .*$")
+    @Dado("que eu tenho o seguinte dado para .*$")
     public void definirPayloadGenerico(String jsonPayload) {
         apiContext.setCorpoRequisicao(jsonPayload);
     }
@@ -125,5 +126,18 @@ public class ComumSteps {
     @Então("o campo {string} deve conter o item {string}")
     public void oCampoDeveConterOItem(String campo, String valorEsperado) {
         validacaoContext.verificarListaContemValor(campo, valorEsperado);
+    }
+
+    /**
+     * Valida que o corpo da resposta HTTP está vazio.
+     *
+     * <p>
+     * Utilizado principalmente para respostas com status {@code 204 (No Content)},
+     * retornadas independentemente da existência do recurso,
+     * como medida de segurança para evitar a descoberta de usuários.
+     */
+    @Então("o corpo da resposta deve ser vazio")
+    public void oCorpoDaRespostaDeveSerVazio() {
+        validacaoContext.verificarCorpoRespostaVazio();
     }
 }

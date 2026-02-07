@@ -106,6 +106,22 @@ public class ComumValidacaoContext {
     }
 
     /**
+     * Valida que o corpo da resposta HTTP está vazio.
+     *
+     * <p>
+     * Utilizado principalmente para respostas com status {@code 204 (No Content)},
+     * onde, por contrato REST e por motivos de segurança,
+     * a API não deve retornar nenhum conteúdo no body.
+     */
+    public void verificarCorpoRespostaVazio() {
+        String corpo = context.getCorpoResposta();
+
+        assertTrue(
+                corpo == null || corpo.isBlank(),
+                "Esperava corpo da resposta vazio, mas foi retornado: " + corpo);
+    }
+
+    /**
      * Retorna um objeto JsonPath configurado com a resposta atual para facilitar a
      * extração de dados.
      * 
