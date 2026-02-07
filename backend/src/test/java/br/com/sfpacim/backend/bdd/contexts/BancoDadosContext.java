@@ -51,4 +51,13 @@ public class BancoDadosContext {
 
         usuarioRepository.save(usuario);
     }
+
+    /**
+     * Busca um usuário no banco de dados pelo email fornecido.
+     * @param email
+     * @return
+     */
+    public Usuario buscarUsuarioPorEmail(String email) {
+        return usuarioRepository.findByEmail(email).orElse(null);
+    }
 }
