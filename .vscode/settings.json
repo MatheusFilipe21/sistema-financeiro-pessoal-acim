@@ -2,7 +2,9 @@
   "java.compile.nullAnalysis.mode": "automatic",
   "java.configuration.updateBuildConfiguration": "automatic",
   "cucumberautocomplete.steps": [
-    "backend/src/test/java/br/com/sfpacim/backend/bdd/**/*.java"
+    "backend/src/test/java/br/com/sfpacim/backend/bdd/**/*.java",
+    "e2e/features/steps/**/*.py"
   ],
-  "cucumberautocomplete.syncfeatures": "backend/src/test/resources/features/**/*.feature"
+  "cucumberautocomplete.syncfeatures": "**/*.feature",
+  "cucumberautocomplete.strictGherkinCompletion": true
 }

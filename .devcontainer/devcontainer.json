@@ -60,7 +60,7 @@
         "ms-python.python", // Suporte completo à linguagem Python.
         "ms-python.vscode-pylance", // Servidor de linguagem de alta performance para Python.
         "littlefoxteam.vscode-python-test-adapter", // Interface para execução e gestão de testes Python.
-        "CucumberOpen.cucumber-official", // Suporte ao BDD e integração com arquivos .feature.
+        "alexkrechik.cucumberautocomplete", // Suporte ao BDD e integração com arquivos .feature.
         "SonarSource.sonarlint-vscode", // Analisador de qualidade de código em tempo real.
         "ryanluker.vscode-coverage-gutters", // Exibe a cobertura de testes diretamente no editor.
         "ms-azuretools.vscode-docker", // Gestão de imagens e containers Docker.
