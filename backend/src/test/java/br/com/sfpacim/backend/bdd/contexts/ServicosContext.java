@@ -12,7 +12,6 @@ import io.cucumber.spring.ScenarioScope;
  *
  * @author Catherine Aussourd
  */
-
 @Component
 @ScenarioScope
 public class ServicosContext {
@@ -22,24 +21,26 @@ public class ServicosContext {
 
     @Autowired
     private BancoDadosContext bancoDadosContext;
-    
+
     /**
      * Gera um token de redefinição de senha para o usuário com o email fornecido e
-     * a senha desejada, e prepara o corpo da requisição para o endpoint de redefinição de senha. 
-     * @param email
-     * @param senha
-     * @return
+     * a senha desejada, e prepara o corpo da requisição para o endpoint de
+     * redefinição de senha.
+     * 
+     * @param email Email do usuário.
+     * @param senha Nova senha do usuário.
+     * @return O corpo da requisição em formato JSON contendo o token e a nova
+     *         senha.
      */
     public String gerarCorpoTokenRedefinicaoSenha(String email, String senha) {
+        Usuario usuario = bancoDadosContext.buscarUsuarioPorEmail(email);
+        String token = tokenService.gerarTokenRecuperacao(usuario);
 
-      Usuario usuario = bancoDadosContext.buscarUsuarioPorEmail(email);
-      String token = tokenService.gerarTokenRecuperacao(usuario);
-
-      return  """
-              {
-                "token": "%s",
-                "senha": "%s"
-              }
-              """.formatted(token, senha);
+        return """
+                {
+                  "token": "%s",
+                  "senha": "%s"
+                }
+                """.formatted(token, senha);
     }
 }

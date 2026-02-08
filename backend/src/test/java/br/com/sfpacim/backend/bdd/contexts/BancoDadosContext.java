@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.PessoaRepository;
 import br.com.sfpacim.backend.repositories.UsuarioRepository;
-import io.cucumber.java.After;
+import io.cucumber.java.Before;
 
 /**
  * Contexto auxiliar para manipulação direta do Banco de Dados nos testes.
@@ -27,10 +27,10 @@ public class BancoDadosContext {
     /**
      * Remove todos os registros de usuários do banco de dados.
      * <p>
-     * Este Hook é executado automaticamente ao final de qualquer cenário
+     * Este Hook é executado automaticamente antes de qualquer cenário
      * que possua a tag <b>@limparUsuarios</b>.
      */
-    @After("@limparUsuarios")
+    @Before("@limparUsuarios")
     public void limparTodosOsUsuarios() {
         pessoaRepository.deleteAll();
         usuarioRepository.deleteAll();
@@ -54,8 +54,9 @@ public class BancoDadosContext {
 
     /**
      * Busca um usuário no banco de dados pelo email fornecido.
-     * @param email
-     * @return
+     * 
+     * @param email Email do usuário.
+     * @return O usuário encontrado ou null se não existir.
      */
     public Usuario buscarUsuarioPorEmail(String email) {
         return usuarioRepository.findByEmail(email).orElse(null);

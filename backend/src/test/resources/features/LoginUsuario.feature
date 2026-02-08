@@ -19,10 +19,8 @@ Funcionalidade: Login de usuário
     Então o status da resposta deve ser 200
     E o corpo da resposta deve conter o campo "token"
 
-  @limparUsuarios
   Cenário: CT002 - Login com e-mail em formato inválido retorna erro 422
-    Dado que já existe um usuário cadastrado com nome "Alexandre Orlando Gracio" e email "aog@cesar.school"
-    E que eu tenho os seguintes dados para o login do usuário
+    Dado que eu tenho os seguintes dados para o login do usuário
       """
       {
         "email": "email.invalido@",
@@ -56,10 +54,8 @@ Funcionalidade: Login de usuário
     E o corpo da resposta deve conter o campo "dataHora"
     E o campo "rota" na resposta deve ser "/api/autenticacao/login"
 
-  @limparUsuarios
   Cenário: CT004 - Login com campos vazios retorna erro 422
-    Dado que já existe um usuário cadastrado com nome "Alexandre Orlando Gracio" e email "aog@cesar.school"
-    E que eu tenho os seguintes dados para o login do usuário
+    Dado que eu tenho os seguintes dados para o login do usuário
       """
       {
         "email": "",

@@ -1,6 +1,5 @@
 # language: pt
 Funcionalidade: Cadastro de Novo Usuário
-
   Para permitir que novos usuários acessem o sistema
   Eu, como um cliente de API,
   Quero enviar dados válidos para o endpoint de cadastro
@@ -39,15 +38,15 @@ Funcionalidade: Cadastro de Novo Usuário
     E o campo "rota" na resposta deve ser "/api/autenticacao/cadastro"
     E o corpo da resposta deve conter o campo "dataHora"
 
-    Cenário: CT003 - Tentativa de cadastro com campos inválidos
+  Cenário: CT003 - Tentativa de cadastro com campos inválidos
     Dado que eu tenho os seguintes dados para o novo usuário
-        """
-        {
-            "nome": "Matheus",
-            "email": "email.invalido@",
-            "senha": "senha_invalida"
-        }
-        """
+      """
+      {
+        "nome": "Matheus",
+        "email": "email.invalido@",
+        "senha": "senha_invalida"
+      }
+      """
     Quando o cliente faz uma requisição POST para "/api/autenticacao/cadastro"
     Então o status da resposta deve ser 422
     E o campo "erro.titulo" na resposta deve ser "Dados Inválidos"
@@ -60,15 +59,15 @@ Funcionalidade: Cadastro de Novo Usuário
     E o campo "erros.campo" deve conter o item "senha"
     E o campo "erros.mensagem" deve conter o item "A senha deve ter no mínimo 8 caracteres, contendo ao menos uma letra maiúscula, uma minúscula e um número."
 
-Cenário: CT004 - Validar campos obrigatórios
+  Cenário: CT004 - Validar campos obrigatórios
     Dado que eu tenho os seguintes dados para o novo usuário
-        """
-        {
-            "nome": "",
-            "email": "",
-            "senha": ""
-        }
-        """
+      """
+      {
+        "nome": "",
+        "email": "",
+        "senha": ""
+      }
+      """
     Quando o cliente faz uma requisição POST para "/api/autenticacao/cadastro"
     Então o status da resposta deve ser 422
     E o campo "erro.titulo" na resposta deve ser "Dados Inválidos"

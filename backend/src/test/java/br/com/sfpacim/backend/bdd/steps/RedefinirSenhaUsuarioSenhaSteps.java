@@ -22,12 +22,14 @@ public class RedefinirSenhaUsuarioSenhaSteps {
 
     @Autowired
     private ApiContext apiContext;
-    
+
     /**
      * Gera um token de redefinição de senha para o usuário com o email fornecido e
-     * a senha desejada, e prepara o corpo da requisição para o endpoint de redefinição de senha.
-     * @param email
-     * @param senha
+     * a senha desejada, e prepara o corpo da requisição para o endpoint de
+     * redefinição de senha.
+     * 
+     * @param email Email do usuário.
+     * @param senha Nova senha do usuário.
      */
     @Dado("que eu tenho o seguinte dado com o token gerado para o usuário de email {string} e a senha {string}")
     public void dadoQueEuTenhoOTokenGeradoParaRedefinirSenha(String email, String senha) {
