@@ -1,10 +1,54 @@
 {
+  "files.autoSave": "onFocusChange",
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.formatOnType": false,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
   "java.compile.nullAnalysis.mode": "automatic",
   "java.configuration.updateBuildConfiguration": "automatic",
+  "[java]": {
+    "editor.defaultFormatter": "redhat.java"
+  },
+  "[xml]": {
+    "editor.defaultFormatter": "redhat.vscode-xml"
+  },
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.python"
+  },
+  "[dockerfile]": {
+    "editor.defaultFormatter": "ms-azuretools.vscode-containers"
+  },
+  "[feature]": {
+    "editor.defaultFormatter": "alexkrechik.cucumberautocomplete",
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false
+  },
   "cucumberautocomplete.steps": [
     "backend/src/test/java/br/com/sfpacim/backend/bdd/**/*.java",
     "e2e/features/steps/**/*.py"
   ],
   "cucumberautocomplete.syncfeatures": "**/*.feature",
-  "cucumberautocomplete.strictGherkinCompletion": true
+  "cucumberautocomplete.strictGherkinCompletion": true,
+  "cucumberautocomplete.smartSnippets": true,
+  "cucumberautocomplete.stepsInvariants": true,
+  "cucumberautocomplete.onTypeFormat": true,
+  "cucumberautocomplete.skipDocStringsFormat": true,
+  "cucumberautocomplete.formatConfOverride": {
+    "Funcionalidade:": 0,
+    "Característica:": 0,
+    "Contexto:": 1,
+    "Cenário:": 1,
+    "Esquema do Cenário:": 1,
+    "Exemplos:": 1,
+    "Para": 1,
+    "Eu": 1,
+    "Quero": 1,
+    "Dado": 2,
+    "Quando": 2,
+    "Então": 2,
+    "E": 2,
+    "Mas": 2,
+    "*": 2
+  }
 }
