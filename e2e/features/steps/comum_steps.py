@@ -1,4 +1,4 @@
-from behave import step, then
+from behave import step, then, given
 from behave.runner import Context
 
 # Mapeamento de texto amigável do BDD para o código técnico
@@ -135,3 +135,27 @@ def step_devo_ser_direcionado_para_pagina (context: Context, caminho_esperado: s
     :author: Alexandre Orlando Gracio
     """
     context.base_service.verificar_pagina_atual(caminho_esperado)
+
+@given('que realizo um cadastro com sucesso com nome padrão, email gerado e a senha padrão')
+def step_given_usuario_ja_cadastrado(context: Context) -> None:
+    """
+    Pré-condição: Cadastra um usuário real via UI para "queimar" o e-mail no banco.
+
+    Este passo realiza um cadastro completo (preenchimento e submit) para garantir
+    que, ao tentar usar este e-mail novamente no teste, o sistema acuse duplicidade.
+
+    Args:
+        context: O contexto de execução do Behave.
+
+    :author: Matheus F. N. Pereira
+    """
+    context.cadastro_service.navegar_para_cadastro()
+
+    context.cadastro_service.realizar_cadastro(
+        nome=context.nome_padrao,
+        email=context.email_gerado,
+        senha=context.senha_padrao,
+        confirmar_senha=context.senha_padrao
+    )
+
+    context.cadastro_service.verificar_sucesso_cadastro(context.nome_padrao)

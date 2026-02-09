@@ -18,33 +18,6 @@ def step_given_estou_na_pagina_de_cadastro(context: Context) -> None:
     context.cadastro_service.navegar_para_cadastro()
 
 
-@given('que já existe um usuário cadastrado com o email gerado')
-def step_given_usuario_ja_cadastrado(context: Context) -> None:
-    """
-    Pré-condição: Cadastra um usuário real via UI para "queimar" o e-mail no banco.
-
-    Este passo realiza um cadastro completo (preenchimento e submit) para garantir
-    que, ao tentar usar este e-mail novamente no teste, o sistema acuse duplicidade.
-
-    Args:
-        context: O contexto de execução do Behave.
-
-    :author: Matheus F. N. Pereira
-    """
-    context.cadastro_service.navegar_para_cadastro()
-
-    context.cadastro_service.realizar_cadastro(
-        nome=context.nome_padrao,
-        email=context.email_gerado,
-        senha=context.senha_padrao,
-        confirmar_senha=context.senha_padrao
-    )
-
-    context.cadastro_service.verificar_sucesso_cadastro(context.nome_padrao)
-
-    context.cadastro_service.navegar_para_cadastro()
-
-
 @when('preencho "{}", o email gerado, e senhas "{}" e "{}"')
 def step_when_preencho_sucesso(context: Context, nome: str, senha: str, confirmar_senha: str) -> None:
     """
