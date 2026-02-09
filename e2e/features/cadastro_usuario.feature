@@ -17,7 +17,8 @@ Funcionalidade: Cadastro de Usuário
 
   @cadastro
   Cenário: CT002 - Tentativa de cadastro com email duplicado
-    Dado que já existe um usuário cadastrado com o email gerado
+    Dado que realizo um cadastro com sucesso com nome padrão, email gerado e a senha padrão
+    E que estou na página de cadastro
     Quando tento me cadastrar novamente com o mesmo email gerado
     Então deve ser exibido um dialog de "erro" com título "Conflito de Dados"
     E a mensagem do dialog deve ser "O e-mail: {email} já está cadastrado."
