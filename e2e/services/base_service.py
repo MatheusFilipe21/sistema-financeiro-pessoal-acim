@@ -23,6 +23,28 @@ class BaseService:
         """
         self.base_page = base_page
 
+    def verificar_pagina_atual(self, caminho_esperado: str) -> None:
+        """
+        Verifica se a URL atual do navegador corresponde ao caminho esperado,
+        aguardando o redirecionamento ocorrer.
+
+        Args:
+            caminho_esperado: O caminho relativo esperado (ex: '/login').
+            timeout: Tempo máximo de espera em segundos.
+        """
+        driver = self.base_page.driver
+        esperado = caminho_esperado.strip()
+        url_inicial = driver.current_url
+
+        self.base_page.espera.until(lambda d: d.current_url != url_inicial)
+        self.base_page.espera.until(lambda d: d.current_url.endswith(esperado))
+
+        url_atual = driver.current_url
+        assert url_atual.endswith(esperado), (
+            f"URL Incorreta. Esperado terminar com: '{esperado}', Obtido: '{url_atual}'"
+        )
+        
+
     def verificar_dialog_global(self,
                                 tipo_dialog: TIPO_DIALOG,
                                 titulo_esperado: str,

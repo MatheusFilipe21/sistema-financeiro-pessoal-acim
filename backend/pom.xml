@@ -183,7 +183,7 @@
                         <exclude>br/com/sfpacim/backend/config/**</exclude>
                         <exclude>br/com/sfpacim/backend/dtos/**</exclude>
                         <exclude>br/com/sfpacim/backend/exceptions/**</exclude>
-                        <exclude>br/com/sfpacim/backend/services/LogEmailService.class</exclude>
+                        <exclude>br/com/sfpacim/backend/services/DevEmailService.class</exclude>
                     </excludes>
                 </configuration>
                 <executions>

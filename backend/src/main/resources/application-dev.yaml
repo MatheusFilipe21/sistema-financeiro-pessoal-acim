@@ -32,6 +32,28 @@ spring:
         # Informa ao Hibernate qual "dialeto" SQL ele deve usar.
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  # =======================================================
+  # CONFIGURAÇÕES DE E-MAIL (MAILHOG)
+  # =======================================================
+  mail:
+    # O endereço do servidor SMTP.
+    host: ${MAIL_HOST:host.docker.internal}
+    port: ${MAIL_PORT:1025}
+
+    # Define o REMETENTE que aparecerá no e-mail (usado pelo @Value no DevEmailService).
+    username: ${MAIL_USERNAME:teste-dev@sfpacim.local}
+    password: ${MAIL_PASSWORD:}
+
+    # Propriedades específicas do JavaMail para desligar a segurança (necessário para Mailhog)
+    properties:
+      mail:
+        smtp:
+          # Se MAIL_AUTH não for informado, assume 'false' (Mailhog)
+          auth: ${MAIL_AUTH:false}
+          starttls:
+            # Se MAIL_STARTTLS não for informado, assume 'false' (Mailhog)
+            enable: ${MAIL_STARTTLS:false}
+
 # =======================================================
 # CONFIGURAÇÕES DA API (SFP-ACIM)
 # =======================================================

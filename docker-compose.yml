@@ -32,8 +32,8 @@ services:
     container_name: sfpacim_backend
     restart: always
     environment:
-      # Perfil de Produção
-      SPRING_PROFILES_ACTIVE: prod
+      # Perfil de Desenvolvimento
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
 
       # Variáveis de ambiente para o Spring Boot se conectar ao DB.
       # O Spring usará o nome 'postgres-db' (DNS do Docker) para encontrar o banco.
@@ -41,7 +41,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-user}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-password}
 
-      # JPA/ibernate
+      # JPA/Hibernate
       JPA_DDL_AUTO: ${JPA_DDL_AUTO:-update}
       SHOW_SQL: "${SHOW_SQL:-false}"
 
@@ -53,10 +53,12 @@ services:
       APP_FRONTEND_URL: ${APP_FRONTEND_URL:-http://localhost:4201}
 
       # Configurações de E-mail
-      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
-      MAIL_PORT: ${MAIL_PORT:-587}
-      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_HOST: ${MAIL_HOST:-mailhog}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-nao-responda@sfpacim.local}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_AUTH: ${MAIL_AUTH:-false}
+      MAIL_STARTTLS: ${MAIL_STARTTLS:-false}
     ports:
       # Mapeia a porta interna (8080) do Spring para a porta 8081 do host.
       - "8081:8080"
@@ -81,6 +83,21 @@ services:
     depends_on:
       # Garante que o frontend só inicie *depois* que o 'app-backend' estiver pronto (para o proxy /api funcionar).
       - app-backend
+    networks:
+      - sfpacim_network
+
+  # ==========================================
+  # Serviço 4: Mailhog (Servidor de E-mail Fake)
+  # ==========================================
+  mailhog:
+    image: mailhog/mailhog
+    container_name: sfpacim_mailhog
+    restart: always
+    ports:
+      # Porta SMTP para envio do e-mail
+      - "1025:1025"
+      # Porta Web para visualização do e-mail
+      - "8025:8025"
     networks:
       - sfpacim_network
 

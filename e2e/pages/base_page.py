@@ -60,6 +60,17 @@ class BasePage:
         url_completa = f"{self.url_base}{caminho}"
         self.driver.get(url_completa)
         print(f"Navegando para: {url_completa}")
+    
+    def obter_url_atual(self) -> str:
+        """
+        Retorna a URL atual do navegador.
+
+        Returns:
+            str: A URL atual do navegador.
+
+        :author: Alexandre Orlando Gracio
+        """
+        return self.driver.current_url
 
     def aguardar_elemento_visivel(self, localizador: Tuple[str, str]) -> Any:
         """
@@ -198,7 +209,7 @@ class BasePage:
 
         :author: Matheus F. N. Pereira
         """
-        sufixo = texto_botao.lower().replace(" ", "")
+        sufixo = texto_botao.lower().replace(" ", "-")
         id_botao = f"{self.PREFIXO_BTN}{sufixo}"
         self.clicar((By.ID, id_botao))
 

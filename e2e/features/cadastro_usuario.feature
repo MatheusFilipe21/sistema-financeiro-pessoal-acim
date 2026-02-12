@@ -13,14 +13,15 @@ Funcionalidade: Cadastro de Usuário
     Quando preencho "MATHEUS FILIPE DO NASCIMENTO PEREIRA", o email gerado, e senhas "Ab123456" e "Ab123456"
     E clico no botão "Cadastrar"
     Então deve ser exibido um dialog de "sucesso" com título "Cadastro realizado com sucesso!"
-    E a mensagem deve conter o texto "O usuário MATHEUS FILIPE DO NASCIMENTO PEREIRA foi cadastrado"
+    E a mensagem do dialog deve conter "O usuário MATHEUS FILIPE DO NASCIMENTO PEREIRA foi cadastrado"
 
   @cadastro
   Cenário: CT002 - Tentativa de cadastro com email duplicado
-    Dado que já existe um usuário cadastrado com o email gerado
+    Dado que realizo um cadastro com sucesso com nome padrão, email gerado e a senha padrão
+    E que estou na página de cadastro
     Quando tento me cadastrar novamente com o mesmo email gerado
     Então deve ser exibido um dialog de "erro" com título "Conflito de Dados"
-    E a mensagem do dialog deve ser "O e-mail: {email} já está cadastrado."
+    E a mensagem do dialog deve conter "O e-mail: {email} já está cadastrado."
 
   @cadastro
   Cenário: CT003 - Validação de formato de dados inválidos
