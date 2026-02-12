@@ -44,6 +44,17 @@
       "cwd": "${workspaceFolder}/e2e",
       "console": "integratedTerminal",
       "justMyCode": true
+    },
+    // --- Configuração Roda apenas cenários com @qa ---
+    {
+      "type": "debugpy",
+      "name": "Selenium (E2E - Tag @qa)",
+      "request": "launch",
+      "module": "behave",
+      "args": ["--tags=@qa", "--no-skipped", "features/"],
+      "cwd": "${workspaceFolder}/e2e",
+      "console": "integratedTerminal",
+      "justMyCode": true
     }
   ]
 }

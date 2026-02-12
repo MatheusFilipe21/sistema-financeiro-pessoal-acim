@@ -43,13 +43,11 @@ O projeto é validado por uma pipeline de Integração Contínua (CI) definida e
 O pipeline é disparado automaticamente em `push` (para `main`/`develop`) ou `pull_request` (para `develop`) e executa três jobs sequenciais para garantir a qualidade do monorepo:
 
 1.  **Job 1: Backend (Java):**
-
     - Compila o Spring Boot.
     - Roda `mvn verify` (JUnit, BDD/Cucumber).
     - Gera e armazena os relatórios (JaCoCo, Surefire).
 
 2.  **Job 2: Frontend (Angular):**
-
     - Instala o Chrome Headless.
     - Roda `npm ci` e `npm test` (Karma/Jasmine).
     - Gera e armazena os relatórios (LCOV, JUnit XML).
@@ -86,7 +84,6 @@ Para garantir performance e compatibilidade, utilizaremos o Docker Desktop integ
     _Reinicie o computador se solicitado._
 
 2.  **Instalar a Distribuição Linux (Ubuntu):**
-
     - Abra a **Microsoft Store**.
     - Procure por **"Ubuntu 24.04 LTS"** (ou sua versão preferida) e instale.
     - Após instalar, **abra o terminal do Ubuntu** uma vez para finalizar a configuração criando seu usuário e senha UNIX.
@@ -96,7 +93,6 @@ Para garantir performance e compatibilidade, utilizaremos o Docker Desktop integ
       ```
 
 3.  **Instalar e Configurar Docker Desktop:**
-
     - Baixe e instale o [Docker Desktop](https://www.docker.com/products/docker-desktop/).
     - **Configuração Geral:** Nas configurações (_Settings_) -> _General_, certifique-se de que **"Use the WSL 2 based engine"** está marcado.
     - **Integração com a Distro:**
@@ -223,6 +219,7 @@ O fluxo de trabalho no VS Code é dividido em dois menus principais:
 | **Frontend (Iniciar)**            | Inicia o servidor Angular (porta 4200) com proxy para o backend.                                | Menu "Run and Debug" (▶️) -> **Angular (Frontend)**       |
 | **Testes de Frontend**            | Roda os testes (Karma) em modo "watch" (observação) na porta 9876.                              | Menu "Run and Debug" (▶️) -> **Angular (Testes)**         |
 | **Testes E2E (Debug)**            | Executa os testes Selenium/Python com o depurador anexado (permite breakpoints).                | Menu "Run and Debug" (▶️) -> **Selenium (E2E)**           |
+| **Testes E2E (Tag @qa)**          | Executa apenas os cenários marcados com a tag `@qa`. Útil para desenvolvimento focado.          | Menu "Run and Debug" (▶️) -> **Selenium (E2E - Tag @qa)** |
 | **Testes de Backend (Unitários)** | Roda/Depura testes unitários (JUnit) individualmente através da interface gráfica.              | **Aba "Testing" (🧪)** -> Selecionar e Rodar o teste.     |
 | **Testes de Backend (Completo)**  | Roda `mvn clean verify`: testes JUnit, BDD (Cucumber), Rest Assured, e gera o relatório JaCoCo. | Menu `Terminal > Run Task...` -> **Spring Boot (Testes)** |
 
