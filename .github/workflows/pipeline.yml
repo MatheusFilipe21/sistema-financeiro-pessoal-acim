@@ -190,6 +190,7 @@ jobs:
         # Define a variável de ambiente que o environment.py irá ler
         env:
           FRONTEND_URL: "http://localhost:4201"
+          MAILHOG_HOST: "localhost"
         run: |
           python -m venv venv
           source venv/bin/activate
