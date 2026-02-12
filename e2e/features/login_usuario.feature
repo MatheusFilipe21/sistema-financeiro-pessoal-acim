@@ -28,7 +28,7 @@ Funcionalidade: Login de Usuário
       | matheusfnpereira@gmail.com | 123456Ja |
     E clico no botão "Entrar"
     Então deve ser exibido um dialog de "erro" com título "Falha na Autenticação"
-    E a mensagem do dialog deve ser "E-mail ou senha inválidos."
+    E a mensagem do dialog deve conter "E-mail ou senha inválidos."
 
   Cenário: CT004 - Login com campos em branco
     Quando preencho o formulário de login com

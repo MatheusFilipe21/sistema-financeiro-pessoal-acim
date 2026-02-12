@@ -27,8 +27,8 @@
           <mat-icon>{{ esconderSenha() ? 'visibility_off' : 'visibility' }}</mat-icon>
         </button>
 
-        @if (formulario.get('senha')?.invalid && (formulario.get('senha')?.touched)) {
-        <mat-error>{{ obterMensagemErro('senha') }}</mat-error>
+        @if (formulario.get('senha')?.invalid && formulario.get('senha')?.touched) {
+          <mat-error id="erro-senha">{{ obterMensagemErro('senha') }}</mat-error>
         }
       </mat-form-field>
 
@@ -54,46 +54,47 @@
           <mat-icon>{{ esconderConfirmarSenha() ? 'visibility_off' : 'visibility' }}</mat-icon>
         </button>
 
-        @if (formulario.get('confirmarSenha')?.invalid &&
-        (formulario.get('confirmarSenha')?.touched)) {
-        <mat-error>{{ obterMensagemErro('confirmarSenha') }}</mat-error>
+        @if (
+          formulario.get('confirmarSenha')?.invalid && formulario.get('confirmarSenha')?.touched
+        ) {
+          <mat-error id="erro-confirmar-senha">{{ obterMensagemErro('confirmarSenha') }}</mat-error>
         }
       </mat-form-field>
 
       @if (formulario.get('senha')?.touched || senhaEstaEmFoco()) {
-      <div id="requisitos-senha">
-        <div id="requisito-tamanho-minimo" [class.valid]="requisitosSenha.minLength">
-          <span
-            class="icone-requisito-senha"
-            [innerHTML]="requisitosSenha.minLength ? '&check;' : '&times;'"
-          ></span>
-          8 caracteres no mínimo
-        </div>
+        <div id="requisitos-senha">
+          <div id="requisito-tamanho-minimo" [class.valid]="requisitosSenha.minLength">
+            <span
+              class="icone-requisito-senha"
+              [innerHTML]="requisitosSenha.minLength ? '&check;' : '&times;'"
+            ></span>
+            8 caracteres no mínimo
+          </div>
 
-        <div id="requisito-maiuscula" [class.valid]="requisitosSenha.temMaiuscula">
-          <span
-            class="icone-requisito-senha"
-            [innerHTML]="requisitosSenha.temMaiuscula ? '&check;' : '&times;'"
-          ></span>
-          1 letra maiúscula
-        </div>
+          <div id="requisito-maiuscula" [class.valid]="requisitosSenha.temMaiuscula">
+            <span
+              class="icone-requisito-senha"
+              [innerHTML]="requisitosSenha.temMaiuscula ? '&check;' : '&times;'"
+            ></span>
+            1 letra maiúscula
+          </div>
 
-        <div id="requisito-minuscula" [class.valid]="requisitosSenha.temMinuscula">
-          <span
-            class="icone-requisito-senha"
-            [innerHTML]="requisitosSenha.temMinuscula ? '&check;' : '&times;'"
-          ></span>
-          1 letra minúscula
-        </div>
+          <div id="requisito-minuscula" [class.valid]="requisitosSenha.temMinuscula">
+            <span
+              class="icone-requisito-senha"
+              [innerHTML]="requisitosSenha.temMinuscula ? '&check;' : '&times;'"
+            ></span>
+            1 letra minúscula
+          </div>
 
-        <div id="requisito-numero" [class.valid]="requisitosSenha.temNumero">
-          <span
-            class="icone-requisito-senha"
-            [innerHTML]="requisitosSenha.temNumero ? '&check;' : '&times;'"
-          ></span>
-          1 número
+          <div id="requisito-numero" [class.valid]="requisitosSenha.temNumero">
+            <span
+              class="icone-requisito-senha"
+              [innerHTML]="requisitosSenha.temNumero ? '&check;' : '&times;'"
+            ></span>
+            1 número
+          </div>
         </div>
-      </div>
       }
 
       <div id="acoes">

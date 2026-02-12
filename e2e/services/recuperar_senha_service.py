@@ -31,15 +31,6 @@ class RecuperarSenhaService(BaseService):
         """
         self.recuperar_senha_page.visitar()
 
-    def fechar_dialog_e_validar_login(self) -> None:
-        """
-        Clica no botão "OK" do dialog de sucesso e valida se a navegação para a tela de login ocorreu.
-
-        :author: Alexandre Orlando Gracio
-        """
-        self.recuperar_senha_page.clicar_ok_dialog()
-        self.base_service.verificar_pagina_atual("/login")
-
     def preencher_campos_dinamicos(self, dados_tabela: Dict[str, str]) -> None:
         """
         Preenche o formulário baseado em um dicionário (útil para Data Tables do BDD).
@@ -53,4 +44,32 @@ class RecuperarSenhaService(BaseService):
         """
         self.recuperar_senha_page.preencher_formulario(
             email=dados_tabela.get('email', ''),
+        )
+
+    def solicitar_recuperacao_senha(self, email: str) -> None:
+        """
+        Executa o fluxo completo de solicitar a recuperação de senha.
+
+        Etapas:
+        1. Navega para a página.
+        2. Preenche o e-mail.
+        3. Clica em enviar.
+        4. Valida se o dialog de sucesso apareceu (Garante que o estado do sistema mudou).
+
+        Args:
+            email: O e-mail para o qual a recuperação será solicitada.
+
+        :author: Matheus F. N. Pereira
+        """
+        self.navegar_para_recuperar_senha()
+
+        self.preencher_campos_dinamicos({'email': email})
+
+        self.recuperar_senha_page.clicar_botao_enviar_link()
+
+        self.verificar_dialog_global(
+            tipo_dialog="mensagem",
+            titulo_esperado="E-mail Enviado",
+            mensagem_esperada=email,
+            ignore_mensagem=False
         )

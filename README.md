@@ -246,6 +246,8 @@ MAIL_PASSWORD=SUBSTITUIR_PELA_SENHA_DE_APP
 # Se mantido comentado, o sistema usará: smtp.gmail.com / 587
 # MAIL_HOST=smtp.gmail.com
 # MAIL_PORT=587
+# MAIL_AUTH=true
+# MAIL_STARTTLS=true
 
 # === BANCO DE DADOS (Opcional) ===
 # Se mantido comentado, o sistema usará: sfpacim_db / user / password

@@ -24,6 +24,7 @@ class RecuperarSenhaPage(BasePage):
 
         # Localizadores
         self.CAMPO_EMAIL = (By.ID, "input-email")
+        self.BTN_ENVIAR_LINK = (By.ID, "btn-enviar-link")
 
     def preencher_formulario(self, email: str) -> None:
         """
@@ -36,3 +37,11 @@ class RecuperarSenhaPage(BasePage):
         :author: Alexandre Orlando Gracio
         """
         self.preencher_campo(self.CAMPO_EMAIL, email)
+
+    def clicar_botao_enviar_link(self) -> None:
+        """
+        Clica no botão principal de ação para submeter o e-mail com o link de redefinição de senha.
+
+        :author: Matheus F. N. Pereira
+        """
+        self.clicar(self.BTN_ENVIAR_LINK)

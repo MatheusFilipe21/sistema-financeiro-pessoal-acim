@@ -1,5 +1,5 @@
 from behave import step, then, given
-from behave.runner import Context
+from utils.contexto import Contexto
 
 # Mapeamento de texto amigável do BDD para o código técnico
 # Ex: "erro" -> "erro", "sucesso" -> "mensagem"
@@ -12,7 +12,7 @@ MAPA_TIPO_DIALOG = {
 
 
 @step('clico no botão "{}"')
-def step_clicar_botao_generico(context: Context, nome_botao: str) -> None:
+def step_clicar_botao_generico(contexto: Contexto, nome_botao: str) -> None:
     """
     Clica em um botão baseado no seu nome visível ou identificador.
     Delega a ação para a BasePage.
@@ -22,11 +22,11 @@ def step_clicar_botao_generico(context: Context, nome_botao: str) -> None:
 
     :author: Matheus F. N. Pereira
     """
-    context.base_page.clicar_botao_dinamico(nome_botao)
+    contexto.base_page.clicar_botao_dinamico(nome_botao)
 
 
 @then('o botão "{}" deve estar "{}"')
-def step_validar_estado_botao(context: Context, nome_botao: str, estado: str) -> None:
+def step_validar_estado_botao(contexto: Contexto, nome_botao: str, estado: str) -> None:
     """
     Valida se um botão está habilitado ou desabilitado.
 
@@ -37,12 +37,12 @@ def step_validar_estado_botao(context: Context, nome_botao: str, estado: str) ->
     :author: Matheus F. N. Pereira
     """
     deve_estar_habilitado = estado.lower() == 'habilitado'
-    context.base_service.verificar_estado_botao(
+    contexto.base_service.verificar_estado_botao(
         nome_botao, deve_estar_habilitado)
 
 
 @then('deve ser exibido um dialog de "{}" com título "{}"')
-def step_validar_titulo_dialog_generico(context: Context, tipo: str, titulo: str) -> None:
+def step_validar_titulo_dialog_generico(contexto: Contexto, tipo: str, titulo: str) -> None:
     """
     Valida a presença e o título de um dialog global.
 
@@ -56,20 +56,20 @@ def step_validar_titulo_dialog_generico(context: Context, tipo: str, titulo: str
 
     tipo_visual = tipo.lower() if tipo.lower() != 'erro' else None
 
-    context.base_service.verificar_dialog_global(
+    contexto.base_service.verificar_dialog_global(
         tipo_dialog=tipo_tecnico,
         titulo_esperado=titulo,
         ignore_mensagem=True,
         tipo_visual_esperado=tipo_visual
     )
 
-    context.ultimo_tipo_dialog = tipo_tecnico
-    context.ultimo_titulo_dialog = titulo
-    context.ultimo_tipo_visual = tipo_visual
+    contexto.ultimo_tipo_dialog = tipo_tecnico
+    contexto.ultimo_titulo_dialog = titulo
+    contexto.ultimo_tipo_visual = tipo_visual
 
 
-@then('a mensagem do dialog deve ser "{}"')
-def step_validar_mensagem_dialog(context: Context, mensagem: str) -> None:
+@then('a mensagem do dialog deve conter "{}"')
+def step_validar_mensagem_dialog(contexto: Contexto, mensagem: str) -> None:
     """
     Valida o corpo da mensagem do dialog que foi verificado no passo anterior.
     Suporta interpolação dinâmica de variáveis como {email}.
@@ -85,24 +85,23 @@ def step_validar_mensagem_dialog(context: Context, mensagem: str) -> None:
 
     :author: Matheus F. N. Pereira
     """
-    if "{email}" in mensagem and hasattr(context, 'email_gerado'):
-        mensagem = mensagem.format(email=context.email_gerado)
+    if "{email}" in mensagem and hasattr(contexto, 'email_gerado'):
+        mensagem = mensagem.format(email=contexto.email_gerado)
 
     try:
-        tipo_salvo = getattr(context, 'ultimo_tipo_dialog', 'mensagem')
-        titulo_salvo = getattr(context, 'ultimo_titulo_dialog', '')
-        tipo_visual_salvo = getattr(context, 'ultimo_tipo_visual', None)
-
-        if not hasattr(context, 'ultimo_tipo_dialog'):
+        if not hasattr(contexto, 'ultimo_tipo_dialog'):
             raise AttributeError("Estado do dialog não encontrado.")
-
     except AttributeError:
         raise AttributeError(
             "Erro de Fluxo BDD: Você tentou validar a mensagem de um dialog "
             "sem antes validar o título (onde o tipo é definido)."
         )
 
-    context.base_service.verificar_dialog_global(
+    tipo_salvo = getattr(contexto, 'ultimo_tipo_dialog', 'mensagem')
+    titulo_salvo = getattr(contexto, 'ultimo_titulo_dialog', '')
+    tipo_visual_salvo = getattr(contexto, 'ultimo_tipo_visual', None)
+
+    contexto.base_service.verificar_dialog_global(
         tipo_dialog=tipo_salvo,
         titulo_esperado=titulo_salvo,
         mensagem_esperada=mensagem,
@@ -112,7 +111,7 @@ def step_validar_mensagem_dialog(context: Context, mensagem: str) -> None:
 
 
 @then('deve ser exibida a mensagem de erro "{}" no campo "{}"')
-def step_validar_erro_campo(context: Context, mensagem: str, campo: str) -> None:
+def step_validar_erro_campo(contexto: Contexto, mensagem: str, campo: str) -> None:
     """
     Valida a mensagem de erro de validação (form validation) associada a um input.
 
@@ -122,10 +121,11 @@ def step_validar_erro_campo(context: Context, mensagem: str, campo: str) -> None
 
     :author: Matheus F. N. Pereira
     """
-    context.base_service.verificar_mensagem_erro_validacao(mensagem, campo)
+    contexto.base_service.verificar_mensagem_erro_validacao(mensagem, campo)
+
 
 @then('devo ser direcionado para a página de "{}"')
-def step_devo_ser_direcionado_para_pagina (context: Context, caminho_esperado: str) -> None:
+def step_devo_ser_direcionado_para_pagina(contexto: Contexto, caminho_esperado: str) -> None:
     """
     Verifica se a URL atual do navegador corresponde à página esperada.
 
@@ -134,10 +134,11 @@ def step_devo_ser_direcionado_para_pagina (context: Context, caminho_esperado: s
 
     :author: Alexandre Orlando Gracio
     """
-    context.base_service.verificar_pagina_atual(caminho_esperado)
+    contexto.base_service.verificar_pagina_atual(caminho_esperado)
+
 
 @given('que realizo um cadastro com sucesso com nome padrão, email gerado e a senha padrão')
-def step_given_usuario_ja_cadastrado(context: Context) -> None:
+def step_given_usuario_ja_cadastrado(contexto: Contexto) -> None:
     """
     Pré-condição: Cadastra um usuário real via UI para "queimar" o e-mail no banco.
 
@@ -145,17 +146,17 @@ def step_given_usuario_ja_cadastrado(context: Context) -> None:
     que, ao tentar usar este e-mail novamente no teste, o sistema acuse duplicidade.
 
     Args:
-        context: O contexto de execução do Behave.
+        contexto: O contexto de execução do Behave.
 
     :author: Matheus F. N. Pereira
     """
-    context.cadastro_service.navegar_para_cadastro()
+    contexto.cadastro_service.navegar_para_cadastro()
 
-    context.cadastro_service.realizar_cadastro(
-        nome=context.nome_padrao,
-        email=context.email_gerado,
-        senha=context.senha_padrao,
-        confirmar_senha=context.senha_padrao
+    contexto.cadastro_service.realizar_cadastro(
+        nome=contexto.nome_padrao,
+        email=contexto.email_gerado,
+        senha=contexto.senha_padrao,
+        confirmar_senha=contexto.senha_padrao
     )
 
-    context.cadastro_service.verificar_sucesso_cadastro(context.nome_padrao)
+    contexto.cadastro_service.verificar_sucesso_cadastro(contexto.nome_padrao)
