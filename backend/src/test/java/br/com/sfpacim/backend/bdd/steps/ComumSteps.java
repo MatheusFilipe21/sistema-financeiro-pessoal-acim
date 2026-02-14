@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import br.com.sfpacim.backend.bdd.contexts.ApiContext;
 import br.com.sfpacim.backend.bdd.contexts.BancoDadosContext;
 import br.com.sfpacim.backend.bdd.contexts.ComumValidacaoContext;
+import br.com.sfpacim.backend.bdd.contexts.ServicosContext;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Então;
 import io.cucumber.java.pt.Quando;
@@ -32,6 +33,9 @@ public class ComumSteps {
 
     @Autowired
     private BancoDadosContext bancoDadosContext;
+
+    @Autowired
+    private ServicosContext servicosContext;
 
     /**
      * Passo Genérico para definição de Payload (Body da requisição).
@@ -66,6 +70,26 @@ public class ComumSteps {
     @Dado("que já existe um usuário cadastrado com nome {string} e email {string}")
     public void dadoQueJaExisteUmUsuarioCadastradoComNomeEEmail(String nome, String email) {
         bancoDadosContext.criarUsuarioComSenhaPadrao(nome, email);
+    }
+
+    /**
+     * Passo de autenticação que gera um token JWT e o armazena no contexto da
+     * requisição.
+     * 
+     * <p>
+     * Este passo deve ser utilizado como pré-condição (Dado) para qualquer cenário
+     * que interaja com endpoints protegidos por segurança (Spring Security).
+     * Uma vez executado, todas as requisições subsequentes do cenário enviarão
+     * o cabeçalho 'Authorization' automaticamente.
+     *
+     * @param email O e-mail do usuário que deseja se autenticar.
+     * 
+     * @author Matheus F. N. Pereira
+     */
+    @Dado("que estou autenticado como o usuário de email {string}")
+    public void queEstouAutenticadoComoOUsuarioDeEmail(String email) {
+        String token = servicosContext.obterTokenAutenticacaoParaUsuario(email);
+        apiContext.setTokenAutenticacao(token);
     }
 
     /**

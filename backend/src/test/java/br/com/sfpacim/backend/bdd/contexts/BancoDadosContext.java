@@ -2,6 +2,7 @@ package br.com.sfpacim.backend.bdd.contexts;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+import br.com.sfpacim.backend.models.Pessoa;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.PessoaRepository;
 import br.com.sfpacim.backend.repositories.UsuarioRepository;
@@ -60,5 +61,18 @@ public class BancoDadosContext {
      */
     public Usuario buscarUsuarioPorEmail(String email) {
         return usuarioRepository.findByEmail(email).orElse(null);
+    }
+
+    /**
+     * Recupera um Usuário pelo e-mail e cria uma Pessoa com o nome informado.
+     * 
+     * @param nome  Nome da pessoa.
+     * @param email Email do usuário.
+     */
+    public void criarPessoaComNomeParaUsuarioComOEmail(String nome, String email) {
+        final Usuario usuario = buscarUsuarioPorEmail(email);
+        final Pessoa pessoa = new Pessoa(nome, usuario);
+
+        pessoaRepository.save(pessoa);
     }
 }

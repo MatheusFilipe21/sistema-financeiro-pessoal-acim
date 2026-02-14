@@ -2,6 +2,7 @@ package br.com.sfpacim.backend.bdd.contexts;
 
 import io.cucumber.spring.ScenarioScope;
 import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
 import lombok.Data;
 
 import static io.restassured.RestAssured.given;
@@ -33,18 +34,35 @@ public class ApiContext {
     protected String corpoRequisicao;
 
     /**
+     * Armazena o token JWT para requisições autenticadas.
+     */
+    protected String tokenAutenticacao;
+
+    /**
      * Executa uma requisição POST para o endpoint informado usando o payload
      * armazenado.
+     * 
+     * <p>
+     * O método prepara uma {@link RequestSpecification}, configurando o
+     * Content-Type como JSON
+     * e anexando o corpo da requisição. Caso um token de autenticação esteja
+     * presente no contexto, ele é injetado automaticamente no cabeçalho
+     * 'Authorization' via Bearer Token.
      *
      * @param endpoint A URL relativa.
      */
     public void executarPost(String endpoint) {
         String endpointLimpo = endpoint.replace("/api", "");
 
-        this.resposta = given()
+        RequestSpecification requisicao = given()
                 .contentType("application/json")
-                .body(this.corpoRequisicao)
-                .when()
+                .body(this.corpoRequisicao);
+
+        if (this.tokenAutenticacao != null && !this.tokenAutenticacao.isBlank()) {
+            requisicao.header("Authorization", "Bearer " + this.tokenAutenticacao);
+        }
+
+        this.resposta = requisicao.when()
                 .post(endpointLimpo);
     }
 
