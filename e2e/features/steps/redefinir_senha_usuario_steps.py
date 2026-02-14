@@ -46,3 +46,16 @@ def step_when_preencho_redefinicao(contexto: Contexto) -> None:
     """
     dados = contexto.table[0].as_dict()
     contexto.redefinir_senha_service.preencher_campos_dinamicos(dados)
+
+@given('que estou na tela de redefinição com token inválido')
+def step_given_token_invalido(contexto: Contexto) -> None:
+    """
+    Acessa diretamente a URL de redefinição com um token inválido para simular o cenário.
+
+    Args:
+    contexto: O contexto de execução do Behave.
+
+    :author: Alexandre Orlando Gracio
+    """
+    url = f"{contexto.url_base}/redefinir-senha?token=token_invalido"
+    contexto.driver.get(url)

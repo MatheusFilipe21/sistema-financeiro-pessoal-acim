@@ -18,8 +18,8 @@ Funcionalidade: Recuperar Senha
 
   Cenário: CT002 - Validação de campo obrigatório para recuperação de senha
     Quando preencho o formulário de recuperar senha com
-      | email           |
-      |                 |
+      | email |
+      |       |
     Então deve ser exibida a mensagem de erro "Este campo é obrigatório." no campo "email"
     E o botão "Enviar Link" deve estar "desabilitado"
 
