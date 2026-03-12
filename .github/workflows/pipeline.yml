@@ -42,11 +42,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 2. Setup Java 21
-      - name: Configurar JDK 21 (Temurin)
+      # 2. Setup Java 25
+      - name: Configurar JDK 25 (Temurin)
         uses: actions/setup-java@v4
         with:
-          java-version: "21"
+          java-version: "25"
           distribution: "temurin"
           cache: "maven"
 
@@ -143,11 +143,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 2. Setup Java 21 (Necessário para o SonarScanner)
-      - name: Configurar JDK 21 (Temurin)
+      # 2. Setup Java 25 (Necessário para o SonarScanner)
+      - name: Configurar JDK 25 (Temurin)
         uses: actions/setup-java@v4
         with:
-          java-version: "21"
+          java-version: "25"
           distribution: "temurin"
 
       # 3. Setup Python (Necessário para o E2E)
