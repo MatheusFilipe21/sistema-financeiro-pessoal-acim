@@ -154,7 +154,6 @@ public class CategoriaService {
      * @param usuario Usuário autenticado.
      * @return Entidade Categoria.
      */
-    @SuppressWarnings("null")
     private Categoria buscarCategoriaValidada(UUID id, Usuario usuario) {
         return categoriaRepository.findById(id)
                 .filter(c -> c.getUsuario() == null || c.getUsuario().equals(usuario))
@@ -168,11 +167,10 @@ public class CategoriaService {
      * @param categoria Entidade a ser salva.
      * @return Entidade salva.
      */
-    @SuppressWarnings("null")
     private Categoria salvarEntidade(Categoria categoria) {
         try {
             return categoriaRepository.saveAndFlush(categoria);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException _) {
             throw excecaoNomeDuplicado(categoria.getNome());
         }
     }

@@ -39,7 +39,6 @@ public class ContaService {
     /**
      * Construtor para Injeção de Dependências.
      *
-     *
      * @param contaRepository        O repositório para persistência de contas.
      * @param pessoaRepository       O repositório para buscar a pessoa titular.
      * @param contextoUsuarioService O serviço para recuperar o usuário autenticado.
@@ -60,7 +59,7 @@ public class ContaService {
      * <p>
      * Recupera o usuário do contexto de segurança e persiste a nova conta,
      * validando se a pessoa pertence ao usuário, se é titular e a unicidade
-     * de nome (RF - Unicidade).
+     * de nome.
      *
      * @param dto Os dados da nova conta (nome, instituição, saldo inicial, pessoa).
      * @return O {@link ContaDTO} representando a conta criada.
@@ -166,7 +165,6 @@ public class ContaService {
      * @param id O identificador da conta a ser excluída.
      * @throws EntityNotFoundException Se a conta não for encontrada.
      */
-    @SuppressWarnings("null")
     public void excluir(UUID id) {
         Conta conta = buscarContaValidada(id);
         contaRepository.delete(conta);
@@ -195,7 +193,6 @@ public class ContaService {
      * @return A entidade Pessoa validada.
      * @throws EntityNotFoundException Se não encontrada ou acesso negado.
      */
-    @SuppressWarnings("null")
     private Pessoa buscarPessoaDoUsuario(UUID pessoaId, Usuario usuario) {
         return pessoaRepository.findById(pessoaId)
                 .filter(p -> p.getUsuario().equals(usuario))
@@ -211,7 +208,6 @@ public class ContaService {
      * @return A entidade Conta validada.
      * @throws EntityNotFoundException Se não encontrada ou acesso negado.
      */
-    @SuppressWarnings("null")
     private Conta buscarContaValidada(UUID id) {
         Usuario usuario = contextoUsuarioService.getUsuarioAutenticado();
 
@@ -292,11 +288,10 @@ public class ContaService {
      * @param conta Entidade a ser salva.
      * @return Entidade salva.
      */
-    @SuppressWarnings("null")
     private Conta salvarEntidade(Conta conta) {
         try {
             return contaRepository.saveAndFlush(conta);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException _) {
             throw excecaoNomeDuplicado(conta.getNome(), conta.getPessoa().getNome());
         }
     }

@@ -27,7 +27,7 @@ import jakarta.persistence.EntityNotFoundException;
 public class PessoaService {
 
     private final PessoaRepository pessoaRepository;
-    private final ContaRepository contaRepository; // <--- Dependência Nova
+    private final ContaRepository contaRepository;
     private final ContextoUsuarioService contextoUsuarioService;
     private final Collator collator;
 
@@ -54,7 +54,7 @@ public class PessoaService {
      *
      * <p>
      * Recupera o usuário do contexto de segurança e persiste a nova pessoa,
-     * validando unicidade de nome por usuário (RF - Unicidade).
+     * validando unicidade de nome por usuário.
      *
      * @param dto Os dados da nova pessoa.
      * @return O {@link PessoaDTO} contendo os dados da pessoa criada.
@@ -119,13 +119,11 @@ public class PessoaService {
      *
      * <p>
      * Verifica se a pessoa existe e pertence ao usuário autenticado.
-     * (Futuramente validará vínculos com Contas/Cartões - RF49).
      *
      * @param id O identificador da pessoa a ser excluída.
      * @throws EntityNotFoundException Se a pessoa não for encontrada ou não
      *                                 pertencer ao usuário.
      */
-    @SuppressWarnings("null")
     public void excluir(UUID id) {
         Pessoa pessoa = buscarPessoaValidada(id);
 
@@ -149,7 +147,6 @@ public class PessoaService {
         }
     }
 
-    @SuppressWarnings("null")
     private Pessoa buscarPessoaValidada(UUID id) {
         Usuario usuario = contextoUsuarioService.getUsuarioAutenticado();
 
@@ -195,13 +192,12 @@ public class PessoaService {
      * @throws ViolacaoDadosException Caso o nome já esteja cadastrado para este
      *                                usuário.
      */
-    @SuppressWarnings("null")
     private Pessoa salvarEntidade(Pessoa pessoa) throws ViolacaoDadosException {
         try {
             validarUnicidadeNome(pessoa);
 
             return pessoaRepository.saveAndFlush(pessoa);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException _) {
             throw excecaoNomeDuplicado(pessoa.getNome());
         }
     }

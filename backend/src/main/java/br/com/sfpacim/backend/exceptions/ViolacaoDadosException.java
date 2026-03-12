@@ -2,7 +2,7 @@ package br.com.sfpacim.backend.exceptions;
 
 /**
  * Exceção customizada para erros de regras de negócio que violam
- * a integridade dos dados (ex: e-mail duplicado - RF04).
+ * a integridade dos dados (ex: e-mail duplicado).
  *
  * @author Matheus F. N. Pereira
  */

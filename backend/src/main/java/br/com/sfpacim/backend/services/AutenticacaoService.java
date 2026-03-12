@@ -56,7 +56,7 @@ public class AutenticacaoService {
     }
 
     /**
-     * Orquestra a tentativa de login (RF10, RF11, RF12).
+     * Orquestra a tentativa de login.
      *
      * @param dados Os dados de autenticação (email, senha).
      * @return O DTO contendo o Token JWT.
@@ -75,7 +75,7 @@ public class AutenticacaoService {
     }
 
     /**
-     * Inicia o fluxo de recuperação de senha (RF14, RF16, RF17).
+     * Inicia o fluxo de recuperação de senha.
      * 
      * <p>
      * Verifica se o e-mail informado existe na base de dados.
@@ -117,7 +117,7 @@ public class AutenticacaoService {
     }
 
     /**
-     * Realiza a redefinição de senha (RF17).
+     * Realiza a redefinição de senha.
      * 
      * @param dados O DTO com token e nova senha.
      */
@@ -133,7 +133,7 @@ public class AutenticacaoService {
 
         try {
             tokenService.validarTokenRecuperacao(dados.token(), usuario);
-        } catch (Exception e) {
+        } catch (Exception _) {
             throw criarErroToken();
         }
 
