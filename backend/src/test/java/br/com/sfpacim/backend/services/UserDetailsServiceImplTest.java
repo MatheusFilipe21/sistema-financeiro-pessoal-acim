@@ -1,8 +1,5 @@
 package br.com.sfpacim.backend.services;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,6 +14,14 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.UsuarioRepository;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Testes unitários para a classe {@link UserDetailsServiceImpl}.
@@ -63,7 +68,7 @@ class UserDetailsServiceImplTest {
 
     /**
      * Testa o método {@link UserDetailsServiceImpl#loadUserByUsername(String)}.
-     * Valida o cenário de falha (usuário não encontrado - RF13).
+     * Valida o cenário de falha (usuário não encontrado).
      * 
      * <p>
      * Verifica se o serviço lança {@link UsernameNotFoundException}

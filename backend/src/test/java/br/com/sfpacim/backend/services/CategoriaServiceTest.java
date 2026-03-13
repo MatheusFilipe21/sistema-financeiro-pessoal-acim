@@ -1,19 +1,10 @@
 package br.com.sfpacim.backend.services;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import jakarta.persistence.EntityNotFoundException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,7 +23,17 @@ import br.com.sfpacim.backend.models.Categoria;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.models.enums.TipoCategoria;
 import br.com.sfpacim.backend.repositories.CategoriaRepository;
-import jakarta.persistence.EntityNotFoundException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Testes unitários para a classe {@link CategoriaService}.
@@ -88,7 +89,6 @@ class CategoriaServiceTest {
      * {@link CategoriaService#cadastrar(CriarAtualizarCategoriaDTO)}.
      * Valida o cenário de sucesso.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("cadastrar: quando dados válidos, deve vincular ao usuário e salvar")
     void testeCadastrar_QuandoDadosValidos_DeveSalvarCategoria() {
@@ -109,7 +109,6 @@ class CategoriaServiceTest {
      * Testa o cadastro com nome duplicado.
      * Deve lançar ViolacaoDadosException.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("cadastrar: quando nome duplicado, deve lançar exceção")
     void testeCadastrar_QuandoNomeDuplicado_DeveLancarExcecao() {
@@ -132,7 +131,6 @@ class CategoriaServiceTest {
      * <p>
      * Simula erro de constraint no banco de dados.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("cadastrar: quando erro banco, deve converter para ViolacaoDadosException")
     void testeCadastrar_QuandoErroBanco_DeveLancarExcecaoNegocio() {
@@ -172,7 +170,6 @@ class CategoriaServiceTest {
      * Testa o método {@link CategoriaService#atualizar}.
      * Valida atualização de uma categoria do usuário.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("atualizar: quando categoria do usuário, deve atualizar os dados")
     void testeAtualizar_QuandoCategoriaUsuario_DeveAtualizar() {
@@ -194,7 +191,6 @@ class CategoriaServiceTest {
      * Testa tentativa de atualizar uma categoria do sistema.
      * Deve lançar RegraDeNegocioException.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("atualizar: quando categoria do sistema, deve lançar RegraDeNegocioException")
     void testeAtualizar_QuandoCategoriaSistema_DeveLancarExcecao() {
@@ -213,7 +209,6 @@ class CategoriaServiceTest {
     /**
      * Testa atualização com nome duplicado para outra categoria existente.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("atualizar: quando nome duplicado na edição, deve lançar exceção")
     void testeAtualizar_QuandoNomeDuplicado_DeveLancarExcecao() {
@@ -237,7 +232,6 @@ class CategoriaServiceTest {
      * Testa tentativa de atualizar categoria de outro usuário.
      * Deve lançar EntityNotFoundException.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("atualizar: quando categoria pertence a outro usuário, deve lançar EntityNotFoundException")
     void testeAtualizar_QuandoOutroUsuario_DeveLancarExcecao() {
@@ -260,7 +254,6 @@ class CategoriaServiceTest {
      * Testa o método {@link CategoriaService#excluir}.
      * Valida exclusão de categoria do usuário.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("excluir: quando categoria do usuário, deve remover")
     void testeExcluir_QuandoCategoriaUsuario_DeveDeletar() {
@@ -276,7 +269,6 @@ class CategoriaServiceTest {
      * Testa tentativa de excluir categoria do sistema.
      * Deve lançar RegraDeNegocioException.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("excluir: quando categoria do sistema, deve lançar RegraDeNegocioException")
     void testeExcluir_QuandoCategoriaSistema_DeveLancarExcecao() {
@@ -296,7 +288,6 @@ class CategoriaServiceTest {
      * Testa o throw do método privado buscarCategoriaValidada.
      * Cenário: Categoria não encontrada no banco.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("excluir: quando categoria não encontrada, deve lançar EntityNotFoundException")
     void testeExcluir_QuandoNaoEncontrada_DeveLancarExcecao() {

@@ -1,7 +1,5 @@
 package br.com.sfpacim.backend.models;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.Collection;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -9,6 +7,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Testes unitários para a entidade {@link Usuario}.

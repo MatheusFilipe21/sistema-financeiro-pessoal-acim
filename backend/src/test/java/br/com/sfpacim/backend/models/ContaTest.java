@@ -1,8 +1,5 @@
 package br.com.sfpacim.backend.models;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -11,6 +8,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import br.com.sfpacim.backend.models.enums.InstituicaoFinanceira;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Testes unitários para a entidade {@link Conta}.

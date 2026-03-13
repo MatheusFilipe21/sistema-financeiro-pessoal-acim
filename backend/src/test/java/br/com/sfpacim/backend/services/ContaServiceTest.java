@@ -1,14 +1,12 @@
 package br.com.sfpacim.backend.services;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import jakarta.persistence.EntityNotFoundException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,7 +26,16 @@ import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.models.enums.InstituicaoFinanceira;
 import br.com.sfpacim.backend.repositories.ContaRepository;
 import br.com.sfpacim.backend.repositories.PessoaRepository;
-import jakarta.persistence.EntityNotFoundException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Testes unitários para a classe {@link ContaService}.
@@ -92,7 +99,6 @@ class ContaServiceTest {
      * Testa o método {@link ContaService#cadastrar(CriarAtualizarContaDTO)}.
      * Valida o cenário de sucesso.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("cadastrar: Quando dados válidos, deve vincular à pessoa e salvar")
     void testeCadastrar_QuandoDadosValidos_DeveSalvarConta() {
@@ -114,7 +120,6 @@ class ContaServiceTest {
      * Testa o cadastro tentando vincular a uma pessoa que NÃO é titular.
      * Deve lançar ViolacaoDadosException.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("cadastrar: Quando pessoa não é titular, deve lançar ViolacaoDadosException")
     void testeCadastrar_QuandoPessoaNaoTitular_DeveLancarExcecao() {
@@ -137,7 +142,6 @@ class ContaServiceTest {
      * Testa o cadastro com nome duplicado para a MESMA pessoa.
      * Deve lançar ViolacaoDadosException.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("cadastrar: Quando nome duplicado para a pessoa, deve lançar exceção")
     void testeCadastrar_QuandoNomeDuplicado_DeveLancarExcecao() {
@@ -176,7 +180,6 @@ class ContaServiceTest {
      * Testa o método {@link ContaService#atualizar}.
      * Valida atualização simples (sem mudança de saldo inicial).
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("atualizar: Quando válido, deve atualizar os dados")
     void testeAtualizar_QuandoValido_DeveAtualizar() {
@@ -199,7 +202,6 @@ class ContaServiceTest {
      * Cenário: Saldo Inicial aumenta em 100.00 -> Saldo Atual deve aumentar em
      * 100.00.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("atualizar: Quando saldo inicial muda, deve recalcular saldo atual (Delta)")
     void testeAtualizar_QuandoSaldoInicialMuda_DeveRecalcularSaldoAtual() {
@@ -225,7 +227,6 @@ class ContaServiceTest {
     /**
      * Testa tentativa de atualizar conta de outro usuário.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("atualizar: Quando conta pertence a outro usuário, deve lançar EntityNotFoundException")
     void testeAtualizar_QuandoOutroUsuario_DeveLancarExcecao() {
@@ -248,7 +249,6 @@ class ContaServiceTest {
     /**
      * Testa o método {@link ContaService#excluir}.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("excluir: Quando válido, deve remover a conta")
     void testeExcluir_QuandoValido_DeveDeletar() {
@@ -268,7 +268,6 @@ class ContaServiceTest {
      * Simula uma "Race Condition": A validação em memória passa (lista vazia),
      * mas o banco rejeita o insert por duplicidade no exato momento da gravação.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("cadastrar: Quando banco lança DataIntegrityViolation, deve converter para ViolacaoDadosException")
     void testeCadastrar_QuandoErroBanco_DeveLancarExcecaoNegocio() {
@@ -295,7 +294,6 @@ class ContaServiceTest {
      * (ambas dele).
      * Deve validar a nova pessoa e atualizar a referência.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("atualizar: Quando troca de pessoa, deve validar nova pessoa e atualizar vínculo")
     void testeAtualizar_QuandoTrocaTitular_DeveAtualizarPessoa() {
@@ -327,7 +325,6 @@ class ContaServiceTest {
      * Cenário: Tenta cadastrar conta para uma pessoa que não existe no banco
      * ou pertence a outro usuário.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("cadastrar: Quando pessoa não encontrada (buscarPessoaDoUsuario), deve lançar EntityNotFoundException")
     void testeCadastrar_QuandoPessoaNaoExiste_DeveLancarExcecao() {

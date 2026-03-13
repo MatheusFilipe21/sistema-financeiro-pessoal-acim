@@ -1,12 +1,5 @@
 package br.com.sfpacim.backend.services;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,6 +23,19 @@ import br.com.sfpacim.backend.exceptions.RegraDeNegocioException;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.UsuarioRepository;
 import br.com.sfpacim.backend.services.interfaces.EmailService;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Testes unitários para a classe {@link AutenticacaoService}.
@@ -133,7 +139,6 @@ class AutenticacaoServiceTest {
      * 2. Gerar o token de recuperação.
      * 3. Enviar o e-mail contendo o link correto.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("solicitarRecuperacaoSenha: Quando e-mail existe, deve gerar token e enviar e-mail")
     void testeSolicitarRecuperacao_QuandoUsuarioExiste_DeveEnviarEmail() {
