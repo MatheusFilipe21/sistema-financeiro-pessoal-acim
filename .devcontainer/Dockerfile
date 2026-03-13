@@ -1,5 +1,5 @@
-# Base image com Java 21 pré-instalado
-FROM mcr.microsoft.com/devcontainers/java:21
+# Base image com Java 25 pré-instalado
+FROM mcr.microsoft.com/devcontainers/java:25
 
 # Define que não haverá interação via terminal durante o build
 ENV DEBIAN_FRONTEND=noninteractive

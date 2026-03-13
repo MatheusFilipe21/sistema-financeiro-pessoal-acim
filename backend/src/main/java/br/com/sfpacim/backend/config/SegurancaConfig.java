@@ -56,7 +56,7 @@ public class SegurancaConfig {
      * 
      * <p>
      * Isso permite que ele seja injetado em outros serviços (como o UsuarioService)
-     * para fazer o hash de senhas (RF06).
+     * para fazer o hash de senhas.
      *
      * @return Uma instância do PasswordEncoder (BCrypt).
      */
@@ -71,15 +71,21 @@ public class SegurancaConfig {
      *
      * <p>
      * O AutenticacaoController irá injetar este Bean para processar
-     * as tentativas de login (RF10).
+     * as tentativas de login.
      *
      * @param configuration A configuração de autenticação do Spring.
      * @return O AuthenticationManager configurado.
-     * @throws Exception Exceção qualquer.
+     * @throws IllegalStateException Caso ocorra um erro técnico ao recuperar
+     *                               o gerenciador de autenticação.
      */
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
-        return configuration.getAuthenticationManager();
+    AuthenticationManager authenticationManager(AuthenticationConfiguration configuration)
+            throws IllegalStateException {
+        try {
+            return configuration.getAuthenticationManager();
+        } catch (Exception e) {
+            throw new IllegalStateException("Erro ao configurar o AuthenticationManager", e);
+        }
     }
 
     /**
@@ -91,30 +97,35 @@ public class SegurancaConfig {
      *
      * @param http O construtor de segurança do Http.
      * @return O SecurityFilterChain construído.
-     * @throws Exception Exceção qualquer.
+     * @throws IllegalStateException Caso ocorra uma falha na construção da
+     *                               cadeia de filtros ou na DSL de segurança.
      */
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
-                // Desabilita a proteção CSRF (Cross-Site Request Forgery),
-                // pois a autenticação será stateless (via token JWT).
-                .csrf(csrf -> csrf.disable())
+    SecurityFilterChain securityFilterChain(HttpSecurity http) throws IllegalStateException {
+        try {
+            return http
+                    // Desabilita a proteção CSRF (Cross-Site Request Forgery),
+                    // pois a autenticação será stateless (via token JWT).
+                    .csrf(csrf -> csrf.disable())
 
-                // Define a política de gerenciamento de sessão como STATELESS (sem estado).
-                // A API não criará ou manterá sessões de usuário (padrão RESTful).
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                    // Define a política de gerenciamento de sessão como STATELESS (sem estado).
+                    // A API não criará ou manterá sessões de usuário (padrão RESTful).
+                    .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // Configura as regras de autorização para os endpoints HTTP
-                .authorizeHttpRequests(authorize -> authorize
-                        // Libera todos os endpoints listados no array ENDPOINTS_PUBLICOS
-                        .requestMatchers(ENDPOINTS_PUBLICOS).permitAll()
+                    // Configura as regras de autorização para os endpoints HTTP
+                    .authorizeHttpRequests(authorize -> authorize
+                            // Libera todos os endpoints listados no array ENDPOINTS_PUBLICOS
+                            .requestMatchers(ENDPOINTS_PUBLICOS).permitAll()
 
-                        // Exige autenticação para todas as outras requisições.
-                        .anyRequest().authenticated())
+                            // Exige autenticação para todas as outras requisições.
+                            .anyRequest().authenticated())
 
-                // Adiciona o filtro JWT (JWTFilter) para rodar antes do filtro de autenticação
-                // padrão do Spring.
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-                .build();
+                    // Adiciona o filtro JWT (JWTFilter) para rodar antes do filtro de autenticação
+                    // padrão do Spring.
+                    .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                    .build();
+        } catch (Exception e) {
+            throw new IllegalStateException("Erro ao configurar o SecurityFilterChain", e);
+        }
     }
 }

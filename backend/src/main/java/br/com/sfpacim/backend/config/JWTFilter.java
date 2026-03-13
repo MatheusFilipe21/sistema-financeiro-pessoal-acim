@@ -43,7 +43,6 @@ public class JWTFilter extends OncePerRequestFilter {
     /**
      * Lógica principal do filtro, executada em cada requisição.
      */
-    @SuppressWarnings("null")
     @Override
     protected void doFilterInternal(HttpServletRequest request,
             HttpServletResponse response,

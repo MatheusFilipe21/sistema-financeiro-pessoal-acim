@@ -1,12 +1,10 @@
 package br.com.sfpacim.backend.services;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import jakarta.persistence.EntityNotFoundException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,7 +22,18 @@ import br.com.sfpacim.backend.models.Pessoa;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.ContaRepository;
 import br.com.sfpacim.backend.repositories.PessoaRepository;
-import jakarta.persistence.EntityNotFoundException;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Testes unitários para a classe {@link PessoaService}.
@@ -82,7 +91,6 @@ class PessoaServiceTest {
      * Verifica se o serviço recupera o usuário, converte para entidade
      * e salva no repositório.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("cadastrar: Quando dados válidos, deve vincular ao usuário e salvar")
     void testeCadastrar_QuandoDadosValidos_DeveSalvarPessoa() {
@@ -100,9 +108,8 @@ class PessoaServiceTest {
 
     /**
      * Testa o método {@link PessoaService#cadastrar(CriarAtualizarPessoaDTO)}.
-     * Valida o cenário de falha por nome duplicado para o usuário (RF - Unicidade).
+     * Valida o cenário de falha por nome duplicado para o usuário.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("cadastrar: Quando nome duplicado, deve lançar ViolacaoDadosException")
     void testeCadastrar_QuandoNomeDuplicado_DeveLancarExcecao() {
@@ -141,7 +148,6 @@ class PessoaServiceTest {
      * {@link PessoaService#atualizar(UUID, CriarAtualizarPessoaDTO)}.
      * Valida o cenário de sucesso.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("atualizar: Quando pessoa existe e pertence ao usuário, deve atualizar")
     void testeAtualizar_QuandoValido_DeveAtualizarNome() {
@@ -163,7 +169,6 @@ class PessoaServiceTest {
      * Testa a segurança do método {@link PessoaService#atualizar(UUID, PessoaDTO)}.
      * Tenta atualizar um registro que pertence a OUTRO usuário.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("atualizar: Quando pessoa pertence a outro usuário, deve lançar EntityNotFoundException")
     void testeAtualizar_QuandoPertenceOutroUsuario_DeveLancarExcecao() {
@@ -190,7 +195,6 @@ class PessoaServiceTest {
      * Testa o método {@link PessoaService#atualizar} quando o campo titular é nulo.
      * Deve manter o valor original da entidade.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("atualizar: Quando titular é nulo no DTO, deve manter valor original")
     void testeAtualizar_QuandoTitularNulo_NaoDeveAlterarTitular() {
@@ -213,7 +217,6 @@ class PessoaServiceTest {
      * Testa o método {@link PessoaService#excluir(UUID)}.
      * Valida o cenário de sucesso.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("excluir: Quando válido, deve remover o registro")
     void testeExcluir_QuandoValido_DeveDeletar() {
@@ -229,7 +232,6 @@ class PessoaServiceTest {
      * Testa a validação de unicidade (Collator) no cadastro.
      * Deve lançar exceção se já existir nome igual (ignorando case/acento).
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("cadastrar: Quando nome existe (Case Insensitive), deve lançar ViolacaoDadosException")
     void testeCadastrar_QuandoNomeDuplicadoLogicaService_DeveLancarExcecao() {
@@ -254,7 +256,6 @@ class PessoaServiceTest {
      * Testa a validação de unicidade na atualização.
      * Deve permitir atualizar se o nome conflitante for do PRÓPRIO registro.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("atualizar: Quando nome é igual ao próprio registro, deve permitir atualização")
     void testeAtualizar_QuandoNomeIgualAoProprio_DevePermitir() {
@@ -276,7 +277,6 @@ class PessoaServiceTest {
      * Testa a validação de unicidade na atualização (Erro).
      * Deve bloquear se o nome pertencer a OUTRO registro.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("atualizar: Quando nome pertence a outra pessoa, deve lançar exceção")
     void testeAtualizar_QuandoNomeDuplicadoOutroId_DeveLancarExcecao() {
@@ -326,7 +326,6 @@ class PessoaServiceTest {
      * Testa o bloqueio de exclusão quando a pessoa possui vínculos.
      * Deve lançar ViolacaoDadosException se existirem contas vinculadas.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("excluir: Quando existem contas vinculadas, deve lançar ViolacaoDadosException")
     void testeExcluir_QuandoPossuiContas_DeveLancarExcecao() {

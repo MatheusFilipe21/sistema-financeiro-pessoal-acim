@@ -1,18 +1,21 @@
 package br.com.sfpacim.backend.repositories;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import br.com.sfpacim.backend.models.Usuario;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Teste de Integração para o {@link UsuarioRepository}.
@@ -79,7 +82,7 @@ class UsuarioRepositoryTest {
     }
 
     /**
-     * Testa a restrição (Constraint) de e-mail único (RF04)
+     * Testa a restrição (Constraint) de e-mail único
      * definida com {@code @Column(unique=true)} na entidade {@link Usuario}.
      */
     @Test

@@ -10,8 +10,7 @@ import jakarta.validation.constraints.Pattern;
  * no JSON da requisição de cadastro de usuário.
  * 
  * <p>
- * Este record aplica as validações de negócio (RF02, RF03, RF04)
- * usando o Spring Validation.
+ * Este record aplica as validações de negócio usando o Spring Validation.
  *
  * @author Matheus F. N. Pereira
  */
@@ -19,15 +18,15 @@ import jakarta.validation.constraints.Pattern;
 public record DadosCadastroUsuarioDTO(
 
         /**
-         * RF04: O nome é obrigatório.
+         * O nome é obrigatório.
          */
         @Schema(description = "Nome do usuário.", example = "Matheus Filipe do Nascimento Pereira") //
         @NotBlank(message = "O nome é obrigatório.") //
         String nome,
 
         /**
-         * RF02: O e-mail deve ter um formato válido.
-         * RF04: O e-mail é obrigatório.
+         * O e-mail deve ter um formato válido.
+         * O e-mail é obrigatório.
          */
         @Schema(description = "E-mail único (será usado para login).", example = "matheusfnpereira@gmail.com") //
         @NotBlank(message = "O e-mail é obrigatório.") //
@@ -35,8 +34,8 @@ public record DadosCadastroUsuarioDTO(
         String email,
 
         /**
-         * RF03: A senha deve ser complexa.
-         * RF04: A senha é obrigatória.
+         * A senha deve ser complexa.
+         * A senha é obrigatória.
          * Regra: Mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número.
          */
         @Schema(description = "Senha de acesso (mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número).", example = "Ab123456") //

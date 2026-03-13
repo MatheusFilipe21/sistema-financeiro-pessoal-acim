@@ -10,7 +10,7 @@ Nosso monorepo é construído com as seguintes tecnologias principais:
 
 | Componente          | Tecnologia                 | Versão   | Propósito                                                |
 | :------------------ | :------------------------- | :------- | :------------------------------------------------------- |
-| **Backend**         | Java / Spring Boot         | 21 / 3.x | API de negócios (Controladores, Serviços, Persistência). |
+| **Backend**         | Java / Spring Boot         | 25 / 4.x | API de negócios (Controladores, Serviços, Persistência). |
 | **Frontend**        | Angular                    | v20      | Interface de usuário web.                                |
 | **Database**        | PostgreSQL                 | 18       | Armazenamento de dados.                                  |
 | **Testes E2E**      | Python / Selenium / Behave | 3.12     | Validação de fluxo ponta-a-ponta (BDD).                  |

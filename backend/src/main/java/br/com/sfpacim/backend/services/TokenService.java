@@ -40,6 +40,20 @@ public class TokenService {
     private Long tempoExpiracaoMs;
 
     /**
+     * Instância do conversor JSON utilizada para processar o payload dos tokens.
+     */
+    private final ObjectMapper objectMapper;
+
+    /**
+     * Construtor para Injeção de Dependências.
+     *
+     * @param objectMapper O conversor JSON gerenciado pelo Spring.
+     */
+    public TokenService(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    /**
      * Gera um novo Token JWT assinado para um usuário autenticado.
      *
      * @param usuario A entidade {@link Usuario} autenticada.
@@ -146,8 +160,8 @@ public class TokenService {
 
             String payloadJson = new String(Base64.getUrlDecoder().decode(partes[1]), StandardCharsets.UTF_8);
 
-            return new ObjectMapper().readTree(payloadJson).get("sub").asText();
-        } catch (Exception e) {
+            return objectMapper.readTree(payloadJson).get("sub").asText();
+        } catch (Exception _) {
             return null;
         }
     }

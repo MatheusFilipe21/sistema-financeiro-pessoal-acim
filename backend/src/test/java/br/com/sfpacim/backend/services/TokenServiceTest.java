@@ -1,7 +1,5 @@
 package br.com.sfpacim.backend.services;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -9,12 +7,21 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import br.com.sfpacim.backend.models.Usuario;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.security.SignatureException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Testes unitários para a classe {@link TokenService}.
@@ -27,6 +34,9 @@ import io.jsonwebtoken.security.SignatureException;
  */
 @ExtendWith(MockitoExtension.class)
 class TokenServiceTest {
+
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     @InjectMocks
     private TokenService tokenService;
@@ -42,7 +52,6 @@ class TokenServiceTest {
      * Configura o TokenService antes de cada teste.
      * Injeta os valores (que viriam do @Value) usando ReflectionTestUtils.
      */
-    @SuppressWarnings("null")
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(tokenService, "chaveSecreta", CHAVE_SECRETA_TESTE);
@@ -87,7 +96,7 @@ class TokenServiceTest {
     void testeValidarToken_QuandoAssinaturaInvalida_DeveLancarExcecao() {
         String tokenValido = tokenService.gerarToken(usuarioMock);
 
-        TokenService tokenServiceInvalido = new TokenService();
+        TokenService tokenServiceInvalido = new TokenService(objectMapper);
         ReflectionTestUtils.setField(tokenServiceInvalido, "chaveSecreta",
                 "999E635266556A586E3272357538782F413F4428472B4B6250645367566B5999");
 
@@ -103,7 +112,7 @@ class TokenServiceTest {
     @Test
     @DisplayName("validarToken: Quando token estiver expirado, deve lançar ExpiredJwtException")
     void testeValidarToken_QuandoTokenExpirado_DeveLancarExcecao() {
-        TokenService tokenServiceExpirado = new TokenService();
+        TokenService tokenServiceExpirado = new TokenService(objectMapper);
         ReflectionTestUtils.setField(tokenServiceExpirado, "chaveSecreta", CHAVE_SECRETA_TESTE);
         ReflectionTestUtils.setField(tokenServiceExpirado, "tempoExpiracaoMs", -14400000L);
 

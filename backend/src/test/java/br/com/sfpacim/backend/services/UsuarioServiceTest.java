@@ -1,10 +1,5 @@
 package br.com.sfpacim.backend.services;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.*;
-
 import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
@@ -22,6 +17,16 @@ import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.PessoaRepository;
 import br.com.sfpacim.backend.repositories.UsuarioRepository;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Testes unitários para a classe {@link UsuarioService}.
@@ -60,7 +65,6 @@ class UsuarioServiceTest {
      * Verifica se o serviço chama o PasswordEncoder e o Repository.saveAndFlush()
      * corretamente e retorna o DTO esperado.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("registrar: Quando dados válidos forem fornecidos, deve hashear a senha e salvar o usuário")
     void testeRegistrar_QuandoDadosValidos_DeveSalvarUsuario() {
@@ -86,13 +90,12 @@ class UsuarioServiceTest {
 
     /**
      * Testa o método {@link UsuarioService#registrar(DadosCadastroUsuarioDTO)}.
-     * Valida o cenário de falha por e-mail duplicado (RF04).
+     * Valida o cenário de falha por e-mail duplicado.
      * 
      * <p>
      * Verifica se o serviço captura a DataIntegrityViolationException (lançada
      * pelo mock do repositório) e a relança como ViolacaoDadosException.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("registrar: Quando e-mail duplicado, deve lançar ViolacaoDadosException")
     void testeRegistrar_QuandoEmailDuplicado_DeveLancarViolacaoDadosException() {
@@ -112,10 +115,10 @@ class UsuarioServiceTest {
 
     /**
      * Testa o método {@link UsuarioService#atualizarSenha(Usuario, String)}.
-     * Valida o fluxo de alteração de senha (RF17).
+     * Valida o fluxo de alteração de senha.
      *
      * <p>
-     * Verifica se a nova senha é encriptada (RF06) e se a entidade é salva
+     * Verifica se a nova senha é encriptada e se a entidade é salva
      * no repositório com o novo hash.
      */
     @Test

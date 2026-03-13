@@ -16,8 +16,8 @@ import jakarta.validation.constraints.NotBlank;
 public record DadosRecuperacaoSenhaDTO(
 
         /**
-         * RF02: O e-mail deve ter um formato válido.
-         * RF04: O e-mail é obrigatório.
+         * O e-mail deve ter um formato válido.
+         * O e-mail é obrigatório.
          */
         @Schema(description = "E-mail cadastrado.", example = "matheusfnpereira@gmail.com") //
         @NotBlank(message = "O e-mail é obrigatório.") //

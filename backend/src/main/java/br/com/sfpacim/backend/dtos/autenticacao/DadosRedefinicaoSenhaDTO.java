@@ -14,15 +14,15 @@ import jakarta.validation.constraints.Pattern;
 public record DadosRedefinicaoSenhaDTO(
 
         /**
-         * RF04: O token é obrigatório.
+         * O token é obrigatório.
          */
         @Schema(description = "Token de recuperação Bearer (JWT).", example = "eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJTRlAtQUNJTSBBUEkiLCJzdWIiOiJtYXRoZXVzZm5wZXJlaXJhQGdtYWlsLmNvbSIsImlhdCI6MTc2NTExMTMzMCwiZXhwIjoxNzY1MTI1NzMwfQ.MB0urXWxU4Hr4J3XA61x_RfzKmNzbs3uJ5rwVStnzg8oCfHYlgN-vsNrrU7CKYNnfs8MvUrMnK1Vw2Dkbr2pPg") //
         @NotBlank(message = "O token é obrigatório") //
         String token,
 
         /**
-         * RF03: A senha deve ser complexa.
-         * RF04: A senha é obrigatória.
+         * A senha deve ser complexa.
+         * A senha é obrigatória.
          * Regra: Mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número.
          */
         @Schema(description = "Senha de acesso (mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número).", example = "Ab1234567") //

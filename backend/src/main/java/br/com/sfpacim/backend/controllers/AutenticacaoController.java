@@ -62,11 +62,11 @@ public class AutenticacaoController {
     }
 
     /**
-     * Endpoint (RF07) para o cadastro de um novo usuário.
+     * Endpoint para o cadastro de um novo usuário.
      *
      * @param dados Os dados de cadastro (validados pela anotação @Valid).
      * @return HTTP 201 (Created) com o DTO do usuário criado e o Header 'Location'.
-     * @throws ViolacaoDadosException Caso o e-mail já esteja cadastrado (RF04).
+     * @throws ViolacaoDadosException Caso o e-mail já esteja cadastrado.
      */
     @SecurityRequirements({})
     @Operation(summary = "Cadastra um novo usuário", description = "Endpoint público para cadastro de novos usuários. Recebe os dados de registro, cria a conta no sistema e retorna os dados do usuário criado com status 201.", responses = {
@@ -89,11 +89,11 @@ public class AutenticacaoController {
     }
 
     /**
-     * Endpoint (RF08) para autenticar (login) um usuário.
+     * Endpoint para autenticar (login) um usuário.
      *
-     * @param dados Os dados de autenticação (email e senha) (RF09).
-     * @return HTTP 200 (OK) com o Token JWT (RF12).
-     *         HTTP 401 (Unauthorized) se as credenciais forem inválidas (RF13).
+     * @param dados Os dados de autenticação (email e senha).
+     * @return HTTP 200 (OK) com o Token JWT.
+     *         HTTP 401 (Unauthorized) se as credenciais forem inválidas.
      */
     @SecurityRequirements({})
     @Operation(summary = "Autentica um usuário", description = "Endpoint público para login. Recebe e-mail e senha e retorna um Token JWT com status 200 se a autenticação for bem-sucedida.", responses = {
@@ -110,7 +110,7 @@ public class AutenticacaoController {
     }
 
     /**
-     * Endpoint (RF14) para solicitar a recuperação de senha.
+     * Endpoint para solicitar a recuperação de senha.
      * 
      * <p>
      * Este endpoint inicia o fluxo de "Recuperação de senha". Por questões de
@@ -134,7 +134,7 @@ public class AutenticacaoController {
     }
 
     /**
-     * Endpoint (RF17) para efetivar a redefinição de senha.
+     * Endpoint para efetivar a redefinição de senha.
      * 
      * <p>
      * Recebe o token enviado por e-mail e a nova senha escolhida pelo usuário.

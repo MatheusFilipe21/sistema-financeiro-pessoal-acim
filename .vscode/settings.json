@@ -6,6 +6,15 @@
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "java.compile.nullAnalysis.mode": "automatic",
   "java.configuration.updateBuildConfiguration": "automatic",
+  "java.completion.importOrder": [
+    "java",
+    "jakarta",
+    "javax",
+    "org",
+    "com",
+    "",
+    "#"
+  ],
   "[java]": {
     "editor.defaultFormatter": "redhat.java"
   },

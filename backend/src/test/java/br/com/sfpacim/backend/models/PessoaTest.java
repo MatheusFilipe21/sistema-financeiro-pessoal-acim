@@ -1,12 +1,13 @@
 package br.com.sfpacim.backend.models;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Testes unitários para a entidade {@link Pessoa}.

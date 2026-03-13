@@ -48,14 +48,13 @@ public class UsuarioService {
      * Processa o registro de um novo usuário no sistema.
      *
      * <p>
-     * Este método orquestra a conversão do DTO (RF06 - Hash BCrypt),
-     * a persistência (RF04 - Verificação de duplicidade) e a criação automática
-     * da pessoa titular vinculada a este usuário.
+     * Este método orquestra a conversão do DTO, a persistência e a criação
+     * automática da pessoa titular vinculada a este usuário.
      *
      * @param dados Os dados de cadastro (DTO) já validados pelo controller.
      * @return O {@link UsuarioDTO} contendo os dados públicos do usuário
      *         recém-criado.
-     * @throws ViolacaoDadosException Se o e-mail já existir no banco (RF04).
+     * @throws ViolacaoDadosException Se o e-mail já existir no banco.
      */
     @Transactional
     public UsuarioDTO registrar(DadosCadastroUsuarioDTO dados) throws ViolacaoDadosException {
@@ -67,10 +66,10 @@ public class UsuarioService {
     }
 
     /**
-     * Atualiza a senha do usuário (RF17).
+     * Atualiza a senha do usuário.
      *
      * <p>
-     * Responsável por gerar o hash da nova senha (RF06) e persistir a alteração.
+     * Responsável por gerar o hash da nova senha e persistir a alteração.
      *
      * @param usuario   A entidade do usuário já carregada do banco.
      * @param novaSenha A nova senha vinda do DTO.
@@ -97,7 +96,7 @@ public class UsuarioService {
 
     /**
      * Converte um {@link DadosCadastroUsuarioDTO} (DTO) para a entidade
-     * {@link Usuario} aplicando o hash na senha durante a conversão (RF06).
+     * {@link Usuario} aplicando o hash na senha durante a conversão.
      *
      * @param dto {@link DadosCadastroUsuarioDTO} com os dados do novo usuário.
      * @return A entidade {@link Usuario} pronta para ser persistida.
@@ -111,7 +110,7 @@ public class UsuarioService {
      * 
      * <p>
      * Este método encapsula o save() e trata a exceção de violação
-     * de integridade (e-mail duplicado - RF04), lançando uma
+     * de integridade (e-mail duplicado), lançando uma
      * exceção de negócio mais clara (ViolacaoDadosException).
      *
      * @param usuario Entidade {@link Usuario} a ser salva.
@@ -119,11 +118,10 @@ public class UsuarioService {
      * @throws ViolacaoDadosException Caso o e-mail (unique=true) já esteja
      *                                cadastrado.
      */
-    @SuppressWarnings("null")
     private Usuario salvarEntidade(Usuario usuario) throws ViolacaoDadosException {
         try {
             return usuarioRepository.saveAndFlush(usuario);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException _) {
             throw new ViolacaoDadosException(
                     String.format("O e-mail: %s já está cadastrado.", usuario.getEmail()));
         }

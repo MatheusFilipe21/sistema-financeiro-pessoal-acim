@@ -1,12 +1,12 @@
 package br.com.sfpacim.backend.bdd.contexts;
 
+import org.springframework.stereotype.Component;
+
 import io.cucumber.spring.ScenarioScope;
 import io.restassured.response.Response;
 import lombok.Data;
 
 import static io.restassured.RestAssured.given;
-
-import org.springframework.stereotype.Component;
 
 /**
  * Componente central de estado para Testes de API (Contexto).
