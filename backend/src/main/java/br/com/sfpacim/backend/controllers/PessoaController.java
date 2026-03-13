@@ -57,7 +57,7 @@ public class PessoaController {
     }
 
     /**
-     * Endpoint (RF46) para cadastrar uma nova pessoa.
+     * Endpoint para cadastrar uma nova pessoa.
      *
      * @param dto Os dados da pessoa (Nome).
      * @return HTTP 201 (Created) com o DTO criado e Header Location.
@@ -83,7 +83,7 @@ public class PessoaController {
     }
 
     /**
-     * Endpoint (RF47) para listar todas as pessoas do usuário autenticado.
+     * Endpoint para listar todas as pessoas do usuário autenticado.
      *
      * @return HTTP 200 (OK) com a lista de pessoas.
      */
@@ -121,7 +121,7 @@ public class PessoaController {
     }
 
     /**
-     * Endpoint (RF49) para excluir uma pessoa.
+     * Endpoint para excluir uma pessoa.
      *
      * @param id O UUID da pessoa a ser excluída.
      * @return HTTP 204 (No Content).

@@ -1,5 +1,34 @@
 package br.com.sfpacim.backend.controllers;
 
+import java.util.List;
+import java.util.UUID;
+
+import jakarta.persistence.EntityNotFoundException;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import br.com.sfpacim.backend.config.JacksonConfig;
+import br.com.sfpacim.backend.dtos.categoria.CategoriaDTO;
+import br.com.sfpacim.backend.dtos.categoria.CriarAtualizarCategoriaDTO;
+import br.com.sfpacim.backend.exceptions.RegraDeNegocioException;
+import br.com.sfpacim.backend.exceptions.TratadorDeErrosGlobal;
+import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
+import br.com.sfpacim.backend.models.enums.TipoCategoria;
+import br.com.sfpacim.backend.services.CategoriaService;
+import br.com.sfpacim.backend.services.TokenService;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -12,33 +41,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.List;
-import java.util.UUID;
-
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import br.com.sfpacim.backend.config.SegurancaConfig;
-import br.com.sfpacim.backend.dtos.categoria.CategoriaDTO;
-import br.com.sfpacim.backend.dtos.categoria.CriarAtualizarCategoriaDTO;
-import br.com.sfpacim.backend.exceptions.RegraDeNegocioException;
-import br.com.sfpacim.backend.exceptions.TratadorDeErrosGlobal;
-import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
-import br.com.sfpacim.backend.models.enums.TipoCategoria;
-import br.com.sfpacim.backend.services.CategoriaService;
-import br.com.sfpacim.backend.services.TokenService;
-import jakarta.persistence.EntityNotFoundException;
-
 /**
  * Testes unitários para a classe {@link CategoriaController}.
  *
@@ -49,7 +51,8 @@ import jakarta.persistence.EntityNotFoundException;
  * @author Matheus F. N. Pereira
  */
 @WebMvcTest(CategoriaController.class)
-@Import({ SegurancaConfig.class, TratadorDeErrosGlobal.class })
+@Import({ JacksonConfig.class, TratadorDeErrosGlobal.class })
+@AutoConfigureMockMvc(addFilters = false)
 @WithMockUser
 class CategoriaControllerTest {
 
@@ -83,7 +86,6 @@ class CategoriaControllerTest {
      * Verifica se, ao enviar dados válidos, o controlador retorna HTTP 201
      * (Created), o DTO criado e o cabeçalho 'Location'.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("cadastrar: Quando dados válidos, deve retornar HTTP 201 Created")
     void testeCadastrar_QuandoDadosValidos_DeveRetornar201() throws Exception {
@@ -110,7 +112,6 @@ class CategoriaControllerTest {
      * <p>
      * Verifica se o @Valid barra nomes em branco, retornando HTTP 422.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("cadastrar: Quando nome em branco (DTO Validation), deve retornar HTTP 422")
     void testeCadastrar_QuandoNomeInvalido_DeveRetornar422() throws Exception {
@@ -120,7 +121,7 @@ class CategoriaControllerTest {
         mockMvc.perform(post("/categorias")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonRequisicao))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableContent());
     }
 
     /**
@@ -130,7 +131,6 @@ class CategoriaControllerTest {
      * Simula o serviço lançando ViolacaoDadosException e verifica se o
      * TratadorDeErrosGlobal converte corretamente para HTTP 409 (Conflict).
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("cadastrar: Quando nome duplicado, deve retornar HTTP 409 Conflict")
     void testeCadastrar_QuandoConflito_DeveRetornar409() throws Exception {
@@ -150,7 +150,6 @@ class CategoriaControllerTest {
      * Testa o endpoint GET /categorias.
      * Valida o cenário de sucesso.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("listar: Deve retornar HTTP 200 OK e a lista de categorias")
     void testeListar_DeveRetornarLista() throws Exception {
@@ -170,7 +169,6 @@ class CategoriaControllerTest {
      * Testa o endpoint PUT /categorias/{id}.
      * Valida o cenário de sucesso.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("atualizar: Quando válido, deve retornar HTTP 200 OK com dados atualizados")
     void testeAtualizar_QuandoValido_DeveRetornar200() throws Exception {
@@ -194,7 +192,6 @@ class CategoriaControllerTest {
      * <p>
      * Simula EntityNotFoundException e espera HTTP 404 (Not Found).
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("atualizar: Quando não encontrado, deve retornar HTTP 404")
     void testeAtualizar_QuandoNaoEncontrado_DeveRetornar404() throws Exception {
@@ -237,6 +234,6 @@ class CategoriaControllerTest {
                 .when(categoriaService).excluir(ID_CATEGORIA);
 
         mockMvc.perform(delete("/categorias/{id}", ID_CATEGORIA))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableContent());
     }
 }

@@ -1,22 +1,15 @@
 package br.com.sfpacim.backend.controllers;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 import java.util.List;
 import java.util.UUID;
+
+import jakarta.persistence.EntityNotFoundException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -26,14 +19,25 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import br.com.sfpacim.backend.config.SegurancaConfig;
+import br.com.sfpacim.backend.config.JacksonConfig;
 import br.com.sfpacim.backend.dtos.pessoa.CriarAtualizarPessoaDTO;
 import br.com.sfpacim.backend.dtos.pessoa.PessoaDTO;
 import br.com.sfpacim.backend.exceptions.TratadorDeErrosGlobal;
 import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 import br.com.sfpacim.backend.services.PessoaService;
 import br.com.sfpacim.backend.services.TokenService;
-import jakarta.persistence.EntityNotFoundException;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Testes unitários para a classe {@link PessoaController}.
@@ -45,7 +49,8 @@ import jakarta.persistence.EntityNotFoundException;
  * @author Matheus F. N. Pereira
  */
 @WebMvcTest(PessoaController.class)
-@Import({ SegurancaConfig.class, TratadorDeErrosGlobal.class })
+@Import({ JacksonConfig.class, TratadorDeErrosGlobal.class })
+@AutoConfigureMockMvc(addFilters = false)
 @WithMockUser
 class PessoaControllerTest {
 
@@ -70,14 +75,13 @@ class PessoaControllerTest {
     private static final UUID ID_PESSOA = UUID.randomUUID();
 
     /**
-     * Testa o endpoint POST /pessoas (RF46).
+     * Testa o endpoint POST /pessoas.
      * Valida o cenário de sucesso.
      *
      * <p>
      * Verifica se, ao enviar dados válidos, o controlador retorna HTTP 201
      * (Created), o DTO criado e o cabeçalho 'Location'.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("cadastrar: Quando dados válidos, deve retornar HTTP 201 Created")
     void testeCadastrar_QuandoDadosValidos_DeveRetornar201() throws Exception {
@@ -103,7 +107,6 @@ class PessoaControllerTest {
      * <p>
      * Verifica se o @Valid barra nomes em branco, retornando HTTP 422.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("cadastrar: Quando nome em branco (DTO Validation), deve retornar HTTP 422")
     void testeCadastrar_QuandoNomeInvalido_DeveRetornar422() throws Exception {
@@ -113,7 +116,7 @@ class PessoaControllerTest {
         mockMvc.perform(post("/pessoas")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonRequisicao))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableContent());
     }
 
     /**
@@ -123,7 +126,6 @@ class PessoaControllerTest {
      * Simula o serviço lançando ViolacaoDadosException e verifica se o
      * TratadorDeErrosGlobal converte corretamente para HTTP 409 (Conflict).
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("cadastrar: Quando nome duplicado, deve retornar HTTP 409 Conflict")
     void testeCadastrar_QuandoConflito_DeveRetornar409() throws Exception {
@@ -136,14 +138,13 @@ class PessoaControllerTest {
         mockMvc.perform(post("/pessoas")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonRequisicao))
-                .andExpect(status().isConflict()); // HTTP 409
+                .andExpect(status().isConflict());
     }
 
     /**
-     * Testa o endpoint GET /pessoas (RF47).
+     * Testa o endpoint GET /pessoas.
      * Valida o cenário de sucesso.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("listar: Deve retornar HTTP 200 OK e a lista de pessoas")
     void testeListar_DeveRetornarLista() throws Exception {
@@ -162,7 +163,6 @@ class PessoaControllerTest {
      * Testa o endpoint PUT /pessoas/{id}.
      * Valida o cenário de sucesso.
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("atualizar: Quando válido, deve retornar HTTP 200 OK com dados atualizados")
     void testeAtualizar_QuandoValido_DeveRetornar200() throws Exception {
@@ -186,7 +186,6 @@ class PessoaControllerTest {
      * <p>
      * Simula EntityNotFoundException e espera HTTP 404 (Not Found).
      */
-    @SuppressWarnings("null")
     @Test
     @DisplayName("atualizar: Quando não encontrado, deve retornar HTTP 404")
     void testeAtualizar_QuandoNaoEncontrado_DeveRetornar404() throws Exception {
@@ -203,7 +202,7 @@ class PessoaControllerTest {
     }
 
     /**
-     * Testa o endpoint DELETE /pessoas/{id} (RF49).
+     * Testa o endpoint DELETE /pessoas/{id}.
      * Valida o cenário de sucesso.
      */
     @Test

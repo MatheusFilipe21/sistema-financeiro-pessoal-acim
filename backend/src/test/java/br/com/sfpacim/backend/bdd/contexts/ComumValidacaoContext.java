@@ -1,9 +1,5 @@
 package br.com.sfpacim.backend.bdd.contexts;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.List;
 import java.util.Objects;
 
@@ -12,6 +8,10 @@ import org.springframework.stereotype.Component;
 
 import io.cucumber.spring.ScenarioScope;
 import io.restassured.path.json.JsonPath;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Contexto responsável pelas validações genéricas de API.
@@ -94,7 +94,6 @@ public class ComumValidacaoContext {
             throw new AssertionError(String.format("O campo '%s' não foi encontrado ou não é uma lista.", campo));
         }
 
-        // Lógica robusta: Filtra nulos, remove espaços e busca o valor
         boolean contemValor = lista.stream()
                 .filter(Objects::nonNull)
                 .map(String::trim)
