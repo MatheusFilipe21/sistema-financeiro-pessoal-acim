@@ -1,3 +1,4 @@
+import { describe, beforeEach, it, vi, expect } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -25,6 +26,7 @@ describe('BaseFormularioDialog', () => {
    * Compila os componentes e define inputs iniciais obrigatórios.
    */
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [
         BaseFormularioDialog,
@@ -42,7 +44,7 @@ describe('BaseFormularioDialog', () => {
     component.titulo = 'Título de Teste';
     component.operacao = 'cadastrar';
 
-    fixture.detectChanges();
+    await fixture.whenStable();
   });
 
   /**
@@ -79,8 +81,12 @@ describe('BaseFormularioDialog', () => {
    * Verifica se o botão principal exibe o texto "Excluir", usa a cor de alerta (warn)
    * e se a mensagem de aviso visual é renderizada.
    */
-  it('deve exibir botão "Excluir", cor warn e alerta para operação "excluir"', () => {
+  it('deve exibir botão "Excluir", cor warn e alerta para operação "excluir"', async () => {
     component.operacao = 'excluir';
+
+    fixture.componentRef.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     const btnConfirmar = fixture.debugElement.query(By.css('#btn-confirmar'));
@@ -96,7 +102,7 @@ describe('BaseFormularioDialog', () => {
    * Deve disparar o Output `confirmar` ao ser clicado.
    */
   it('deve emitir evento "confirmar" ao clicar no botão de ação (#btn-confirmar)', () => {
-    spyOn(component.confirmar, 'emit');
+    vi.spyOn(component.confirmar, 'emit');
 
     const btnConfirmar = fixture.debugElement.query(By.css('#btn-confirmar'));
     btnConfirmar.nativeElement.click();
@@ -109,7 +115,7 @@ describe('BaseFormularioDialog', () => {
    * Deve disparar o Output `cancelar` ao ser clicado.
    */
   it('deve emitir evento "cancelar" ao clicar no botão Cancelar (#btn-cancelar)', () => {
-    spyOn(component.cancelar, 'emit');
+    vi.spyOn(component.cancelar, 'emit');
 
     const btnCancelar = fixture.debugElement.query(By.css('#btn-cancelar'));
     btnCancelar.nativeElement.click();
@@ -122,7 +128,7 @@ describe('BaseFormularioDialog', () => {
    * Deve disparar o Output `cancelar` ao ser clicado.
    */
   it('deve emitir evento "cancelar" ao clicar no botão de fechar (#btn-fechar)', () => {
-    spyOn(component.cancelar, 'emit');
+    vi.spyOn(component.cancelar, 'emit');
 
     const btnFechar = fixture.debugElement.query(By.css('#btn-fechar'));
     btnFechar.nativeElement.click();
@@ -133,26 +139,34 @@ describe('BaseFormularioDialog', () => {
   /**
    * Verifica o estado desabilitado do botão principal quando o formulário é inválido.
    */
-  it('deve desabilitar botão de confirmação se formularioInvalido for true', () => {
+  it('deve desabilitar botão de confirmação se formularioInvalido for true', async () => {
     component.formularioInvalido = true;
+
+    fixture.componentRef.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     const btnConfirmar = fixture.debugElement.query(By.css('#btn-confirmar'));
-    expect(btnConfirmar.nativeElement.disabled).toBeTrue();
+    expect(btnConfirmar.nativeElement.disabled).toBe(true);
   });
 
   /**
    * Verifica o estado de carregamento (Processing).
    * O botão principal deve estar desabilitado e o Spinner deve estar visível.
    */
-  it('deve exibir spinner e desabilitar botões quando estiver processando', () => {
+  it('deve exibir spinner e desabilitar botões quando estiver processando', async () => {
     component.processando = true;
+
+    fixture.componentRef.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     const btnConfirmar = fixture.debugElement.query(By.css('#btn-confirmar'));
     const spinner = fixture.debugElement.query(By.css('mat-spinner'));
 
-    expect(btnConfirmar.nativeElement.disabled).toBeTrue();
+    expect(btnConfirmar.nativeElement.disabled).toBe(true);
     expect(spinner).toBeTruthy();
   });
 });

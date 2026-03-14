@@ -1,3 +1,4 @@
+import { describe, beforeEach, afterEach, it, vi, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -30,10 +31,16 @@ describe('Autenticacao', () => {
    * Configura o ambiente de testes antes de cada 'it'.
    */
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [RouterModule.forRoot([{ path: 'dashboard', component: Dashboard }])],
       providers: [provideHttpClient(), provideHttpClientTesting(), Autenticacao],
     });
+
+    vi.spyOn(Storage.prototype, 'setItem');
+    vi.spyOn(Storage.prototype, 'getItem');
+    vi.spyOn(Storage.prototype, 'removeItem');
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     service = TestBed.inject(Autenticacao);
     httpMock = TestBed.inject(HttpTestingController);
@@ -59,7 +66,7 @@ describe('Autenticacao', () => {
    * Testa o método registrar(), garantindo que o endpoint correto (POST /autenticacao/cadastro) seja chamado,
    * que o DTO enviado esteja correto e que o retorno do backend (UsuarioDTO) seja recebido conforme esperado.
    */
-  it('deve registrar um usuário (POST /autenticacao/cadastro)', (done) => {
+  it('deve registrar um usuário (POST /autenticacao/cadastro)', () => {
     const dadosCadastro: DadosCadastroUsuarioDTO = {
       nome: 'Matheus Filipe do Nascimento Pereira',
       email: 'matheusfnpereira@gmail.com',
@@ -74,7 +81,6 @@ describe('Autenticacao', () => {
 
     service.registrar(dadosCadastro).subscribe((res) => {
       expect(res).toEqual(mockResponse);
-      done();
     });
 
     const req = httpMock.expectOne('/autenticacao/cadastro');
@@ -89,7 +95,7 @@ describe('Autenticacao', () => {
    * Testa o método login(), garantindo que além de chamar a API,
    * ele invoca a lógica de persistência de sessão (logar).
    */
-  it('deve autenticar um usuário e salvar a sessão (POST /autenticacao/login)', (done) => {
+  it('deve autenticar um usuário e salvar a sessão (POST /autenticacao/login)', () => {
     const dadosLogin: DadosAutenticacaoDTO = {
       email: 'matheus@gmail.com',
       senha: 'Ab123456',
@@ -98,12 +104,11 @@ describe('Autenticacao', () => {
       token: TOKEN_VALIDO,
     };
 
-    spyOn(service, 'logar').and.callThrough();
+    vi.spyOn(service, 'logar');
 
     service.login(dadosLogin).subscribe((res) => {
       expect(res).toEqual(mockResponse);
       expect(service.logar).toHaveBeenCalledWith(TOKEN_VALIDO);
-      done();
     });
 
     const req = httpMock.expectOne('/autenticacao/login');
@@ -115,12 +120,10 @@ describe('Autenticacao', () => {
    * Testa o método recuperarSenha(), garantindo que o endpoint correto (POST /autenticacao/recuperar-senha) seja chamado,
    * que o e-mail seja enviado no corpo da requisição e que o retorno seja vazio (void).
    */
-  it('deve solicitar recuperação de senha (POST /autenticacao/recuperar-senha)', (done) => {
+  it('deve solicitar recuperação de senha (POST /autenticacao/recuperar-senha)', () => {
     const email = 'matheusfnpereira@gmail.com';
 
-    service.recuperarSenha(email).subscribe(() => {
-      done();
-    });
+    service.recuperarSenha(email).subscribe(() => {});
 
     const req = httpMock.expectOne('/autenticacao/recuperar-senha');
 
@@ -157,13 +160,13 @@ describe('Autenticacao', () => {
    * e se ocorre o redirecionamento para o dashboard.
    */
   it('deve salvar sessão, atualizar signal e navegar para dashboard', () => {
-    spyOn(localStorage, 'setItem');
-    spyOn(router, 'navigate');
+    vi.spyOn(localStorage, 'setItem');
+    vi.spyOn(router, 'navigate');
 
     service.logar(TOKEN_VALIDO);
 
     expect(localStorage.setItem).toHaveBeenCalledWith('sfp-acim-token-jwt', TOKEN_VALIDO);
-    expect(service.usuarioEstaLogado()).toBeTrue();
+    expect(service.usuarioEstaLogado()).toBe(true);
     expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
   });
 
@@ -173,13 +176,13 @@ describe('Autenticacao', () => {
    * e se ocorre o redirecionamento para o login.
    */
   it('deve limpar sessão, atualizar signal e navegar para login', () => {
-    spyOn(localStorage, 'removeItem');
-    spyOn(router, 'navigate');
+    vi.spyOn(localStorage, 'removeItem');
+    vi.spyOn(router, 'navigate');
 
     service.deslogar();
 
     expect(localStorage.removeItem).toHaveBeenCalledWith('sfp-acim-token-jwt');
-    expect(service.usuarioEstaLogado()).toBeFalse();
+    expect(service.usuarioEstaLogado()).toBe(false);
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
 
@@ -187,24 +190,24 @@ describe('Autenticacao', () => {
    * Testa a validação de token (possuiTokenValido) com um JWT válido (data futura).
    */
   it('deve retornar true para token válido (não expirado)', () => {
-    spyOn(localStorage, 'getItem').and.returnValue(TOKEN_VALIDO);
-    expect(service.possuiTokenValido()).toBeTrue();
+    vi.spyOn(localStorage, 'getItem').mockReturnValue(TOKEN_VALIDO);
+    expect(service.possuiTokenValido()).toBe(true);
   });
 
   /**
    * Testa a validação de token com um JWT expirado (data passada).
    */
   it('deve retornar false para token expirado', () => {
-    spyOn(localStorage, 'getItem').and.returnValue(TOKEN_EXPIRADO);
-    expect(service.possuiTokenValido()).toBeFalse();
+    vi.spyOn(localStorage, 'getItem').mockReturnValue(TOKEN_EXPIRADO);
+    expect(service.possuiTokenValido()).toBe(false);
   });
 
   /**
    * Testa a validação quando não há token no armazenamento.
    */
   it('deve retornar false se não houver token', () => {
-    spyOn(localStorage, 'getItem').and.returnValue(null);
-    expect(service.possuiTokenValido()).toBeFalse();
+    vi.spyOn(localStorage, 'getItem').mockReturnValue(null);
+    expect(service.possuiTokenValido()).toBe(false);
   });
 
   /**
@@ -212,10 +215,10 @@ describe('Autenticacao', () => {
    * Garante que o serviço não quebra e retorna false.
    */
   it('deve retornar false e logar aviso se o token for malformado', () => {
-    spyOn(localStorage, 'getItem').and.returnValue('token-invalido-que-nao-eh-jwt');
-    spyOn(console, 'warn');
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(localStorage, 'getItem').mockReturnValue('token-invalido-que-nao-eh-jwt');
 
-    expect(service.possuiTokenValido()).toBeFalse();
-    expect(console.warn).toHaveBeenCalled();
+    expect(service.possuiTokenValido()).toBe(false);
+    expect(warnSpy).toHaveBeenCalled();
   });
 });

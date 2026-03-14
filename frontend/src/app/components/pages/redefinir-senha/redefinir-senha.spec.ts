@@ -1,3 +1,4 @@
+import { describe, beforeEach, it, vi, expect } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
@@ -13,14 +14,14 @@ import { DadosRedefinicaoSenhaDTO } from '../../../dtos/autenticacao/DadosRedefi
  * Mock do serviço de autenticação.
  */
 class AutenticacaoServiceMock {
-  redefinirSenha = jasmine.createSpy('redefinirSenha').and.returnValue(of(void 0));
+  redefinirSenha = vi.fn().mockReturnValue(of(void 0));
 }
 
 /**
  * Mock do serviço de dialog.
  */
 class DialogServiceMock {
-  mostrarSucesso = jasmine.createSpy('mostrarSucesso').and.returnValue(of(true));
+  mostrarSucesso = vi.fn().mockReturnValue(of(true));
 }
 
 /**
@@ -46,6 +47,7 @@ describe('RedefinirSenha', () => {
    * aplicando mocks às dependências e criando a instância do componente antes de cada teste.
    */
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [
         RedefinirSenha,
@@ -94,7 +96,7 @@ describe('RedefinirSenha', () => {
    */
   it('deve deixar o formulário inválido quando campos obrigatórios estiverem vazios', () => {
     component.formulario.setValue({ senha: '', confirmarSenha: '' });
-    expect(component.formulario.invalid).toBeTrue();
+    expect(component.formulario.invalid).toBe(true);
   });
 
   /**
@@ -102,10 +104,10 @@ describe('RedefinirSenha', () => {
    */
   it('deve validar requisitos mínimos da senha', () => {
     component.formulario.get('senha')?.setValue('abc');
-    expect(component.formulario.get('senha')?.valid).toBeFalse();
+    expect(component.formulario.get('senha')?.valid).toBe(false);
 
     component.formulario.get('senha')?.setValue('Senha123');
-    expect(component.formulario.get('senha')?.valid).toBeTrue();
+    expect(component.formulario.get('senha')?.valid).toBe(true);
   });
 
   /**
@@ -133,7 +135,7 @@ describe('RedefinirSenha', () => {
       confirmarSenha: novaSenha,
     });
 
-    spyOn(router, 'navigate');
+    vi.spyOn(router, 'navigate');
 
     component.aoEnviar();
 
@@ -146,7 +148,7 @@ describe('RedefinirSenha', () => {
 
     expect(dialogService.mostrarSucesso).toHaveBeenCalledWith(
       'Senha Alterada',
-      jasmine.stringMatching('sucesso')
+      expect.stringContaining('sucesso'),
     );
 
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
@@ -170,7 +172,7 @@ describe('RedefinirSenha', () => {
   it('deve definir senhaEstaEmFoco como true ao focar', () => {
     component.senhaEstaEmFoco.set(false);
     component.aoFocarSenha();
-    expect(component.senhaEstaEmFoco()).toBeTrue();
+    expect(component.senhaEstaEmFoco()).toBe(true);
   });
 
   /**
@@ -179,7 +181,7 @@ describe('RedefinirSenha', () => {
   it('deve definir senhaEstaEmFoco como false ao desfocar', () => {
     component.senhaEstaEmFoco.set(true);
     component.aoDesfocarSenha();
-    expect(component.senhaEstaEmFoco()).toBeFalse();
+    expect(component.senhaEstaEmFoco()).toBe(false);
   });
 
   /**
@@ -239,8 +241,8 @@ describe('RedefinirSenha', () => {
       confirmarSenha: 'Senha1234',
     });
 
-    expect(component.formulario.invalid).toBeTrue();
-    expect(component.formulario.get('confirmarSenha')?.hasError('senhasNaoConferem')).toBeTrue();
+    expect(component.formulario.invalid).toBe(true);
+    expect(component.formulario.get('confirmarSenha')?.hasError('senhasNaoConferem')).toBe(true);
     expect(component.obterMensagemErro('confirmarSenha')).toBe('As senhas não conferem.');
   });
 
@@ -260,9 +262,9 @@ describe('RedefinirSenha', () => {
    * Verifica se o usuário é redirecionado para o login caso o token não esteja presente na URL.
    */
   it('deve redirecionar para o login se o token estiver ausente no ngOnInit', () => {
-    spyOn(router, 'navigate');
+    vi.spyOn(router, 'navigate');
 
-    spyOn(TestBed.inject(ActivatedRoute).snapshot.queryParamMap, 'get').and.returnValue(null);
+    vi.spyOn(TestBed.inject(ActivatedRoute).snapshot.queryParamMap, 'get').mockReturnValue(null);
 
     component.ngOnInit();
 

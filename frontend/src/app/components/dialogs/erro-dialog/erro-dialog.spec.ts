@@ -1,3 +1,4 @@
+import { describe, beforeEach, it, expect } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -51,6 +52,7 @@ describe('ErroDialog', () => {
    * Configura o TestBed (ambiente de teste) antes de cada 'it'.
    */
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [ErroDialog, MatDialogModule, MatButtonModule, MatIconModule],
       providers: [{ provide: MAT_DIALOG_DATA, useValue: mockErroPadrao }],

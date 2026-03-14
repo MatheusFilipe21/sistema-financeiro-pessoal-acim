@@ -1,3 +1,4 @@
+import { describe, beforeEach, it, vi, expect, Mocked } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { of } from 'rxjs';
@@ -17,8 +18,8 @@ import { PessoaDTO } from '../../../dtos/pessoa/PessoaDTO';
 describe('Pessoas', () => {
   let component: Pessoas;
   let fixture: ComponentFixture<Pessoas>;
-  let pessoaServiceSpy: jasmine.SpyObj<PessoaService>;
-  let dialogServiceSpy: jasmine.SpyObj<DialogService>;
+  let pessoaServiceSpy: Mocked<PessoaService>;
+  let dialogServiceSpy: Mocked<DialogService>;
 
   const listaPessoasMock: PessoaDTO[] = [
     { id: '1', nome: 'Ana Silva', titular: true },
@@ -27,14 +28,18 @@ describe('Pessoas', () => {
   ];
 
   beforeEach(async () => {
-    pessoaServiceSpy = jasmine.createSpyObj('PessoaService', ['listar']);
-    dialogServiceSpy = jasmine.createSpyObj('DialogService', [
-      'abrirFormularioPessoa',
-      'mostrarSucesso',
-    ]);
+    pessoaServiceSpy = {
+      listar: vi.fn(),
+    } as unknown as Mocked<PessoaService>;
 
-    pessoaServiceSpy.listar.and.returnValue(of(listaPessoasMock));
+    dialogServiceSpy = {
+      abrirFormularioPessoa: vi.fn(),
+      mostrarSucesso: vi.fn(),
+    } as unknown as Mocked<DialogService>;
 
+    pessoaServiceSpy.listar.mockReturnValue(of(listaPessoasMock));
+
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [Pessoas, FormsModule],
       providers: [
@@ -78,13 +83,13 @@ describe('Pessoas', () => {
     component.filtrar();
 
     expect(component.pessoasFiltradas.length).toBe(2);
-    expect(component.pessoasFiltradas.every((p) => p.titular === true)).toBeTrue();
+    expect(component.pessoasFiltradas.every((p) => p.titular === true)).toBe(true);
 
     component.filtro.titular = false;
     component.filtrar();
 
     expect(component.pessoasFiltradas.length).toBe(1);
-    expect(component.pessoasFiltradas[0].titular).toBeFalse();
+    expect(component.pessoasFiltradas[0].titular).toBe(false);
   });
 
   /**
@@ -107,12 +112,12 @@ describe('Pessoas', () => {
    * Teste de Alternância de Visualização.
    */
   it('deve alternar entre visualização de Cards e Tabela', () => {
-    expect(component.visualizacaoEmCards).toBeTrue();
+    expect(component.visualizacaoEmCards).toBe(true);
 
     component.visualizacaoEmCards = false;
     fixture.detectChanges();
 
-    expect(component.visualizacaoEmCards).toBeFalse();
+    expect(component.visualizacaoEmCards).toBe(false);
   });
 
   /**
@@ -121,7 +126,7 @@ describe('Pessoas', () => {
   it('deve abrir dialog de cadastro e atualizar lista ao confirmar', () => {
     const novaPessoa: PessoaDTO = { id: '4', nome: 'Nova Pessoa', titular: true };
 
-    dialogServiceSpy.abrirFormularioPessoa.and.returnValue(of(novaPessoa));
+    dialogServiceSpy.abrirFormularioPessoa.mockReturnValue(of(novaPessoa));
 
     component.aoAdicionar();
 
@@ -131,7 +136,7 @@ describe('Pessoas', () => {
   });
 
   it('não deve atualizar lista se o cadastro for cancelado', () => {
-    dialogServiceSpy.abrirFormularioPessoa.and.returnValue(of(undefined));
+    dialogServiceSpy.abrirFormularioPessoa.mockReturnValue(of(undefined));
 
     component.aoAdicionar();
 
@@ -146,7 +151,7 @@ describe('Pessoas', () => {
     const pessoaAlvo = listaPessoasMock[0];
     const pessoaEditada = { ...pessoaAlvo, nome: 'Ana Editada' };
 
-    dialogServiceSpy.abrirFormularioPessoa.and.returnValue(of(pessoaEditada));
+    dialogServiceSpy.abrirFormularioPessoa.mockReturnValue(of(pessoaEditada));
 
     component.aoEditar(pessoaAlvo);
 
@@ -160,7 +165,7 @@ describe('Pessoas', () => {
   it('deve abrir dialog de exclusão e atualizar lista ao confirmar', () => {
     const pessoaAlvo = listaPessoasMock[1];
 
-    dialogServiceSpy.abrirFormularioPessoa.and.returnValue(of(true));
+    dialogServiceSpy.abrirFormularioPessoa.mockReturnValue(of(true));
 
     component.aoExcluir(pessoaAlvo);
 

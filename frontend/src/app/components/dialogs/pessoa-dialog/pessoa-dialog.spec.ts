@@ -1,3 +1,4 @@
+import { describe, it, expect, vi, Mocked } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -18,9 +19,9 @@ import { Dialog as DialogService } from '../../../services/dialog';
 describe('PessoaDialog', () => {
   let component: PessoaDialog;
   let fixture: ComponentFixture<PessoaDialog>;
-  let pessoaServiceSpy: jasmine.SpyObj<PessoaService>;
-  let dialogRefSpy: jasmine.SpyObj<MatDialogRef<PessoaDialog>>;
-  let dialogServiceSpy: jasmine.SpyObj<DialogService>;
+  let pessoaServiceSpy: Mocked<PessoaService>;
+  let dialogRefSpy: Mocked<MatDialogRef<PessoaDialog>>;
+  let dialogServiceSpy: Mocked<DialogService>;
 
   /**
    * Função auxiliar para recriar o componente com dados específicos (Injection Token).
@@ -29,9 +30,19 @@ describe('PessoaDialog', () => {
   async function iniciarComponente(dados: DadosPessoaDialog) {
     TestBed.resetTestingModule();
 
-    pessoaServiceSpy = jasmine.createSpyObj('PessoaService', ['cadastrar', 'atualizar', 'excluir']);
-    dialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['close']);
-    dialogServiceSpy = jasmine.createSpyObj('DialogService', ['mostrarInfo']);
+    pessoaServiceSpy = {
+      cadastrar: vi.fn(),
+      atualizar: vi.fn(),
+      excluir: vi.fn(),
+    } as unknown as Mocked<PessoaService>;
+
+    dialogRefSpy = {
+      close: vi.fn(),
+    } as unknown as Mocked<MatDialogRef<PessoaDialog>>;
+
+    dialogServiceSpy = {
+      mostrarInfo: vi.fn(),
+    } as unknown as Mocked<DialogService>;
 
     await TestBed.configureTestingModule({
       imports: [ReactiveFormsModule, PessoaDialog],
@@ -58,7 +69,7 @@ describe('PessoaDialog', () => {
     expect(component.operacao).toBe('cadastrar');
     expect(component.formulario.get('id')?.value).toBeNull();
     expect(component.formulario.get('nome')?.value).toBe('');
-    expect(component.formulario.get('titular')?.value).toBeFalse();
+    expect(component.formulario.get('titular')?.value).toBe(false);
   });
 
   /**
@@ -82,7 +93,7 @@ describe('PessoaDialog', () => {
 
     const novaPessoa: PessoaDTO = { id: '123', nome: 'Matheus', titular: true };
     component.formulario.patchValue({ nome: 'Matheus', titular: true });
-    pessoaServiceSpy.cadastrar.and.returnValue(of(novaPessoa));
+    pessoaServiceSpy.cadastrar.mockReturnValue(of(novaPessoa));
 
     component.confirmarAcao();
 
@@ -111,7 +122,7 @@ describe('PessoaDialog', () => {
     component.formulario.patchValue({ nome: 'João Silva' });
 
     const pessoaAtualizada = { ...pessoaExistente, nome: 'João Silva' };
-    pessoaServiceSpy.atualizar.and.returnValue(of(pessoaAtualizada));
+    pessoaServiceSpy.atualizar.mockReturnValue(of(pessoaAtualizada));
 
     component.confirmarAcao();
 
@@ -130,7 +141,7 @@ describe('PessoaDialog', () => {
     await iniciarComponente({ acao: 'excluir', pessoa: pessoaExistente });
 
     expect(component.titulo).toBe('Excluir Pessoa');
-    expect(component.formulario.disabled).toBeTrue();
+    expect(component.formulario.disabled).toBe(true);
   });
 
   /**
@@ -140,7 +151,7 @@ describe('PessoaDialog', () => {
     const pessoaExistente: PessoaDTO = { id: '999', nome: 'Deletar', titular: true };
     await iniciarComponente({ acao: 'excluir', pessoa: pessoaExistente });
 
-    pessoaServiceSpy.excluir.and.returnValue(of(void 0));
+    pessoaServiceSpy.excluir.mockReturnValue(of(void 0));
 
     component.confirmarAcao();
 
@@ -195,7 +206,7 @@ describe('PessoaDialog', () => {
 
     component.formulario.get('nome')?.setValue('');
 
-    spyOn(component.formulario, 'markAllAsTouched');
+    vi.spyOn(component.formulario, 'markAllAsTouched');
 
     component.confirmarAcao();
 
@@ -214,8 +225,8 @@ describe('PessoaDialog', () => {
 
     expect(dialogServiceSpy.mostrarInfo).toHaveBeenCalledWith(
       'Regra de Titularidade',
-      jasmine.stringMatching('Apenas pessoas marcadas como <b>Titulares</b>'),
-      'Entendi'
+      expect.stringContaining('Apenas pessoas marcadas como <b>Titulares</b>'),
+      'Entendi',
     );
   });
 });

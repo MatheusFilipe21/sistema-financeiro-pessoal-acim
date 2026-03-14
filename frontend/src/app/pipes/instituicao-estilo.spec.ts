@@ -1,3 +1,4 @@
+import { describe, beforeEach, it, expect } from 'vitest';
 import { InstituicaoFinanceira } from '../enums/InstituicaoFinanceira';
 import { InstituicaoEstilo } from './instituicao-estilo';
 

@@ -1,3 +1,4 @@
+import { describe, beforeEach, afterEach, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -23,6 +24,7 @@ describe('CategoriaService', () => {
    * Utiliza a nova API de testes HTTP do Angular (provideHttpClientTesting).
    */
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting(), CategoriaService],
     });
@@ -49,7 +51,7 @@ describe('CategoriaService', () => {
    * Testa o método listar().
    * Deve realizar um GET em /categorias e retornar a lista de DTOs.
    */
-  it('deve listar categorias (GET /categorias)', (done) => {
+  it('deve listar categorias (GET /categorias)', () => {
     const mockLista: CategoriaDTO[] = [
       {
         id: '1',
@@ -72,7 +74,6 @@ describe('CategoriaService', () => {
     service.listar().subscribe((res: string | any[]) => {
       expect(res.length).toBe(2);
       expect(res).toEqual(mockLista);
-      done();
     });
 
     const req = httpMock.expectOne(API_URL);
@@ -85,7 +86,7 @@ describe('CategoriaService', () => {
    * Testa o método cadastrar().
    * Deve realizar um POST em /categorias com o corpo correto.
    */
-  it('deve cadastrar uma categoria (POST /categorias)', (done) => {
+  it('deve cadastrar uma categoria (POST /categorias)', () => {
     const dtoEnvio: CriarAtualizarCategoriaDTO = {
       nome: 'Nova Categoria',
       tipo: TipoCategoria.DESPESA,
@@ -100,7 +101,6 @@ describe('CategoriaService', () => {
 
     service.cadastrar(dtoEnvio).subscribe((res) => {
       expect(res).toEqual(mockResposta);
-      done();
     });
 
     const req = httpMock.expectOne(API_URL);
@@ -114,7 +114,7 @@ describe('CategoriaService', () => {
    * Testa o método atualizar().
    * Deve realizar um PUT em /categorias/{id}.
    */
-  it('deve atualizar uma categoria (PUT /categorias/{id})', (done) => {
+  it('deve atualizar uma categoria (PUT /categorias/{id})', () => {
     const id = '123-uuid';
     const dtoEnvio: CriarAtualizarCategoriaDTO = {
       nome: 'Categoria Editada',
@@ -130,7 +130,6 @@ describe('CategoriaService', () => {
 
     service.atualizar(id, dtoEnvio).subscribe((res) => {
       expect(res).toEqual(mockResposta);
-      done();
     });
 
     const req = httpMock.expectOne(`${API_URL}/${id}`);
@@ -144,12 +143,11 @@ describe('CategoriaService', () => {
    * Testa o método excluir().
    * Deve realizar um DELETE em /categorias/{id} e não retornar conteúdo.
    */
-  it('deve excluir uma categoria (DELETE /categorias/{id})', (done) => {
+  it('deve excluir uma categoria (DELETE /categorias/{id})', () => {
     const id = '123-uuid';
 
     service.excluir(id).subscribe((res) => {
       expect(res).toBeNull();
-      done();
     });
 
     const req = httpMock.expectOne(`${API_URL}/${id}`);

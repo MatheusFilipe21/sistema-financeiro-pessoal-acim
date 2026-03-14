@@ -1,3 +1,4 @@
+import { describe, beforeEach, it, vi, expect } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
 import { of } from 'rxjs';
@@ -35,6 +36,7 @@ describe('ContainerFiltro', () => {
     breakpointObserver = new BreakpointObserverMock();
     breakpointObserver.setMobile(false);
 
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [ContainerFiltro],
       providers: [{ provide: BreakpointObserver, useValue: breakpointObserver }],
@@ -44,8 +46,6 @@ describe('ContainerFiltro', () => {
     component = fixture.componentInstance;
 
     component.titulo = 'Teste de Filtros';
-
-    fixture.detectChanges();
   });
 
   /**
@@ -60,6 +60,7 @@ describe('ContainerFiltro', () => {
    */
   it('deve exibir o título correto configurado via @Input', () => {
     const tituloEl = fixture.nativeElement.querySelector('#titulo-pagina');
+    fixture.detectChanges();
     expect(tituloEl.textContent).toContain('Teste de Filtros');
   });
 
@@ -68,7 +69,7 @@ describe('ContainerFiltro', () => {
    * O signal 'dispositivoMovel' deve ser false.
    */
   it('deve identificar ambiente Desktop (dispositivoMovel = false)', () => {
-    expect(component.dispositivoMovel()).toBeFalse();
+    expect(component.dispositivoMovel()).toBe(false);
   });
 
   /**
@@ -83,7 +84,7 @@ describe('ContainerFiltro', () => {
    * Teste de Integração (Output): Verifica se o botão "Limpar" emite o evento.
    */
   it('deve emitir o evento "limpar" ao clicar no botão Limpar', () => {
-    spyOn(component.limpar, 'emit');
+    vi.spyOn(component.limpar, 'emit');
 
     const btnLimpar = fixture.nativeElement.querySelector('#btn-acao-limpar');
     expect(btnLimpar).toBeTruthy();
@@ -96,8 +97,11 @@ describe('ContainerFiltro', () => {
   /**
    * Teste de Integração (Output): Verifica se o botão "Buscar" emite o evento.
    */
-  it('deve emitir o evento "buscar" ao clicar no botão Buscar', () => {
-    spyOn(component.buscar, 'emit');
+  it('deve emitir o evento "buscar" ao clicar no botão Buscar', async () => {
+    vi.spyOn(component.buscar, 'emit');
+
+    fixture.detectChanges();
+    await fixture.whenStable();
 
     const btnBuscar = fixture.nativeElement.querySelector('#btn-acao-buscar');
     expect(btnBuscar).toBeTruthy();
@@ -124,20 +128,21 @@ describe('ContainerFiltro', () => {
       fixture = TestBed.createComponent(ContainerFiltro);
       component = fixture.componentInstance;
       component.titulo = 'Teste Mobile';
-      fixture.detectChanges();
     });
 
     /**
      * Verifica se o signal reflete o estado Mobile.
      */
     it('deve identificar ambiente Mobile (dispositivoMovel = true)', () => {
-      expect(component.dispositivoMovel()).toBeTrue();
+      fixture.detectChanges();
+      expect(component.dispositivoMovel()).toBe(true);
     });
 
     /**
      * Verifica se o botão de toggle aparece no mobile.
      */
     it('deve exibir o botão de abrir filtros no modo mobile', () => {
+      fixture.detectChanges();
       const btnAbrir = fixture.nativeElement.querySelector('#btn-abrir-filtros');
       expect(btnAbrir).toBeTruthy();
     });
@@ -145,15 +150,21 @@ describe('ContainerFiltro', () => {
     /**
      * Teste de Interface: Verifica a abertura da gaveta lateral.
      */
-    it('deve abrir a gaveta (adicionar classe .aberto) ao clicar no toggle', () => {
-      const btnAbrir = fixture.nativeElement.querySelector('#btn-abrir-filtros');
-
-      expect(component.filtroAberto).toBeFalse();
-
-      btnAbrir.click();
+    it('deve abrir a gaveta (adicionar classe .aberto) ao clicar no toggle', async () => {
       fixture.detectChanges();
 
-      expect(component.filtroAberto).toBeTrue();
+      const btnAbrir = fixture.nativeElement.querySelector('#btn-abrir-filtros');
+
+      expect(component.filtroAberto).toBe(false);
+
+      btnAbrir.click();
+
+      fixture.componentRef.changeDetectorRef.markForCheck();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(component.filtroAberto).toBe(true);
 
       const areaFiltros = fixture.nativeElement.querySelector('#area-conteudo-filtros');
       expect(areaFiltros.classList).toContain('aberto');
@@ -162,51 +173,75 @@ describe('ContainerFiltro', () => {
     /**
      * Teste de Interface: Verifica o fechamento pelo botão "X" interno.
      */
-    it('deve fechar a gaveta ao clicar no botão de fechar interno', () => {
+    it('deve fechar a gaveta ao clicar no botão de fechar interno', async () => {
+      fixture.detectChanges();
       component.alternarFiltro();
+
+      fixture.componentRef.changeDetectorRef.markForCheck();
+      fixture.detectChanges();
+      await fixture.whenStable();
       fixture.detectChanges();
 
       const btnFechar = fixture.nativeElement.querySelector('#btn-fechar-painel');
       expect(btnFechar).toBeTruthy();
 
       btnFechar.click();
+
+      fixture.detectChanges();
+      await fixture.whenStable();
       fixture.detectChanges();
 
-      expect(component.filtroAberto).toBeFalse();
+      expect(component.filtroAberto).toBe(false);
     });
 
     /**
      * Teste de Interface: Verifica o fechamento pelo Backdrop (fundo escuro).
      */
-    it('deve fechar a gaveta ao clicar no backdrop (fundo escuro)', () => {
+    it('deve fechar a gaveta ao clicar no backdrop (fundo escuro)', async () => {
+      fixture.detectChanges();
       component.alternarFiltro();
+
+      fixture.componentRef.changeDetectorRef.markForCheck();
+      fixture.detectChanges();
+      await fixture.whenStable();
       fixture.detectChanges();
 
       const backdrop = fixture.nativeElement.querySelector('#fundo-escuro-modal');
       expect(backdrop).toBeTruthy();
 
       backdrop.click();
+
+      fixture.detectChanges();
+      await fixture.whenStable();
       fixture.detectChanges();
 
-      expect(component.filtroAberto).toBeFalse();
+      expect(component.filtroAberto).toBe(false);
     });
 
     /**
      * Regra de Negócio Visual:
      * Ao buscar no mobile, a gaveta deve fechar automaticamente para exibir os resultados.
      */
-    it('deve fechar a gaveta automaticamente após clicar em Buscar no mobile', () => {
-      spyOn(component.buscar, 'emit');
+    it('deve fechar a gaveta automaticamente após clicar em Buscar no mobile', async () => {
+      vi.spyOn(component.buscar, 'emit');
+      fixture.detectChanges();
 
       component.alternarFiltro();
+
+      fixture.componentRef.changeDetectorRef.markForCheck();
+      fixture.detectChanges();
+      await fixture.whenStable();
       fixture.detectChanges();
 
       const btnBuscar = fixture.nativeElement.querySelector('#btn-acao-buscar');
       btnBuscar.click();
+
+      fixture.detectChanges();
+      await fixture.whenStable();
       fixture.detectChanges();
 
       expect(component.buscar.emit).toHaveBeenCalled();
-      expect(component.filtroAberto).toBeFalse();
+      expect(component.filtroAberto).toBe(false);
     });
   });
 });

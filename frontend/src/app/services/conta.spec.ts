@@ -1,3 +1,4 @@
+import { describe, beforeEach, afterEach, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -25,6 +26,7 @@ describe('Conta', () => {
    * Utiliza a nova API de testes HTTP do Angular (provideHttpClientTesting).
    */
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting(), Conta],
     });
@@ -51,7 +53,7 @@ describe('Conta', () => {
    * Testa o método listar().
    * Deve realizar um GET em /contas e retornar a lista de DTOs.
    */
-  it('deve listar contas (GET /contas)', (done) => {
+  it('deve listar contas (GET /contas)', () => {
     const mockPessoa: PessoaDTO = { id: 'p1', nome: 'Matheus', titular: true };
 
     const mockLista: ContaDTO[] = [
@@ -76,7 +78,6 @@ describe('Conta', () => {
     service.listar().subscribe((res) => {
       expect(res.length).toBe(2);
       expect(res).toEqual(mockLista);
-      done();
     });
 
     const req = httpMock.expectOne(API_URL);
@@ -89,7 +90,7 @@ describe('Conta', () => {
    * Testa o método cadastrar().
    * Deve realizar um POST em /contas com o corpo correto.
    */
-  it('deve cadastrar uma conta (POST /contas)', (done) => {
+  it('deve cadastrar uma conta (POST /contas)', () => {
     const dtoEnvio: CriarAtualizarContaDTO = {
       nome: 'Nova Conta',
       instituicao: InstituicaoFinanceira.ITAU,
@@ -108,7 +109,6 @@ describe('Conta', () => {
 
     service.cadastrar(dtoEnvio).subscribe((res) => {
       expect(res).toEqual(mockResposta);
-      done();
     });
 
     const req = httpMock.expectOne(API_URL);
@@ -122,7 +122,7 @@ describe('Conta', () => {
    * Testa o método atualizar().
    * Deve realizar um PUT em /contas/{id}.
    */
-  it('deve atualizar uma conta (PUT /contas/{id})', (done) => {
+  it('deve atualizar uma conta (PUT /contas/{id})', () => {
     const id = '123-uuid';
 
     const dtoEnvio: CriarAtualizarContaDTO = {
@@ -143,7 +143,6 @@ describe('Conta', () => {
 
     service.atualizar(id, dtoEnvio).subscribe((res) => {
       expect(res).toEqual(mockResposta);
-      done();
     });
 
     const req = httpMock.expectOne(`${API_URL}/${id}`);
@@ -157,12 +156,11 @@ describe('Conta', () => {
    * Testa o método excluir().
    * Deve realizar um DELETE em /contas/{id} e não retornar conteúdo.
    */
-  it('deve excluir uma conta (DELETE /contas/{id})', (done) => {
+  it('deve excluir uma conta (DELETE /contas/{id})', () => {
     const id = '123-uuid';
 
     service.excluir(id).subscribe((res) => {
       expect(res).toBeNull();
-      done();
     });
 
     const req = httpMock.expectOne(`${API_URL}/${id}`);
