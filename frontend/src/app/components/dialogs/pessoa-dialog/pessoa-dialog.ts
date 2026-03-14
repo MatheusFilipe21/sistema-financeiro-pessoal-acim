@@ -3,7 +3,6 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { CommonModule } from '@angular/common';
 import { PessoaDTO } from '../../../dtos/pessoa/PessoaDTO';
 import {
   BaseFormularioDialog,
@@ -37,7 +36,6 @@ export interface DadosPessoaDialog {
   selector: 'app-pessoa-dialog',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
@@ -205,7 +203,7 @@ export class PessoaDialog implements OnInit {
         Se na sua casa o controle de gastos é centralizado, então você registra as contas de ambos (Você e Cônjuge) para organizar a vida financeira em conjunto.
 
         Ao pagar a escola, você usa a sua Conta, mas marca que a despesa foi do seu filho. Assim, os relatórios mostram quanto você gastou com ele.`,
-      'Entendi'
+      'Entendi',
     );
   }
 }

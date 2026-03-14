@@ -1,5 +1,4 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -21,7 +20,6 @@ import { validarSenhasIguais } from '../../../validators/validar-senhas-iguais';
   selector: 'app-redefinir-senha',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
@@ -71,7 +69,7 @@ export class RedefinirSenha implements OnInit {
         ],
         confirmarSenha: ['', Validators.required],
       },
-      { validators: validarSenhasIguais }
+      { validators: validarSenhasIguais },
     );
 
     // Escuta as mudanças no campo 'senha' para atualizar a UI de requisitos
@@ -171,7 +169,7 @@ export class RedefinirSenha implements OnInit {
         this.dialogService
           .mostrarSucesso(
             'Senha Alterada',
-            'Sua senha foi redefinida com sucesso! Você já pode acessar sua conta.'
+            'Sua senha foi redefinida com sucesso! Você já pode acessar sua conta.',
           )
           .subscribe(() => {
             this.router.navigate(['/login']);

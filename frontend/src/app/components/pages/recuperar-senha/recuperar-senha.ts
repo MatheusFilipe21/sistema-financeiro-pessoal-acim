@@ -1,5 +1,4 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Autenticacao as AutenticacaoService } from '../../../services/autenticacao';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -16,14 +15,7 @@ import { Dialog as DialogService } from '../../../services/dialog';
 @Component({
   selector: 'app-recuperar-senha',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    RouterModule,
-  ],
+  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, RouterModule],
   templateUrl: './recuperar-senha.html',
   styleUrls: ['./recuperar-senha.scss'],
 })
@@ -79,7 +71,7 @@ export class RecuperarSenha {
         this.dialogService
           .mostrarSucesso(
             'E-mail Enviado',
-            `Se o e-mail <strong>${email}</strong> estiver cadastrado, você receberá as instruções em instantes.\n\nVerifique também sua caixa de Spam ou Lixo Eletrônico.`
+            `Se o e-mail <strong>${email}</strong> estiver cadastrado, você receberá as instruções em instantes.\n\nVerifique também sua caixa de Spam ou Lixo Eletrônico.`,
           )
           .subscribe(() => {
             this.router.navigate(['/login']);
