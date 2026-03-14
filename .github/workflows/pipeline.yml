@@ -93,31 +93,21 @@ jobs:
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
-      # 3. Instalar o Google Chrome (necessário para o CHROME_BIN)
-      - name: Instalar Google Chrome (para Karma/Headless)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget gnupg
-          sudo wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg
-          sudo sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list'
-          sudo apt-get update
-          sudo apt-get install -y google-chrome-stable
-
-      # 4. Instalar Dependências (npm ci)
+      # 3. Instalar Dependências (npm ci)
       - name: Instalar dependências (npm ci)
         # Define o diretório de trabalho para este passo
         working-directory: ./frontend
         run: npm ci
 
-      # 5. Executar Testes (ng test)
+      # 4. Executar Testes (ng test)
       # O 'npm run test' (do package.json) define o CHROME_BIN
       # O 'karma.conf.js' define o ChromeHeadlessNoSandbox
       # O 'angular.json' define o codeCoverage
-      - name: Executar Testes do Angular (npm test -- --no-watch)
+      - name: Executar Testes do Angular (Vitest + Coverage)
         working-directory: ./frontend
-        run: npm run test -- --no-watch
+        run: npm run test
 
-      # 6. Carrega os relatórios para o Job 3
+      # 5. Carrega os relatórios para o Job 3
       - name: Carregar Artefatos do Frontend (LCOV + JUnit XML)
         uses: actions/upload-artifact@v4
         with:
