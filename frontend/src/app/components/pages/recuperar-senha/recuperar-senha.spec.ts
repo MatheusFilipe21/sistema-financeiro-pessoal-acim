@@ -1,3 +1,4 @@
+import { describe, beforeEach, it, vi, expect } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
@@ -13,14 +14,14 @@ import { Login } from '../login/login';
  * Mock do serviço de autenticação.
  */
 class AutenticacaoServiceMock {
-  recuperarSenha = jasmine.createSpy('recuperarSenha').and.returnValue(of(void 0));
+  recuperarSenha = vi.fn().mockReturnValue(of(void 0));
 }
 
 /**
  * Mock do serviço de dialog.
  */
 class DialogServiceMock {
-  mostrarSucesso = jasmine.createSpy('mostrarSucesso').and.returnValue(of(true));
+  mostrarSucesso = vi.fn().mockReturnValue(of(true));
 }
 
 describe('RecuperarSenha', () => {
@@ -36,6 +37,7 @@ describe('RecuperarSenha', () => {
    * aplicando mocks às dependências e criando a instância do componente antes de cada teste.
    */
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [
         RecuperarSenha,
@@ -81,7 +83,7 @@ describe('RecuperarSenha', () => {
    */
   it('deve deixar o formulário inválido se o e-mail estiver vazio', () => {
     component.formulario.get('email')?.setValue('');
-    expect(component.formulario.invalid).toBeTrue();
+    expect(component.formulario.invalid).toBe(true);
   });
 
   /**
@@ -89,10 +91,10 @@ describe('RecuperarSenha', () => {
    */
   it('deve validar formato de e-mail', () => {
     component.formulario.get('email')?.setValue('email_invalido');
-    expect(component.formulario.get('email')?.valid).toBeFalse();
+    expect(component.formulario.get('email')?.valid).toBe(false);
 
     component.formulario.get('email')?.setValue('valido@email.com');
-    expect(component.formulario.get('email')?.valid).toBeTrue();
+    expect(component.formulario.get('email')?.valid).toBe(true);
   });
 
   /**
@@ -111,7 +113,7 @@ describe('RecuperarSenha', () => {
     const emailTeste = 'matheus@exemplo.com';
     component.formulario.get('email')?.setValue(emailTeste);
 
-    spyOn(router, 'navigate');
+    vi.spyOn(router, 'navigate');
 
     component.aoEnviar();
 
@@ -119,7 +121,7 @@ describe('RecuperarSenha', () => {
 
     expect(dialogService.mostrarSucesso).toHaveBeenCalledWith(
       'E-mail Enviado',
-      jasmine.stringMatching(emailTeste)
+      expect.stringContaining(emailTeste),
     );
 
     expect(router.navigate).toHaveBeenCalledWith(['/login']);

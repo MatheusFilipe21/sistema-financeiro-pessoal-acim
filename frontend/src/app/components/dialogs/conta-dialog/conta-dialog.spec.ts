@@ -1,3 +1,4 @@
+import { describe, it, expect, vi, Mocked } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -21,9 +22,9 @@ import { InstituicaoFinanceira } from '../../../enums/InstituicaoFinanceira';
 describe('ContaDialog', () => {
   let component: ContaDialog;
   let fixture: ComponentFixture<ContaDialog>;
-  let contaServiceSpy: jasmine.SpyObj<ContaService>;
-  let pessoaServiceSpy: jasmine.SpyObj<PessoaService>;
-  let dialogRefSpy: jasmine.SpyObj<MatDialogRef<ContaDialog>>;
+  let contaServiceSpy: Mocked<ContaService>;
+  let pessoaServiceSpy: Mocked<PessoaService>;
+  let dialogRefSpy: Mocked<MatDialogRef<ContaDialog>>;
 
   const mockPessoaTitular: PessoaDTO = { id: 'p1', nome: 'Titular', titular: true };
   const mockPessoaDependente: PessoaDTO = { id: 'p2', nome: 'Dependente', titular: false };
@@ -43,11 +44,21 @@ describe('ContaDialog', () => {
   async function iniciarComponente(dados: DadosContaDialog, pessoasMock = [mockPessoaTitular]) {
     TestBed.resetTestingModule();
 
-    contaServiceSpy = jasmine.createSpyObj('ContaService', ['cadastrar', 'atualizar', 'excluir']);
-    pessoaServiceSpy = jasmine.createSpyObj('PessoaService', ['listar']);
-    dialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['close']);
+    contaServiceSpy = {
+      cadastrar: vi.fn(),
+      atualizar: vi.fn(),
+      excluir: vi.fn(),
+    } as unknown as Mocked<ContaService>;
 
-    pessoaServiceSpy.listar.and.returnValue(of(pessoasMock));
+    pessoaServiceSpy = {
+      listar: vi.fn(),
+    } as unknown as Mocked<PessoaService>;
+
+    dialogRefSpy = {
+      close: vi.fn(),
+    } as unknown as Mocked<MatDialogRef<ContaDialog>>;
+
+    pessoaServiceSpy.listar.mockReturnValue(of(pessoasMock));
 
     await TestBed.configureTestingModule({
       imports: [ReactiveFormsModule, ContaDialog],
@@ -72,7 +83,7 @@ describe('ContaDialog', () => {
 
     expect(component.pessoas.length).toBe(1);
     expect(component.pessoas[0].id).toBe('p1');
-    expect(component.pessoas[0].titular).toBeTrue();
+    expect(component.pessoas[0].titular).toBe(true);
   });
 
   it('deve iniciar em modo Cadastro (título "Nova Conta" e form vazio)', async () => {
@@ -127,7 +138,7 @@ describe('ContaDialog', () => {
     await iniciarComponente({ acao: 'excluir', conta: mockConta });
 
     expect(component.titulo).toBe('Excluir Conta');
-    expect(component.formulario.disabled).toBeTrue();
+    expect(component.formulario.disabled).toBe(true);
   });
 
   /**
@@ -135,11 +146,11 @@ describe('ContaDialog', () => {
    */
   it('deve configurar o dialog mesmo se falhar ao carregar pessoas', async () => {
     TestBed.resetTestingModule();
-    contaServiceSpy = jasmine.createSpyObj('ContaService', ['cadastrar']);
-    pessoaServiceSpy = jasmine.createSpyObj('PessoaService', ['listar']);
-    dialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['close']);
+    contaServiceSpy = { cadastrar: vi.fn() } as any;
+    pessoaServiceSpy = { listar: vi.fn() } as any;
+    dialogRefSpy = { close: vi.fn() } as any;
 
-    pessoaServiceSpy.listar.and.returnValue(throwError(() => new Error('Erro API')));
+    pessoaServiceSpy.listar.mockReturnValue(throwError(() => new Error('Erro API')));
 
     await TestBed.configureTestingModule({
       imports: [ReactiveFormsModule, ContaDialog],
@@ -196,16 +207,16 @@ describe('ContaDialog', () => {
       saldoInicial: '100.00',
     });
 
-    contaServiceSpy.cadastrar.and.returnValue(of(mockConta));
+    contaServiceSpy.cadastrar.mockReturnValue(of(mockConta));
 
     component.confirmarAcao();
 
     expect(contaServiceSpy.cadastrar).toHaveBeenCalledWith(
-      jasmine.objectContaining({
+      expect.objectContaining({
         nome: 'Itaú',
         instituicao: 'ITAU',
         pessoaId: 'p1',
-      })
+      }),
     );
     expect(dialogRefSpy.close).toHaveBeenCalledWith(mockConta);
   });
@@ -219,15 +230,15 @@ describe('ContaDialog', () => {
     component.formulario.patchValue({ nome: 'Mercado Pago Atualizado' });
 
     const contaAtualizada = { ...mockConta, nome: 'Mercado Pago Atualizado' };
-    contaServiceSpy.atualizar.and.returnValue(of(contaAtualizada));
+    contaServiceSpy.atualizar.mockReturnValue(of(contaAtualizada));
 
     component.confirmarAcao();
 
     expect(contaServiceSpy.atualizar).toHaveBeenCalledWith(
       'c1',
-      jasmine.objectContaining({
+      expect.objectContaining({
         nome: 'Mercado Pago Atualizado',
-      })
+      }),
     );
     expect(dialogRefSpy.close).toHaveBeenCalledWith(contaAtualizada);
   });
@@ -238,7 +249,7 @@ describe('ContaDialog', () => {
   it('não deve chamar serviço se formulário inválido', async () => {
     await iniciarComponente({ acao: 'cadastrar' });
 
-    spyOn(component.formulario, 'markAllAsTouched');
+    vi.spyOn(component.formulario, 'markAllAsTouched');
 
     component.confirmarAcao();
 
@@ -252,7 +263,7 @@ describe('ContaDialog', () => {
   it('deve chamar excluir e fechar dialog retornando true', async () => {
     await iniciarComponente({ acao: 'excluir', conta: mockConta });
 
-    contaServiceSpy.excluir.and.returnValue(of(void 0));
+    contaServiceSpy.excluir.mockReturnValue(of(void 0));
 
     component.confirmarAcao();
 

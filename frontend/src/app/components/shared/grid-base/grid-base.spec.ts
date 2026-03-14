@@ -1,3 +1,4 @@
+import { describe, beforeEach, it, expect } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component } from '@angular/core';
 import { By } from '@angular/platform-browser';
@@ -25,13 +26,13 @@ describe('GridBase', () => {
    * Configuração inicial do módulo de teste.
    */
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [GridBase, TestHostComponent],
     }).compileComponents();
 
     fixture = TestBed.createComponent(GridBase);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
   /**
@@ -44,8 +45,13 @@ describe('GridBase', () => {
   /**
    * Teste de Input: Verifica se o ID padrão é aplicado quando nenhum é fornecido.
    */
-  it('deve usar o ID padrão "grid-principal" se nenhum for fornecido', () => {
+  it('deve usar o ID padrão "grid-principal" se nenhum for fornecido', async () => {
     const elementoGrid = fixture.nativeElement.querySelector('.grid-base');
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
     expect(elementoGrid.id).toBe('grid-principal');
   });
 

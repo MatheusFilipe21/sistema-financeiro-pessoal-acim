@@ -1,3 +1,4 @@
+import { describe, beforeEach, it, vi, expect } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TabelaBase, ColunaTabela } from './tabela-base';
 import { SimpleChange } from '@angular/core';
@@ -26,6 +27,7 @@ describe('TabelaBase', () => {
    * Configuração inicial do módulo de teste.
    */
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [TabelaBase],
     }).compileComponents();
@@ -82,7 +84,7 @@ describe('TabelaBase', () => {
    * Verifica se ao clicar no botão, o objeto correto é emitido.
    */
   it('deve emitir evento "editar" com o objeto correto ao clicar no botão', () => {
-    spyOn(component.editar, 'emit');
+    vi.spyOn(component.editar, 'emit');
 
     const btnEditarJoao = fixture.nativeElement.querySelector('#btn-editar-1');
     expect(btnEditarJoao).toBeTruthy();
@@ -97,7 +99,7 @@ describe('TabelaBase', () => {
    * Verifica se ao clicar no botão, o objeto correto é emitido.
    */
   it('deve emitir evento "excluir" com o objeto correto ao clicar no botão', () => {
-    spyOn(component.excluir, 'emit');
+    vi.spyOn(component.excluir, 'emit');
 
     const btnExcluirMaria = fixture.nativeElement.querySelector('#btn-excluir-2');
     expect(btnExcluirMaria).toBeTruthy();
@@ -222,10 +224,10 @@ describe('TabelaBase', () => {
       '#btn-excluir-2',
     ) as HTMLButtonElement;
 
-    expect(btnEditarJoao.disabled).toBeTrue();
-    expect(btnExcluirJoao.disabled).toBeTrue();
+    expect(btnEditarJoao.disabled).toBe(true);
+    expect(btnExcluirJoao.disabled).toBe(true);
 
-    expect(btnEditarMaria.disabled).toBeFalse();
-    expect(btnExcluirMaria.disabled).toBeFalse();
+    expect(btnEditarMaria.disabled).toBe(false);
+    expect(btnExcluirMaria.disabled).toBe(false);
   });
 });

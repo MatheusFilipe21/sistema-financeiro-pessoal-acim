@@ -1,3 +1,4 @@
+import { describe, beforeEach, it, expect, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterModule } from '@angular/router';
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
@@ -12,7 +13,7 @@ import { Login } from '../login/login';
  * Mock do serviço de autenticação.
  */
 class AutenticacaoServiceMock {
-  deslogar = jasmine.createSpy('deslogar');
+  deslogar = vi.fn();
 }
 
 /**
@@ -50,6 +51,7 @@ describe('Dashboard', () => {
 
     breakpointObserver.setMobile(false);
 
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [
         Dashboard,
@@ -83,7 +85,7 @@ describe('Dashboard', () => {
    * O signal 'dispositivoMovel' deve ser false.
    */
   it('deve identificar ambiente Desktop (dispositivoMovel = false)', () => {
-    expect(component.dispositivoMovel()).toBeFalse();
+    expect(component.dispositivoMovel()).toBe(false);
   });
 
   /**
@@ -151,7 +153,7 @@ describe('Dashboard', () => {
      * Verifica se o signal reflete o estado Mobile.
      */
     it('deve identificar ambiente Mobile (dispositivoMovel = true)', () => {
-      expect(component.dispositivoMovel()).toBeTrue();
+      expect(component.dispositivoMovel()).toBe(true);
     });
 
     /**

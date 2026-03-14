@@ -1,5 +1,4 @@
 import { Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Autenticacao as AutenticacaoService } from '../../../services/autenticacao';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -21,7 +20,6 @@ import { Dialog as DialogService } from '../../../services/dialog';
   selector: 'app-cadastro',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
@@ -77,7 +75,7 @@ export class Cadastro {
       },
       {
         validators: validarSenhasIguais,
-      }
+      },
     );
 
     // Escuta as mudanças no campo 'senha' para atualizar a UI de requisitos
@@ -168,7 +166,7 @@ export class Cadastro {
         this.dialogService
           .mostrarSucesso(
             'Cadastro realizado com sucesso!',
-            `O usuário ${usuario.nome} foi cadastrado, acesse a tela de login ou clique no OK para ser redirecionado e acessar o sistema.`
+            `O usuário ${usuario.nome} foi cadastrado, acesse a tela de login ou clique no OK para ser redirecionado e acessar o sistema.`,
           )
           .subscribe(() => {
             this.router.navigate(['/login']);

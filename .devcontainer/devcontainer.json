@@ -44,7 +44,7 @@
   // 1. Garante permissão ao usuário vscode na pasta do projeto e instala o Angular CLI globalmente
   // 2. Adiciona o script de autocompletar do Angular ao bashrc
   // 3. Instala as dependências do frontend (npm ci) e do ambiente de testes E2E (pip)
-  "postCreateCommand": "sudo chown -R vscode:vscode . && npm install -g @angular/cli@20 && echo 'source <(ng completion script)' >> /home/vscode/.bashrc && (cd frontend && npm ci) && pip install -r e2e/requirements.txt",
+  "postCreateCommand": "sudo chown -R vscode:vscode . && npm install -g @angular/cli@21 && echo 'source <(ng completion script)' >> /home/vscode/.bashrc && (cd frontend && npm ci) && pip install -r e2e/requirements.txt",
 
   // Customizações específicas do VS Code
   "customizations": {

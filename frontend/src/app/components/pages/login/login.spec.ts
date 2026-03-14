@@ -1,26 +1,27 @@
+import { describe, beforeEach, it, expect, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ReactiveFormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
 import { of } from 'rxjs';
-import { provideLocationMocks } from '@angular/common/testing';
 import { Login } from './login';
 import { Autenticacao } from '../../../services/autenticacao';
 import { DadosTokenJWTDTO } from '../../../dtos/autenticacao/DadosTokenJWTDTO';
 import { DadosAutenticacaoDTO } from '../../../dtos/autenticacao/DadosAutenticacaoDTO';
+import { ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Cadastro } from '../cadastro/cadastro';
+import { provideLocationMocks } from '@angular/common/testing';
 
 /**
  * Mock do serviço de autenticação.
  */
 class AutenticacaoServiceMock {
-  login = jasmine.createSpy('login').and.returnValue(
+  login = vi.fn().mockReturnValue(
     of({
       token:
         'eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJTRlAtQUNJTSBBUEkiLCJzdWIiOiJtYXRoZXVzZm5wZXJlaXJhQGdtYWlsLmNvbSIsImlhdCI6MTc2MzMwNjE3NiwiZXhwIjoxNzYzMzM0OTc2fQ.e90EOyfiPFUE4Mu5LgbZEtrYnQIGzueecgm4G-fWIKTtSr7IuxC1X_hBkltJBRxHo9ocTvQFje44r0g84TqaiQ',
-    } as DadosTokenJWTDTO)
+    } as DadosTokenJWTDTO),
   );
 
-  deslogar = jasmine.createSpy('deslogar');
+  deslogar = vi.fn();
 }
 
 describe('Login', () => {
@@ -33,6 +34,7 @@ describe('Login', () => {
    * aplicando mocks às dependências e criando a instância do componente antes de cada teste.
    */
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [
         Login,
@@ -85,7 +87,7 @@ describe('Login', () => {
    */
   it('deve deixar o formulário inválido quando campos obrigatórios estiverem vazios', () => {
     component.formulario.setValue({ email: '', senha: '' });
-    expect(component.formulario.invalid).toBeTrue();
+    expect(component.formulario.invalid).toBe(true);
   });
 
   /**
@@ -93,10 +95,10 @@ describe('Login', () => {
    */
   it('deve validar formato de e-mail', () => {
     component.formulario.get('email')?.setValue('email_invalido');
-    expect(component.formulario.get('email')?.valid).toBeFalse();
+    expect(component.formulario.get('email')?.valid).toBe(false);
 
     component.formulario.get('email')?.setValue('valido@email.com');
-    expect(component.formulario.get('email')?.valid).toBeTrue();
+    expect(component.formulario.get('email')?.valid).toBe(true);
   });
 
   /**
@@ -126,7 +128,8 @@ describe('Login', () => {
 
     component.aoEnviar();
 
-    expect(autenticacaoService.login).toHaveBeenCalledOnceWith(dados);
+    expect(autenticacaoService.login).toHaveBeenCalledTimes(1);
+    expect(autenticacaoService.login).toHaveBeenCalledWith(dados);
   });
 
   /**

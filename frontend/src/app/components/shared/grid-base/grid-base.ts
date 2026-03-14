@@ -1,5 +1,4 @@
 import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 /**
  * Componente estrutural de Layout (Grid System).
@@ -14,7 +13,7 @@ import { CommonModule } from '@angular/common';
 @Component({
   selector: 'app-grid-base',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './grid-base.html',
   styleUrl: './grid-base.scss',
 })

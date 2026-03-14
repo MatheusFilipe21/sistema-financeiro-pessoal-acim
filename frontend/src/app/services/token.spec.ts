@@ -1,3 +1,4 @@
+import { describe, beforeEach, afterEach, it, vi, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { Token } from './token';
 
@@ -15,10 +16,16 @@ describe('Token', () => {
   const TOKEN_TESTE = 'eyJhbGciOiJIUzUxMiJ9.exemplo-token-jwt';
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [Token],
     });
     service = TestBed.inject(Token);
+
+    vi.spyOn(Storage.prototype, 'setItem');
+    vi.spyOn(Storage.prototype, 'getItem');
+    vi.spyOn(Storage.prototype, 'removeItem');
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     localStorage.clear();
   });
@@ -39,7 +46,7 @@ describe('Token', () => {
    * Deve chamar localStorage.setItem com a chave e o valor corretos.
    */
   it('deve salvar o token no localStorage', () => {
-    spyOn(localStorage, 'setItem');
+    vi.spyOn(localStorage, 'setItem');
 
     service.salvar(TOKEN_TESTE);
 
@@ -51,7 +58,7 @@ describe('Token', () => {
    * Deve retornar a string do token.
    */
   it('deve recuperar o token do localStorage quando existir', () => {
-    spyOn(localStorage, 'getItem').and.returnValue(TOKEN_TESTE);
+    vi.spyOn(localStorage, 'getItem').mockReturnValue(TOKEN_TESTE);
 
     const resultado = service.obter();
 
@@ -64,7 +71,7 @@ describe('Token', () => {
    * Deve retornar null.
    */
   it('deve retornar null se não houver token salvo', () => {
-    spyOn(localStorage, 'getItem').and.returnValue(null);
+    vi.spyOn(localStorage, 'getItem').mockReturnValue(null);
 
     const resultado = service.obter();
 
@@ -76,7 +83,7 @@ describe('Token', () => {
    * Deve chamar localStorage.removeItem com a chave correta.
    */
   it('deve remover o token do localStorage', () => {
-    spyOn(localStorage, 'removeItem');
+    vi.spyOn(localStorage, 'removeItem');
 
     service.remover();
 
@@ -88,9 +95,9 @@ describe('Token', () => {
    * Deve retornar true.
    */
   it('deve retornar true se possui token', () => {
-    spyOn(service, 'obter').and.returnValue(TOKEN_TESTE);
+    vi.spyOn(service, 'obter').mockReturnValue(TOKEN_TESTE);
 
-    expect(service.possuiToken()).toBeTrue();
+    expect(service.possuiToken()).toBe(true);
   });
 
   /**
@@ -98,8 +105,8 @@ describe('Token', () => {
    * Deve retornar false.
    */
   it('deve retornar false se não possui token', () => {
-    spyOn(service, 'obter').and.returnValue(null);
+    vi.spyOn(service, 'obter').mockReturnValue(null);
 
-    expect(service.possuiToken()).toBeFalse();
+    expect(service.possuiToken()).toBe(false);
   });
 });

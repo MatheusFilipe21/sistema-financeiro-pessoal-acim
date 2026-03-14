@@ -1,3 +1,4 @@
+import { describe, beforeEach, it, vi, expect } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { provideLocationMocks } from '@angular/common/testing';
@@ -13,12 +14,12 @@ import { Login } from '../../pages/login/login';
  * Mock do serviço de autenticação.
  */
 class AutenticacaoServiceMock {
-  registrar = jasmine.createSpy('registrar').and.returnValue(
+  registrar = vi.fn().mockReturnValue(
     of({
       id: '123e4567-e89b-12d3-a456-426614174000',
       nome: 'Matheus Filipe do Nascimento Pereira',
       email: 'matheusfnpereira@gmail.com',
-    } as UsuarioDTO)
+    } as UsuarioDTO),
   );
 }
 
@@ -26,7 +27,7 @@ class AutenticacaoServiceMock {
  * Mock do serviço de dialog.
  */
 class DialogServiceMock {
-  mostrarSucesso = jasmine.createSpy('mostrarSucesso').and.returnValue(of(true));
+  mostrarSucesso = vi.fn().mockReturnValue(of(true));
 }
 
 describe('Cadastro', () => {
@@ -41,6 +42,7 @@ describe('Cadastro', () => {
    * aplicando mocks às dependências e criando a instância do componente antes de cada teste.
    */
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [
         Cadastro,
@@ -91,7 +93,7 @@ describe('Cadastro', () => {
    */
   it('deve deixar o formulário inválido quando campos obrigatórios estiverem vazios', () => {
     component.formulario.setValue({ nome: '', email: '', senha: '', confirmarSenha: '' });
-    expect(component.formulario.invalid).toBeTrue();
+    expect(component.formulario.invalid).toBe(true);
   });
 
   /**
@@ -99,10 +101,10 @@ describe('Cadastro', () => {
    */
   it('deve validar formato de e-mail', () => {
     component.formulario.get('email')?.setValue('email_invalido');
-    expect(component.formulario.get('email')?.valid).toBeFalse();
+    expect(component.formulario.get('email')?.valid).toBe(false);
 
     component.formulario.get('email')?.setValue('valido@email.com');
-    expect(component.formulario.get('email')?.valid).toBeTrue();
+    expect(component.formulario.get('email')?.valid).toBe(true);
   });
 
   /**
@@ -110,10 +112,10 @@ describe('Cadastro', () => {
    */
   it('deve validar requisitos mínimos da senha', () => {
     component.formulario.get('senha')?.setValue('abc');
-    expect(component.formulario.get('senha')?.valid).toBeFalse();
+    expect(component.formulario.get('senha')?.valid).toBe(false);
 
     component.formulario.get('senha')?.setValue('Senha123');
-    expect(component.formulario.get('senha')?.valid).toBeTrue();
+    expect(component.formulario.get('senha')?.valid).toBe(true);
   });
 
   /**
@@ -146,7 +148,7 @@ describe('Cadastro', () => {
 
     component.formulario.setValue(dadosFormulario);
 
-    spyOn(router, 'navigate');
+    vi.spyOn(router, 'navigate');
 
     component.aoEnviar();
 
@@ -157,12 +159,12 @@ describe('Cadastro', () => {
     };
 
     expect(autenticacaoService.registrar).toHaveBeenCalledWith(
-      jasmine.objectContaining(dadosEsperadosAPI)
+      expect.objectContaining(dadosEsperadosAPI),
     );
 
     expect(dialogService.mostrarSucesso).toHaveBeenCalledWith(
       'Cadastro realizado com sucesso!',
-      jasmine.stringMatching(dadosFormulario.nome)
+      expect.stringContaining(dadosFormulario.nome),
     );
 
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
@@ -186,7 +188,7 @@ describe('Cadastro', () => {
   it('deve definir senhaEstaEmFoco como true ao focar', () => {
     component.senhaEstaEmFoco.set(false);
     component.aoFocarSenha();
-    expect(component.senhaEstaEmFoco()).toBeTrue();
+    expect(component.senhaEstaEmFoco()).toBe(true);
   });
 
   /**
@@ -195,7 +197,7 @@ describe('Cadastro', () => {
   it('deve definir senhaEstaEmFoco como false ao desfocar', () => {
     component.senhaEstaEmFoco.set(true);
     component.aoDesfocarSenha();
-    expect(component.senhaEstaEmFoco()).toBeFalse();
+    expect(component.senhaEstaEmFoco()).toBe(false);
   });
 
   /**
@@ -267,8 +269,8 @@ describe('Cadastro', () => {
       confirmarSenha: 'Ab1234567',
     });
 
-    expect(component.formulario.invalid).toBeTrue();
-    expect(component.formulario.get('confirmarSenha')?.hasError('senhasNaoConferem')).toBeTrue();
+    expect(component.formulario.invalid).toBe(true);
+    expect(component.formulario.get('confirmarSenha')?.hasError('senhasNaoConferem')).toBe(true);
     expect(component.obterMensagemErro('confirmarSenha')).toBe('As senhas não conferem.');
   });
 
@@ -304,10 +306,9 @@ describe('Cadastro', () => {
     component.formulario.setValue(dados);
     component.aoEnviar();
 
-    const argumentoChamada = autenticacaoService.registrar.calls.mostRecent().args[0];
+    const argumentoChamada = autenticacaoService.registrar.mock.calls[0][0];
 
-    expect(argumentoChamada).toEqual(jasmine.objectContaining(dadosEsperadosNoBackend));
-
+    expect(argumentoChamada).toEqual(expect.objectContaining(dadosEsperadosNoBackend));
     expect(argumentoChamada.confirmarSenha).toBeUndefined();
   });
 });

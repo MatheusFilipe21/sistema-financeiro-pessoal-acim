@@ -1,3 +1,4 @@
+import { describe, beforeEach, it, expect, vi, Mocked } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { of } from 'rxjs';
@@ -22,25 +23,29 @@ import { TipoCategoria } from '../enums/TipoCategoria';
  */
 describe('Dialog', () => {
   let service: Dialog;
-  let matDialogSpy: jasmine.SpyObj<MatDialog>;
+  let matDialogSpy: Mocked<MatDialog>;
 
-  const dialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['afterClosed']);
-  dialogRefSpy.afterClosed.and.returnValue(of(true));
+  const dialogRefSpy = {
+    afterClosed: vi.fn(),
+  };
 
   /**
    * Configura o ambiente de testes antes de cada 'it'.
    */
   beforeEach(() => {
-    const spy = jasmine.createSpyObj('MatDialog', ['open', 'getDialogById']);
-    spy.open.and.returnValue(dialogRefSpy);
-    spy.getDialogById.and.returnValue(null);
+    dialogRefSpy.afterClosed.mockReturnValue(of(true));
+    const spy = {
+      open: vi.fn().mockReturnValue(dialogRefSpy),
+      getDialogById: vi.fn().mockReturnValue(null),
+    } as unknown as Mocked<MatDialog>;
 
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [Dialog, { provide: MatDialog, useValue: spy }],
     });
 
     service = TestBed.inject(Dialog);
-    matDialogSpy = TestBed.inject(MatDialog) as jasmine.SpyObj<MatDialog>;
+    matDialogSpy = TestBed.inject(MatDialog) as Mocked<MatDialog>;
   });
 
   /**
@@ -144,10 +149,9 @@ describe('Dialog', () => {
    * Verifica se os métodos retornam o Observable do afterClosed.
    * Isso garante que os componentes que chamam o serviço possam reagir ao fechamento do modal.
    */
-  it('deve retornar o observable afterClosed', (done) => {
+  it('deve retornar o observable afterClosed', () => {
     service.mostrarSucesso('T', 'M').subscribe((resultado) => {
-      expect(resultado).toBeTrue();
-      done();
+      expect(resultado).toBe(true);
     });
   });
 
@@ -303,15 +307,15 @@ describe('Dialog', () => {
    * Cenário: Usuário aperta Insert/Botão várias vezes rápido.
    * Resultado: Deve retornar a referência do dialog já aberto e NÃO abrir um novo.
    */
-  it('não deve abrir novo dialog se já existir um aberto com mesmo ID', (done) => {
-    const dialogExistenteRef = jasmine.createSpyObj('MatDialogRef', ['afterClosed']);
-    dialogExistenteRef.afterClosed.and.returnValue(of('retorno-do-dialog-anterior'));
+  it('não deve abrir novo dialog se já existir um aberto com mesmo ID', () => {
+    const dialogExistenteRef = {
+      afterClosed: vi.fn().mockReturnValue(of('retorno-do-dialog-anterior')),
+    };
 
-    matDialogSpy.getDialogById.and.returnValue(dialogExistenteRef);
+    matDialogSpy.getDialogById.mockReturnValue(dialogExistenteRef as any);
 
     service.abrirFormularioPessoa('cadastrar').subscribe((resultado) => {
       expect(resultado).toBe('retorno-do-dialog-anterior' as any);
-      done();
     });
 
     expect(matDialogSpy.open).not.toHaveBeenCalled();

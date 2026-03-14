@@ -1,3 +1,4 @@
+import { describe, beforeEach, it, expect } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -48,6 +49,7 @@ describe('MensagemDialog', () => {
    * Configura o TestBed (ambiente de teste) antes de cada 'it'.
    */
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [MensagemDialog, MatDialogModule, MatButtonModule, MatIconModule],
       providers: [{ provide: MAT_DIALOG_DATA, useValue: mockDadosSucesso }],
@@ -139,14 +141,23 @@ describe('MensagemDialog', () => {
    * Testa a renderização do botão de ação.
    * Verifica texto customizado e texto padrão.
    */
-  it('deve exibir o texto do botão customizado ou padrão', () => {
+  it('deve exibir o texto do botão customizado ou padrão', async () => {
     component.dados = { ...mockDadosInfo, textoBotao: 'Confirmar' };
     fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
     let botao = el.querySelector('button')?.textContent;
     expect(botao).toContain('Confirmar');
 
     component.dados = { ...mockDadosInfo, textoBotao: undefined };
+
+    fixture.componentRef.changeDetectorRef.markForCheck();
+
     fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
     botao = el.querySelector('button')?.textContent;
     expect(botao).toContain('Fechar');
   });

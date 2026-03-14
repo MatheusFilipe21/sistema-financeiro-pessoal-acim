@@ -1,3 +1,4 @@
+import { describe, it, expect, vi, Mocked } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -18,8 +19,8 @@ import { TipoCategoria } from '../../../enums/TipoCategoria';
 describe('CategoriaDialog', () => {
   let component: CategoriaDialog;
   let fixture: ComponentFixture<CategoriaDialog>;
-  let categoriaServiceSpy: jasmine.SpyObj<CategoriaService>;
-  let dialogRefSpy: jasmine.SpyObj<MatDialogRef<CategoriaDialog>>;
+  let categoriaServiceSpy: Mocked<CategoriaService>;
+  let dialogRefSpy: Mocked<MatDialogRef<CategoriaDialog>>;
 
   /**
    * Função auxiliar para recriar o componente com dados específicos (Injection Token).
@@ -28,12 +29,15 @@ describe('CategoriaDialog', () => {
   async function iniciarComponente(dados: DadosCategoriaDialog) {
     TestBed.resetTestingModule();
 
-    categoriaServiceSpy = jasmine.createSpyObj('CategoriaService', [
-      'cadastrar',
-      'atualizar',
-      'excluir',
-    ]);
-    dialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['close']);
+    categoriaServiceSpy = {
+      cadastrar: vi.fn(),
+      atualizar: vi.fn(),
+      excluir: vi.fn(),
+    } as unknown as Mocked<CategoriaService>;
+
+    dialogRefSpy = {
+      close: vi.fn(),
+    } as unknown as Mocked<MatDialogRef<CategoriaDialog>>;
 
     await TestBed.configureTestingModule({
       imports: [ReactiveFormsModule, CategoriaDialog],
@@ -99,7 +103,7 @@ describe('CategoriaDialog', () => {
       cor: '#FF0000',
     });
 
-    categoriaServiceSpy.cadastrar.and.returnValue(of(novaCategoria));
+    categoriaServiceSpy.cadastrar.mockReturnValue(of(novaCategoria));
 
     component.confirmarAcao();
 
@@ -153,7 +157,7 @@ describe('CategoriaDialog', () => {
     component.formulario.patchValue({ nome: 'Salário Mensal' });
 
     const categoriaAtualizada = { ...categoriaExistente, nome: 'Salário Mensal' };
-    categoriaServiceSpy.atualizar.and.returnValue(of(categoriaAtualizada));
+    categoriaServiceSpy.atualizar.mockReturnValue(of(categoriaAtualizada));
 
     component.confirmarAcao();
 
@@ -181,7 +185,7 @@ describe('CategoriaDialog', () => {
     await iniciarComponente({ acao: 'excluir', categoria: categoriaExistente });
 
     expect(component.titulo).toBe('Excluir Categoria');
-    expect(component.formulario.disabled).toBeTrue();
+    expect(component.formulario.disabled).toBe(true);
   });
 
   /**
@@ -198,7 +202,7 @@ describe('CategoriaDialog', () => {
     };
     await iniciarComponente({ acao: 'excluir', categoria: categoriaExistente });
 
-    categoriaServiceSpy.excluir.and.returnValue(of(void 0));
+    categoriaServiceSpy.excluir.mockReturnValue(of(void 0));
 
     component.confirmarAcao();
 
@@ -253,7 +257,7 @@ describe('CategoriaDialog', () => {
 
     component.formulario.get('nome')?.setValue('');
 
-    spyOn(component.formulario, 'markAllAsTouched');
+    vi.spyOn(component.formulario, 'markAllAsTouched');
 
     component.confirmarAcao();
 

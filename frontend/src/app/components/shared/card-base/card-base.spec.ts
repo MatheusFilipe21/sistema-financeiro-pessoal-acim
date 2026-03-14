@@ -1,3 +1,4 @@
+import { describe, beforeEach, it, vi, expect } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component } from '@angular/core';
 import { By } from '@angular/platform-browser';
@@ -26,6 +27,7 @@ describe('CardBase', () => {
    * Configuração inicial do módulo de teste.
    */
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [CardBase, TestHostComponent],
     }).compileComponents();
@@ -35,8 +37,6 @@ describe('CardBase', () => {
 
     component.identificador = 1;
     component.titulo = 'Título Inicial';
-
-    fixture.detectChanges();
   });
 
   /**
@@ -50,8 +50,11 @@ describe('CardBase', () => {
    * Teste de Renderização:
    * Verifica se os IDs são gerados corretamente concatenando o identificador.
    */
-  it('deve gerar IDs dinâmicos baseados no input "identificador"', () => {
+  it('deve gerar IDs dinâmicos baseados no input "identificador"', async () => {
     component.identificador = 50;
+
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     const cardContainer = fixture.nativeElement.querySelector('#card-base-50');
@@ -101,10 +104,13 @@ describe('CardBase', () => {
    * Regra de Negócio Visual:
    * Se apenas 'icone' for fornecido, deve renderizar o MAT-ICON e não a IMAGEM.
    */
-  it('deve renderizar o ícone (mat-icon) quando apenas icone for fornecido', () => {
+  it('deve renderizar o ícone (mat-icon) quando apenas icone for fornecido', async () => {
     component.identificador = 30;
     component.icone = 'account_balance';
     component.avatarUrl = undefined;
+
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     const iconeAvatar = fixture.nativeElement.querySelector('#icone-avatar-30');
@@ -121,7 +127,7 @@ describe('CardBase', () => {
    * Verifica o fluxo de abrir o menu e clicar em Editar.
    */
   it('deve emitir evento "editar" ao clicar na opção do menu', () => {
-    spyOn(component.editar, 'emit');
+    vi.spyOn(component.editar, 'emit');
     component.identificador = 100;
     fixture.detectChanges();
 
@@ -142,7 +148,7 @@ describe('CardBase', () => {
    * Verifica o fluxo de abrir o menu e clicar em Excluir.
    */
   it('deve emitir evento "excluir" ao clicar na opção do menu', () => {
-    spyOn(component.excluir, 'emit');
+    vi.spyOn(component.excluir, 'emit');
     component.identificador = 200;
     fixture.detectChanges();
 

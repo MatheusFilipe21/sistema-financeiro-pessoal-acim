@@ -1,5 +1,4 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { map } from 'rxjs/operators';
@@ -22,7 +21,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
   selector: 'app-dashboard',
   standalone: true,
   imports: [
-    CommonModule,
     RouterModule,
     MatSidenavModule,
     MatToolbarModule,
@@ -48,7 +46,7 @@ export class Dashboard {
     this.breakpointObserver
       .observe([Breakpoints.XSmall, Breakpoints.Small, Breakpoints.Handset])
       .pipe(map((result) => result.matches)),
-    { initialValue: false }
+    { initialValue: false },
   );
 
   /**

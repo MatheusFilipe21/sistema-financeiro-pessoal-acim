@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import {
   InstituicaoFinanceira,
   InstituicaoFinanceiraNome,
@@ -83,7 +84,7 @@ describe('InstituicaoFinanceira', () => {
       const indiceAgibank = opcoes.findIndex((o) => o.valor === InstituicaoFinanceira.AGIBANK);
       const indiceBB = opcoes.findIndex((o) => o.valor === InstituicaoFinanceira.BB);
       const indiceMercadoPago = opcoes.findIndex(
-        (o) => o.valor === InstituicaoFinanceira.MERCADO_PAGO
+        (o) => o.valor === InstituicaoFinanceira.MERCADO_PAGO,
       );
 
       expect(indiceAgibank).toBeLessThan(indiceBB);

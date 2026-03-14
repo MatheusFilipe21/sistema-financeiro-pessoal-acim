@@ -1,3 +1,4 @@
+import { describe, beforeEach, it, expect, vi, Mocked } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { of } from 'rxjs';
@@ -20,9 +21,9 @@ import { InstituicaoFinanceira } from '../../../enums/InstituicaoFinanceira';
 describe('Contas', () => {
   let component: Contas;
   let fixture: ComponentFixture<Contas>;
-  let contaServiceSpy: jasmine.SpyObj<ContaService>;
-  let pessoaServiceSpy: jasmine.SpyObj<PessoaService>;
-  let dialogServiceSpy: jasmine.SpyObj<DialogService>;
+  let contaServiceSpy: Mocked<ContaService>;
+  let pessoaServiceSpy: Mocked<PessoaService>;
+  let dialogServiceSpy: Mocked<DialogService>;
 
   const mockTitular1: PessoaDTO = { id: 'p1', nome: 'Ana', titular: true };
   const mockTitular2: PessoaDTO = { id: 'p2', nome: 'Bruno', titular: true };
@@ -58,13 +59,22 @@ describe('Contas', () => {
   ];
 
   beforeEach(async () => {
-    contaServiceSpy = jasmine.createSpyObj('ContaService', ['listar']);
-    pessoaServiceSpy = jasmine.createSpyObj('PessoaService', ['listar']);
-    dialogServiceSpy = jasmine.createSpyObj('DialogService', ['abrirFormularioConta']);
+    contaServiceSpy = {
+      listar: vi.fn(),
+    } as unknown as Mocked<ContaService>;
 
-    contaServiceSpy.listar.and.returnValue(of(listaContasMock));
-    pessoaServiceSpy.listar.and.returnValue(of(listaPessoasMock));
+    pessoaServiceSpy = {
+      listar: vi.fn(),
+    } as unknown as Mocked<PessoaService>;
 
+    dialogServiceSpy = {
+      abrirFormularioConta: vi.fn(),
+    } as unknown as Mocked<DialogService>;
+
+    contaServiceSpy.listar.mockReturnValue(of(listaContasMock));
+    pessoaServiceSpy.listar.mockReturnValue(of(listaPessoasMock));
+
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [Contas, FormsModule],
       providers: [
@@ -141,12 +151,12 @@ describe('Contas', () => {
    * Teste de Alternância de Visualização.
    */
   it('deve alternar entre visualização de Cards e Tabela', () => {
-    expect(component.visualizacaoEmCards).toBeTrue();
+    expect(component.visualizacaoEmCards).toBe(true);
 
     component.visualizacaoEmCards = false;
     fixture.detectChanges();
 
-    expect(component.visualizacaoEmCards).toBeFalse();
+    expect(component.visualizacaoEmCards).toBe(false);
   });
 
   /**
@@ -155,7 +165,7 @@ describe('Contas', () => {
   it('deve abrir dialog de cadastro e atualizar lista ao confirmar', () => {
     const novaConta = { ...listaContasMock[0], id: '99', nome: 'Nova Conta' };
 
-    dialogServiceSpy.abrirFormularioConta.and.returnValue(of(novaConta));
+    dialogServiceSpy.abrirFormularioConta.mockReturnValue(of(novaConta));
 
     component.aoAdicionar();
 
@@ -164,7 +174,7 @@ describe('Contas', () => {
   });
 
   it('não deve atualizar lista se o cadastro for cancelado', () => {
-    dialogServiceSpy.abrirFormularioConta.and.returnValue(of(undefined));
+    dialogServiceSpy.abrirFormularioConta.mockReturnValue(of(undefined));
 
     component.aoAdicionar();
 
@@ -179,7 +189,7 @@ describe('Contas', () => {
     const contaAlvo = listaContasMock[0];
     const contaEditada = { ...contaAlvo, nome: 'Editada' };
 
-    dialogServiceSpy.abrirFormularioConta.and.returnValue(of(contaEditada));
+    dialogServiceSpy.abrirFormularioConta.mockReturnValue(of(contaEditada));
 
     component.aoEditar(contaAlvo);
 
@@ -193,7 +203,7 @@ describe('Contas', () => {
   it('deve abrir dialog de exclusão e atualizar lista ao confirmar', () => {
     const contaAlvo = listaContasMock[1];
 
-    dialogServiceSpy.abrirFormularioConta.and.returnValue(of(true));
+    dialogServiceSpy.abrirFormularioConta.mockReturnValue(of(true));
 
     component.aoExcluir(contaAlvo);
 

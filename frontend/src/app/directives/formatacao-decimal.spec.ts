@@ -1,3 +1,4 @@
+import { describe, beforeEach, it, vi, expect } from 'vitest';
 import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -38,6 +39,7 @@ describe('FormatacaoDecimalDirective', () => {
    * Configuração inicial do ambiente de teste.
    */
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [TestComponent],
     }).compileComponents();
@@ -56,7 +58,7 @@ describe('FormatacaoDecimalDirective', () => {
    */
   function dispararKeyDown(key: string): KeyboardEvent {
     const event = new KeyboardEvent('keydown', { key: key, cancelable: true });
-    spyOn(event, 'preventDefault');
+    vi.spyOn(event, 'preventDefault');
     inputComForm.dispatchEvent(event);
     return event;
   }

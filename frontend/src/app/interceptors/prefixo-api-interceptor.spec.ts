@@ -1,3 +1,4 @@
+import { describe, beforeEach, afterEach, it, vi, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
@@ -21,6 +22,7 @@ describe('PrefixoApiInterceptor', () => {
   const TOKEN_TESTE = 'token-jwt-simulado-123';
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(withInterceptors([prefixoApiInterceptor])),
@@ -42,7 +44,7 @@ describe('PrefixoApiInterceptor', () => {
    * Deve adicionar "/api" E o cabeçalho Authorization.
    */
   it('deve adicionar prefixo /api e cabeçalho Authorization quando houver token', () => {
-    spyOn(tokenService, 'obter').and.returnValue(TOKEN_TESTE);
+    vi.spyOn(tokenService, 'obter').mockReturnValue(TOKEN_TESTE);
 
     httpClient.get('/pessoas').subscribe();
 
@@ -56,12 +58,12 @@ describe('PrefixoApiInterceptor', () => {
    * Deve adicionar "/api" mas NÃO enviar cabeçalho Authorization.
    */
   it('deve adicionar prefixo /api mas NÃO enviar cabeçalho se não houver token', () => {
-    spyOn(tokenService, 'obter').and.returnValue(null);
+    vi.spyOn(tokenService, 'obter').mockReturnValue(null);
 
     httpClient.post('/autenticacao/login', {}).subscribe();
 
     const req = httpMock.expectOne('/api/autenticacao/login');
-    expect(req.request.headers.has('Authorization')).toBeFalse();
+    expect(req.request.headers.has('Authorization')).toBe(false);
   });
 
   /**
@@ -69,7 +71,7 @@ describe('PrefixoApiInterceptor', () => {
    * Deve manter a URL original mas adicionar o Token (comportamento padrão).
    */
   it('deve ignorar prefixo em URLs absolutas mas adicionar token se existir', () => {
-    spyOn(tokenService, 'obter').and.returnValue(TOKEN_TESTE);
+    vi.spyOn(tokenService, 'obter').mockReturnValue(TOKEN_TESTE);
 
     httpClient.get('https://api.externa.com/dados').subscribe();
 

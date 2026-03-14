@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { FormControl, FormGroup } from '@angular/forms';
 import { validarSenhasIguais } from './validar-senhas-iguais';
 
@@ -31,7 +32,7 @@ describe('validarSenhasIguais', () => {
     expect(resultado).toEqual({ senhasNaoConferem: true });
 
     const confirmControl = group.get('confirmarSenha');
-    expect(confirmControl?.hasError('senhasNaoConferem')).toBeTrue();
+    expect(confirmControl?.hasError('senhasNaoConferem')).toBe(true);
   });
 
   /**
@@ -48,8 +49,8 @@ describe('validarSenhasIguais', () => {
 
     validarSenhasIguais(group);
 
-    expect(confirmControl.hasError('minlength')).toBeTrue();
-    expect(confirmControl.hasError('senhasNaoConferem')).toBeTrue();
+    expect(confirmControl.hasError('minlength')).toBe(true);
+    expect(confirmControl.hasError('senhasNaoConferem')).toBe(true);
     expect(Object.keys(confirmControl.errors || {}).length).toBe(2);
   });
 
@@ -104,8 +105,8 @@ describe('validarSenhasIguais', () => {
 
     validarSenhasIguais(group);
 
-    expect(confirmControl.hasError('senhasNaoConferem')).toBeFalse();
-    expect(confirmControl.hasError('outroErro')).toBeTrue();
+    expect(confirmControl.hasError('senhasNaoConferem')).toBe(false);
+    expect(confirmControl.hasError('outroErro')).toBe(true);
     expect(confirmControl.errors).toEqual({ outroErro: true });
   });
 });

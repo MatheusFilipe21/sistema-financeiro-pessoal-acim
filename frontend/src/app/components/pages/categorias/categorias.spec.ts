@@ -1,3 +1,4 @@
+import { describe, beforeEach, it, vi, expect, Mocked } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { of } from 'rxjs';
@@ -18,8 +19,8 @@ import { TipoCategoria } from '../../../enums/TipoCategoria';
 describe('Categorias', () => {
   let component: Categorias;
   let fixture: ComponentFixture<Categorias>;
-  let categoriaServiceSpy: jasmine.SpyObj<CategoriaService>;
-  let dialogServiceSpy: jasmine.SpyObj<DialogService>;
+  let categoriaServiceSpy: Mocked<CategoriaService>;
+  let dialogServiceSpy: Mocked<DialogService>;
 
   const listaCategoriasMock: CategoriaDTO[] = [
     {
@@ -49,11 +50,17 @@ describe('Categorias', () => {
   ];
 
   beforeEach(async () => {
-    categoriaServiceSpy = jasmine.createSpyObj('CategoriaService', ['listar']);
-    dialogServiceSpy = jasmine.createSpyObj('DialogService', ['abrirFormularioCategoria']);
+    categoriaServiceSpy = {
+      listar: vi.fn(),
+    } as unknown as Mocked<CategoriaService>;
 
-    categoriaServiceSpy.listar.and.returnValue(of(listaCategoriasMock));
+    dialogServiceSpy = {
+      abrirFormularioCategoria: vi.fn(),
+    } as unknown as Mocked<DialogService>;
 
+    categoriaServiceSpy.listar.mockReturnValue(of(listaCategoriasMock));
+
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [Categorias, FormsModule],
       providers: [
@@ -103,8 +110,8 @@ describe('Categorias', () => {
     component.filtrar();
 
     expect(component.categoriasFiltradas.length).toBe(2);
-    expect(component.categoriasFiltradas.some((c) => c.tipo === TipoCategoria.RECEITA)).toBeTrue();
-    expect(component.categoriasFiltradas.some((c) => c.tipo === TipoCategoria.AMBOS)).toBeTrue();
+    expect(component.categoriasFiltradas.some((c) => c.tipo === TipoCategoria.RECEITA)).toBe(true);
+    expect(component.categoriasFiltradas.some((c) => c.tipo === TipoCategoria.AMBOS)).toBe(true);
   });
 
   /**
@@ -116,8 +123,8 @@ describe('Categorias', () => {
     component.filtrar();
 
     expect(component.categoriasFiltradas.length).toBe(2);
-    expect(component.categoriasFiltradas.some((c) => c.tipo === TipoCategoria.DESPESA)).toBeTrue();
-    expect(component.categoriasFiltradas.some((c) => c.tipo === TipoCategoria.AMBOS)).toBeTrue();
+    expect(component.categoriasFiltradas.some((c) => c.tipo === TipoCategoria.DESPESA)).toBe(true);
+    expect(component.categoriasFiltradas.some((c) => c.tipo === TipoCategoria.AMBOS)).toBe(true);
   });
 
   /**
@@ -142,8 +149,8 @@ describe('Categorias', () => {
     const catSistema = listaCategoriasMock[2];
     const catUsuario = listaCategoriasMock[0];
 
-    expect(component.verificarBloqueioAcao(catSistema)).toBeTrue();
-    expect(component.verificarBloqueioAcao(catUsuario)).toBeFalse();
+    expect(component.verificarBloqueioAcao(catSistema)).toBe(true);
+    expect(component.verificarBloqueioAcao(catUsuario)).toBe(false);
   });
 
   /**
@@ -154,7 +161,7 @@ describe('Categorias', () => {
       ...listaCategoriasMock[0],
       id: '99',
     };
-    dialogServiceSpy.abrirFormularioCategoria.and.returnValue(of(novaCategoria));
+    dialogServiceSpy.abrirFormularioCategoria.mockReturnValue(of(novaCategoria));
 
     component.aoAdicionar();
 
@@ -169,7 +176,7 @@ describe('Categorias', () => {
     const catUsuario = listaCategoriasMock[0];
     const catEditada = { ...catUsuario, nome: 'Editado' };
 
-    dialogServiceSpy.abrirFormularioCategoria.and.returnValue(of(catEditada));
+    dialogServiceSpy.abrirFormularioCategoria.mockReturnValue(of(catEditada));
 
     component.aoEditar(catUsuario);
 
@@ -195,7 +202,7 @@ describe('Categorias', () => {
   it('deve abrir dialog de exclusão para categoria do usuário', () => {
     const catUsuario = listaCategoriasMock[0];
 
-    dialogServiceSpy.abrirFormularioCategoria.and.returnValue(of(true));
+    dialogServiceSpy.abrirFormularioCategoria.mockReturnValue(of(true));
 
     component.aoExcluir(catUsuario);
 
@@ -212,6 +219,32 @@ describe('Categorias', () => {
     component.aoExcluir(catSistema);
 
     expect(dialogServiceSpy.abrirFormularioCategoria).not.toHaveBeenCalled();
+    expect(categoriaServiceSpy.listar).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * Teste de filtros com valores vazios.
+   */
+  it('deve manter a lista original quando os filtros forem vazios ou nulos', () => {
+    component.filtro.nome = '   ';
+    component.filtro.tipo = null;
+
+    component.filtrar();
+
+    expect(component.categoriasFiltradas.length).toBe(3);
+    expect(component.categoriasFiltradas).toEqual(listaCategoriasMock);
+  });
+
+  /**
+   * Teste de cancelamento de dialogs.
+   */
+  it('não deve atualizar a lista se o usuário cancelar os dialogs (Adicionar/Editar/Excluir)', () => {
+    dialogServiceSpy.abrirFormularioCategoria.mockReturnValue(of(undefined));
+
+    component.aoAdicionar();
+    component.aoEditar(listaCategoriasMock[0]);
+    component.aoExcluir(listaCategoriasMock[0]);
+
     expect(categoriaServiceSpy.listar).toHaveBeenCalledTimes(1);
   });
 });
