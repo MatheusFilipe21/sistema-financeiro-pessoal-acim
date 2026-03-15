@@ -19,9 +19,9 @@
       // Isso instrui a feature a usar 'docker-ce-cli' em vez de 'moby-cli'
       "moby": false
     },
-    // Node.js: Versão 22 LTS para Angular e ferramentas de análise
+    // Node.js: Versão 24 LTS para Angular e ferramentas de análise
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "22"
+      "version": "24"
     },
     // Python: Para automação e testes E2E com Selenium/Cucumber
     "ghcr.io/devcontainers/features/python:1": {
