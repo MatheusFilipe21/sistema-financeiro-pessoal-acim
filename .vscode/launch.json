@@ -34,25 +34,14 @@
       "cwd": "${workspaceFolder}/frontend",
       "console": "integratedTerminal"
     },
-    // --- Configuração de Debug do E2E (Python/Behave) ---
+    // --- Configuração de Debug do E2E (Python/Pytest-BDD) ---
     {
       "type": "debugpy",
       "name": "Selenium (E2E)",
       "request": "launch",
-      "module": "behave",
-      "args": ["features/"],
-      "cwd": "${workspaceFolder}/e2e",
-      "console": "integratedTerminal",
-      "justMyCode": true
-    },
-    // --- Configuração Roda apenas cenários com @qa ---
-    {
-      "type": "debugpy",
-      "name": "Selenium (E2E - Tag @qa)",
-      "request": "launch",
-      "module": "behave",
-      "args": ["--tags=@qa", "--no-skipped", "features/"],
-      "cwd": "${workspaceFolder}/e2e",
+      "module": "pytest",
+      "args": ["e2e/steps", "-v"],
+      "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "justMyCode": true
     }
