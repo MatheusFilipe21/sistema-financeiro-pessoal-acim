@@ -22,7 +22,7 @@
     "editor.defaultFormatter": "redhat.vscode-xml"
   },
   "[python]": {
-    "editor.defaultFormatter": "ms-python.python"
+    "editor.defaultFormatter": "ms-python.autopep8"
   },
   "[dockerfile]": {
     "editor.defaultFormatter": "ms-azuretools.vscode-containers"
@@ -35,7 +35,7 @@
   },
   "cucumberautocomplete.steps": [
     "backend/src/test/java/br/com/sfpacim/backend/bdd/**/*.java",
-    "e2e/features/steps/**/*.py"
+    "e2e/steps/**/*.py"
   ],
   "cucumberautocomplete.syncfeatures": "**/*.feature",
   "cucumberautocomplete.strictGherkinCompletion": true,
@@ -43,6 +43,14 @@
   "cucumberautocomplete.stepsInvariants": true,
   "cucumberautocomplete.onTypeFormat": true,
   "cucumberautocomplete.skipDocStringsFormat": true,
+  "cucumberautocomplete.gherkinDefinitionPart": "@(given|when|then|step)\\((?:parsers.parse\\(|)",
+  "cucumberautocomplete.stepRegExSymbol": "'",
+  "cucumberautocomplete.customParameters": [
+    {
+      "parameter": "\\{.*?\\}",
+      "value": ".*"
+    }
+  ],
   "cucumberautocomplete.formatConfOverride": {
     "Funcionalidade:": 0,
     "Característica:": 0,
@@ -59,5 +67,8 @@
     "E": 2,
     "Mas": 2,
     "*": 2
-  }
+  },
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["e2e/steps"]
 }

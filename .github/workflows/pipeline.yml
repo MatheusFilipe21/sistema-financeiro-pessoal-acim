@@ -174,8 +174,8 @@ jobs:
             sleep 5;
           done'
 
-      # 8. Instalar e Rodar os Testes E2E (Behave/Selenium)
-      - name: Instalar e Rodar Testes E2E (Behave)
+      # 8. Instalar e Rodar os Testes E2E (Pytest-BDD/Selenium)
+      - name: Instalar e Rodar Testes E2E (Pytest-BDD)
         working-directory: ./e2e
         # Define a variável de ambiente que o environment.py irá ler
         env:
@@ -185,7 +185,7 @@ jobs:
           python -m venv venv
           source venv/bin/activate
           pip install -r requirements.txt
-          behave features/
+          pytest steps/ --junitxml=reports/pytest-report.xml
 
       # 9. Parar a Aplicação (Sempre roda, mesmo se o E2E falhar)
       - name: Parar Aplicação (Docker Compose)
@@ -212,8 +212,8 @@ jobs:
             -Dsonar.organization=matheusfilipe21
             -Dsonar.projectKey=MatheusFilipe21_sistema-finaneiro-pessoal-acim
             -Dsonar.sources=backend/src/main,frontend/src/app
-            -Dsonar.tests=backend/src/test,frontend/src/app
-            -Dsonar.test.inclusions=**/*.spec.ts
+            -Dsonar.tests=backend/src/test,frontend/src/app,e2e/steps
+            -Dsonar.test.inclusions=**/*.spec.ts,e2e/steps/test_*.py
             -Dsonar.java.libraries=backend/target/dependency-jars
             -Dsonar.java.binaries=backend/target/classes
             -Dsonar.java.surefire.reportPaths=backend/target/surefire-reports
@@ -221,4 +221,4 @@ jobs:
             -Dsonar.coverage.jacoco.xmlReportPaths=backend/target/site/jacoco/jacoco.xml
             -Dsonar.javascript.lcov.reportPaths=frontend/coverage/frontend/lcov.info
             -Dsonar.typescript.lcov.reportPaths=frontend/coverage/frontend/lcov.info
-            -Dsonar.junit.reportPaths=frontend/coverage/frontend/junit-report.xml
+            -Dsonar.junit.reportPaths=frontend/coverage/frontend/junit-report.xml,e2e/reports/pytest-report.xml

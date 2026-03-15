@@ -8,13 +8,13 @@ O SFP-ACIM é uma plataforma modular de gestão financeira pessoal desenvolvida 
 
 Nosso monorepo é construído com as seguintes tecnologias principais:
 
-| Componente          | Tecnologia                 | Versão   | Propósito                                                |
-| :------------------ | :------------------------- | :------- | :------------------------------------------------------- |
-| **Backend**         | Java / Spring Boot         | 25 / 4.x | API de negócios (Controladores, Serviços, Persistência). |
-| **Frontend**        | Angular                    | v20      | Interface de usuário web.                                |
-| **Database**        | PostgreSQL                 | 18       | Armazenamento de dados.                                  |
-| **Testes E2E**      | Python / Selenium / Behave | 3.12     | Validação de fluxo ponta-a-ponta (BDD).                  |
-| **Containerização** | Docker Compose             |          | Ambiente de desenvolvimento local e CI/CD.               |
+| Componente          | Tecnologia          | Versão   | Propósito                                                |
+| :------------------ | :------------------ | :------- | :------------------------------------------------------- |
+| **Backend**         | Java / Spring Boot  | 25 / 4.x | API de negócios (Controladores, Serviços, Persistência). |
+| **Frontend**        | Angular             | v21      | Interface de usuário web.                                |
+| **Database**        | PostgreSQL          | 18       | Armazenamento de dados.                                  |
+| **Testes E2E**      | Python / Pytest-BDD | 3.12     | Validação de fluxo ponta-a-ponta (Gherkin).              |
+| **Containerização** | Docker Compose      |          | Ambiente de desenvolvimento local e CI/CD.               |
 
 ## 🏗️ Arquitetura e Padrões
 
@@ -32,7 +32,7 @@ A qualidade é aplicada em três camadas:
 
 - **Unitário/Slice (Backend):** Usando JUnit e MockMvc para testar a lógica dos **Repositórios, Serviços e Controladores** de forma isolada e rápida.
 - **Integração/BDD (API):** Usando **Cucumber e Rest Assured** para validar o comportamento dos **fluxos de negócio** e a comunicação entre as camadas da API.
-- **E2E (Ponta-a-Ponta):** Usando **Selenium e Behave (Python)** para automatizar os cenários Gherkin no navegador (Chrome Headless), validando a comunicação completa entre o Frontend e o Backend.
+- **E2E (Ponta-a-Ponta):** Usando **Selenium e Pytest-BDD (Python)** para automatizar os cenários Gherkin no navegador (Chrome Headless). Esta camada valida a integração real entre o Frontend, Backend e Banco de Dados.
 
 ---
 
@@ -55,7 +55,7 @@ O pipeline é disparado automaticamente em `push` (para `main`/`develop`) ou `pu
 3.  **Job 3: E2E e Quality Gate (Docker + Sonar):**
     - Espera os Jobs 1 e 2 terminarem com sucesso.
     - Inicia a aplicação completa (Postgres, Backend, Frontend) usando `docker compose up --build`.
-    - Roda os testes E2E (Behave/Selenium) contra a aplicação containerizada.
+    - Roda os testes E2E (Pytest-BDD/Selenium) contra a aplicação containerizada.
     - (Se o E2E passar) Envia uma análise combinada (Java + TS) para o SonarQube Cloud para validar o Quality Gate.
 
 ---
@@ -218,10 +218,31 @@ O fluxo de trabalho no VS Code é dividido em dois menus principais:
 | **Backend (Iniciar)**             | Inicia a API Spring Boot (porta 8080).                                                          | Menu "Run and Debug" (▶️) -> **Spring Boot (Backend)**    |
 | **Frontend (Iniciar)**            | Inicia o servidor Angular (porta 4200) com proxy para o backend.                                | Menu "Run and Debug" (▶️) -> **Angular (Frontend)**       |
 | **Testes de Frontend**            | Roda os testes (Karma) em modo "watch" (observação) na porta 9876.                              | Menu "Run and Debug" (▶️) -> **Angular (Testes)**         |
-| **Testes E2E (Debug)**            | Executa os testes Selenium/Python com o depurador anexado (permite breakpoints).                | Menu "Run and Debug" (▶️) -> **Selenium (E2E)**           |
-| **Testes E2E (Tag @qa)**          | Executa apenas os cenários marcados com a tag `@qa`. Útil para desenvolvimento focado.          | Menu "Run and Debug" (▶️) -> **Selenium (E2E - Tag @qa)** |
+| **Testes E2E (Completo)**         | Executa os testes Selenium/Python com o depurador anexado (permite breakpoints).                | Menu "Run and Debug" (▶️) -> **Selenium (E2E)**           |
 | **Testes de Backend (Unitários)** | Roda/Depura testes unitários (JUnit) individualmente através da interface gráfica.              | **Aba "Testing" (🧪)** -> Selecionar e Rodar o teste.     |
+| **Testes de Ponta a Ponta (E2E)** | Roda/Depura cenários Gherkin individualmente via interface gráfica.                             | **Aba "Testing" (🧪)** -> Selecionar e Rodar o teste.     |
 | **Testes de Backend (Completo)**  | Roda `mvn clean verify`: testes JUnit, BDD (Cucumber), Rest Assured, e gera o relatório JaCoCo. | Menu `Terminal > Run Task...` -> **Spring Boot (Testes)** |
+
+> **Sobre a Árvore de Testes:**
+> Devido à arquitetura do monorepo, o VS Code pode exibir uma árvore duplicada no painel de testes (uma correta em `e2e/steps` e outra com erro na raiz). Esta é uma limitação conhecida do discovery do Pytest em estruturas monorepo. Para limpar o ambiente, **ignore a árvore da raiz** (sistema-financeiro-pessoal-acim - Pytest tests). Recomenda-se clicar com o botão direito sobre ela e selecionar a opção **"Hide Test"**.
+
+> **Sobre o suporte à Navegação Gherkin (IDE):**
+> Atualmente, a configuração do Plugin de Autocomplete no VS Code está otimizada exclusivamente para o projeto **E2E (Python/Pytest-BDD)**. Esta escolha foi feita devido à complexidade técnica do motor do Pytest-BDD (uso de `parsers.parse` e `target_fixture`), que exige mapeamentos de Regex customizados para habilitar o _Ctrl + Click_. Como o ecossistema Java/Cucumber possui suporte nativo superior, optou-se por garantir a produtividade na camada E2E, onde o esforço de configuração manual é maior. Caso o foco seja o Backend, a alternância de suporte pode ser feita via `settings.json`.
+> Remova localmente o bloco abaixo do `settings.json`:
+>
+> ```json
+> {
+>   "cucumberautocomplete.steps": ["e2e/steps/**/*.py"],
+>   "cucumberautocomplete.gherkinDefinitionPart": "@(given|when|then|step)\\((?:parsers.parse\\(|)",
+>   "cucumberautocomplete.stepRegExSymbol": "'",
+>   "cucumberautocomplete.customParameters": [
+>     {
+>       "parameter": "\\{.*?\\}",
+>       "value": ".*"
+>     }
+>   ]
+> }
+> ```
 
 ---
 
@@ -261,6 +282,7 @@ MAIL_PASSWORD=SUBSTITUIR_PELA_SENHA_DE_APP
 # APP_FRONTEND_URL=http://localhost:4201
 # JPA_DDL_AUTO=update
 # SHOW_SQL=false
+# HEADLESS_MODE=true
 ```
 
 > **🔑 Como obter a Senha de App (Google Workspace/Gmail):**
