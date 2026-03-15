@@ -65,6 +65,10 @@ pip-log.txt
 # Arquivos compilados/cache
 __pycache__
 *.pyc
+.pytest_cache
+
+# Relatórios e2e
+e2e/reports
 
 # Diversos
 .angular/

@@ -1,6 +1,7 @@
 selenium
 pytest
+pytest-bdd
 pytest-html
-behave
+pytest-xdist
 faker
 requests
