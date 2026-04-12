@@ -15,8 +15,6 @@ import br.com.sfpacim.backend.repositories.UsuarioRepository;
 
 /**
  * Serviço responsável pela lógica de negócio relacionada ao {@link Usuario}.
- *
- * @author Matheus F. N. Pereira
  */
 @Service
 public class UsuarioService {
@@ -24,6 +22,7 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final PessoaRepository pessoaRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ContextoUsuarioService contextoUsuarioService;
 
     /**
      * Construtor para Injeção de Dependências.
@@ -32,16 +31,21 @@ public class UsuarioService {
      * O Spring injeta automaticamente as instâncias necessárias quando esta
      * classe é criada.
      *
-     * @param usuarioRepository O repositório para acesso aos dados do usuário.
-     * @param pessoaRepository  O repositório para persistência da pessoa titular
-     *                          vinculada.
-     * @param passwordEncoder   O bean para codificação de senhas (BCrypt).
+     * @param usuarioRepository      O repositório para acesso aos dados do usuário.
+     * @param pessoaRepository       O repositório para persistência da pessoa
+     *                               titular
+     *                               vinculada.
+     * @param passwordEncoder        O bean para codificação de senhas (BCrypt).
+     * @param contextoUsuarioService O serviço utilitário
+     *                               para recuperar o usuário
+     *                               autenticado do contexto de segurança.
      */
     public UsuarioService(UsuarioRepository usuarioRepository, PessoaRepository pessoaRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder, ContextoUsuarioService contextoUsuarioService) {
         this.usuarioRepository = usuarioRepository;
         this.pessoaRepository = pessoaRepository;
         this.passwordEncoder = passwordEncoder;
+        this.contextoUsuarioService = contextoUsuarioService;
     }
 
     /**
@@ -55,6 +59,8 @@ public class UsuarioService {
      * @return O {@link UsuarioDTO} contendo os dados públicos do usuário
      *         recém-criado.
      * @throws ViolacaoDadosException Se o e-mail já existir no banco.
+     * 
+     * @author Matheus F. N. Pereira
      */
     @Transactional
     public UsuarioDTO registrar(DadosCadastroUsuarioDTO dados) throws ViolacaoDadosException {
@@ -73,11 +79,26 @@ public class UsuarioService {
      *
      * @param usuario   A entidade do usuário já carregada do banco.
      * @param novaSenha A nova senha vinda do DTO.
+     * 
+     * @author Matheus F. N. Pereira
      */
     public void atualizarSenha(Usuario usuario, String novaSenha) {
         usuario.setSenha(passwordEncoder.encode(novaSenha));
 
         this.salvarEntidade(usuario);
+    }
+
+    /**
+     * Recupera os dados do usuário atualmente autenticado no sistema.
+     *
+     * @return O {@link UsuarioDTO} contendo os dados do usuário logado.
+     * 
+     * @author Iago Leonam G.
+     */
+    public UsuarioDTO dadosUsuarioAutenticado() {
+        Usuario usuario = contextoUsuarioService.getUsuarioAutenticado();
+
+        return paraDTO(usuario);
     }
 
     /**
@@ -89,6 +110,8 @@ public class UsuarioService {
      *
      * @param usuario A entidade {@link Usuario} vinda do banco.
      * @return O {@link UsuarioDTO} correspondente.
+     * 
+     * @author Matheus F. N. Pereira
      */
     private UsuarioDTO paraDTO(Usuario usuario) {
         return new UsuarioDTO(usuario);
@@ -100,6 +123,8 @@ public class UsuarioService {
      *
      * @param dto {@link DadosCadastroUsuarioDTO} com os dados do novo usuário.
      * @return A entidade {@link Usuario} pronta para ser persistida.
+     * 
+     * @author Matheus F. N. Pereira
      */
     private Usuario paraEntidade(DadosCadastroUsuarioDTO dto) {
         return new Usuario(dto.nome(), dto.email(), passwordEncoder.encode(dto.senha()));
@@ -117,6 +142,8 @@ public class UsuarioService {
      * @return O usuário persistido.
      * @throws ViolacaoDadosException Caso o e-mail (unique=true) já esteja
      *                                cadastrado.
+     * 
+     * @author Matheus F. N. Pereira
      */
     private Usuario salvarEntidade(Usuario usuario) throws ViolacaoDadosException {
         try {
@@ -135,6 +162,8 @@ public class UsuarioService {
      * sejam criados para ela imediatamente.
      *
      * @param usuario O usuário recém-cadastrado que será dono do registro.
+     * 
+     * @author Matheus F. N. Pereira
      */
     private void criarPessoaTitular(Usuario usuario) {
         Pessoa titular = new Pessoa(usuario.getNome(), usuario);
