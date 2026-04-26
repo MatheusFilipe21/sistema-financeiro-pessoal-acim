@@ -41,6 +41,9 @@ public enum InstituicaoFinanceira {
     DINHEIRO("Dinheiro em Espécie"),
     OUTROS("Outros");
 
+    /**
+     * Nome comercial e amigável da instituição financeira.
+     */
     private final String descricao;
 
     /**

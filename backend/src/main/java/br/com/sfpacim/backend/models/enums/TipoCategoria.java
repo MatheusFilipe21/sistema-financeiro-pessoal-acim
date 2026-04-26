@@ -18,6 +18,9 @@ public enum TipoCategoria {
     DESPESA("Despesa"),
     AMBOS("Ambos");
 
+    /**
+     * Nomenclatura descritiva do tipo de categoria.
+     */
     private final String descricao;
 
     /**
