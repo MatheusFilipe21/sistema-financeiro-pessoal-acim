@@ -1,25 +1,30 @@
 package br.com.sfpacim.backend.services;
 
-import java.text.Collator;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
 import java.util.UUID;
 
+import jakarta.persistence.EntityNotFoundException;
+
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import br.com.sfpacim.backend.dtos.pessoa.CriarAtualizarPessoaDTO;
 import br.com.sfpacim.backend.dtos.pessoa.PessoaDTO;
 import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 import br.com.sfpacim.backend.models.Pessoa;
 import br.com.sfpacim.backend.models.Usuario;
-import br.com.sfpacim.backend.repositories.ContaRepository;
 import br.com.sfpacim.backend.repositories.PessoaRepository;
-import jakarta.persistence.EntityNotFoundException;
+import br.com.sfpacim.backend.utils.MetodosUteis;
 
 /**
  * Serviço responsável pela lógica de negócio relacionada à {@link Pessoa}.
+ *
+ * <p>
+ * Aplica rigorosamente o conceito de Defense in Depth, garantindo que
+ * todas as operações validem a titularidade do usuário sobre a entidade.
  *
  * @author Matheus F. N. Pereira
  */
@@ -27,26 +32,25 @@ import jakarta.persistence.EntityNotFoundException;
 public class PessoaService {
 
     private final PessoaRepository pessoaRepository;
-    private final ContaRepository contaRepository;
     private final ContextoUsuarioService contextoUsuarioService;
-    private final Collator collator;
+    private final ContaService contaService;
+    private final TransacaoService transacaoService;
 
     /**
      * Construtor para Injeção de Dependências.
      * 
      * @param pessoaRepository       O repositório para acesso aos dados da pessoa.
-     * @param pessoaRepository       O repositório para acesso aos dados das contas.
      * @param contextoUsuarioService O serviço utilitário para recuperar o usuário
      *                               autenticado do contexto de segurança.
+     * @param contaService           O serviço para acesso as contas.
+     * @param transacaoService       O serviço para acesso as transações.
      */
-    public PessoaService(PessoaRepository pessoaRepository, ContaRepository contaRepository,
-            ContextoUsuarioService contextoUsuarioService) {
+    public PessoaService(PessoaRepository pessoaRepository, ContextoUsuarioService contextoUsuarioService,
+            @Lazy ContaService contaService, @Lazy TransacaoService transacaoService) {
         this.pessoaRepository = pessoaRepository;
-        this.contaRepository = contaRepository;
         this.contextoUsuarioService = contextoUsuarioService;
-
-        this.collator = Collator.getInstance(Locale.of("pt", "BR"));
-        this.collator.setStrength(Collator.PRIMARY);
+        this.contaService = contaService;
+        this.transacaoService = transacaoService;
     }
 
     /**
@@ -61,29 +65,28 @@ public class PessoaService {
      * @throws ViolacaoDadosException Se já existir uma pessoa com esse nome para o
      *                                usuário.
      */
+    @Transactional
     public PessoaDTO cadastrar(CriarAtualizarPessoaDTO dto) throws ViolacaoDadosException {
-        Usuario usuario = contextoUsuarioService.getUsuarioAutenticado();
+        Pessoa entidade = paraEntidade(dto, contextoUsuarioService.getUsuarioAutenticado());
 
-        Pessoa entidade = paraEntidade(dto, usuario);
-
-        return paraDTO(this.salvarEntidade(entidade));
+        return paraDTO(salvarEntidade(entidade));
     }
 
     /**
      * Lista todas as pessoas vinculadas ao usuário autenticado.
-     *
+     * 
      * <p>
-     * Garante o isolamento dos dados (Multi-tenancy), retornando apenas
-     * registros que pertencem ao token informado.
+     * Aplica uma ordenação em memória pelo nome da pessoa (alfabética).
      *
      * @return Uma lista de {@link PessoaDTO}.
      */
+    @Transactional(readOnly = true)
     public List<PessoaDTO> listar() {
-        Usuario usuario = contextoUsuarioService.getUsuarioAutenticado();
+        UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
 
-        return pessoaRepository.findByUsuario(usuario)
+        return pessoaRepository.findByUsuarioId(usuarioId)
                 .stream()
-                .sorted((p1, p2) -> collator.compare(p1.getNome(), p2.getNome()))
+                .sorted((p1, p2) -> MetodosUteis.collator().compare(p1.getNome(), p2.getNome()))
                 .map(this::paraDTO)
                 .toList();
     }
@@ -95,15 +98,18 @@ public class PessoaService {
      * Verifica se a pessoa existe e se pertence ao usuário autenticado
      * antes de permitir a alteração.
      *
-     * @param id  O identificador da pessoa a ser atualizada.
-     * @param dto Os novos dados (nome).
+     * @param pessoaId O identificador da pessoa a ser atualizada.
+     * @param dto      Os novos dados (nome).
      * @return O {@link PessoaDTO} atualizado.
+     * @throws ViolacaoDadosException  Se o novo nome causar duplicidade.
      * @throws EntityNotFoundException Se a pessoa não for encontrada ou não
      *                                 pertencer ao usuário.
-     * @throws ViolacaoDadosException  Se o novo nome causar duplicidade.
      */
-    public PessoaDTO atualizar(UUID id, CriarAtualizarPessoaDTO dto) throws ViolacaoDadosException {
-        Pessoa pessoa = buscarPessoaValidada(id);
+    @Transactional
+    public PessoaDTO atualizar(UUID pessoaId, CriarAtualizarPessoaDTO dto) throws ViolacaoDadosException,
+            EntityNotFoundException {
+        UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
+        Pessoa pessoa = obterEntidadeValidada(usuarioId, pessoaId);
 
         pessoa.setNome(dto.nome().trim());
 
@@ -111,7 +117,7 @@ public class PessoaService {
             pessoa.setTitular(dto.titular());
         }
 
-        return paraDTO(this.salvarEntidade(pessoa));
+        return paraDTO(salvarEntidade(pessoa));
     }
 
     /**
@@ -120,12 +126,14 @@ public class PessoaService {
      * <p>
      * Verifica se a pessoa existe e pertence ao usuário autenticado.
      *
-     * @param id O identificador da pessoa a ser excluída.
+     * @param pessoaId O identificador da pessoa a ser excluída.
      * @throws EntityNotFoundException Se a pessoa não for encontrada ou não
      *                                 pertencer ao usuário.
      */
-    public void excluir(UUID id) {
-        Pessoa pessoa = buscarPessoaValidada(id);
+    @Transactional
+    public void excluir(UUID pessoaId) throws EntityNotFoundException {
+        UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
+        Pessoa pessoa = obterEntidadeValidada(usuarioId, pessoaId);
 
         validarDependenciasParaExclusao(pessoa);
 
@@ -133,37 +141,37 @@ public class PessoaService {
     }
 
     /**
-     * Verifica se a pessoa possui vínculos que impedem a exclusão (Contas, Cartões,
-     * etc).
+     * Busca a entidade Pessoa validando a propriedade do usuário no banco de dados.
+     *
+     * @param usuarioId O identificador único do usuário proprietário.
+     * @param pessoaId  O identificador único da pessoa.
+     * @return A entidade {@link Pessoa} validada.
+     * @throws EntityNotFoundException Se a pessoa não for encontrada ou não
+     *                                 pertencer ao usuário.
      */
-    private void validarDependenciasParaExclusao(Pessoa pessoa) {
-        boolean possuiContas = !contaRepository.findByPessoa(pessoa).isEmpty();
-
-        if (possuiContas) {
-            throw new ViolacaoDadosException(
-                    String.format(
-                            "Não é possível excluir '%s' pois existem Contas vinculadas. Exclua as contas primeiro.",
-                            pessoa.getNome()));
-        }
-    }
-
-    private Pessoa buscarPessoaValidada(UUID id) {
-        Usuario usuario = contextoUsuarioService.getUsuarioAutenticado();
-
-        return pessoaRepository.findById(id)
-                .filter(p -> p.getUsuario().equals(usuario))
+    Pessoa obterEntidadeValidada(UUID usuarioId, UUID pessoaId) throws EntityNotFoundException {
+        return pessoaRepository.findByUsuarioIdAndId(usuarioId, pessoaId)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        String.format("Pessoa com id %s não encontrada ou acesso negado.", id)));
+                        String.format("Pessoa com id %s não encontrada ou acesso negado.", pessoaId)));
     }
 
     /**
-     * Converte a entidade {@link Pessoa} para um {@link PessoaDTO}.
+     * Valida se a pessoa possui permissão de titularidade para operações
+     * financeiras.
      *
-     * @param pessoa A entidade vinda do banco.
-     * @return O DTO correspondente.
+     * <p>
+     * Regra de Negócio: Impede que dependentes ou pessoas não marcadas como
+     * titulares sejam vinculadas a entidades que exigem titularidade (ex: Contas).
+     *
+     * @param pessoa A entidade {@link Pessoa} a ser validada.
+     * @throws ViolacaoDadosException Se a pessoa não possuir a flag de titular
+     *                                ativa.
      */
-    private PessoaDTO paraDTO(Pessoa pessoa) {
-        return new PessoaDTO(pessoa);
+    void validarTitularidade(Pessoa pessoa) throws ViolacaoDadosException {
+        if (!pessoa.isTitular()) {
+            throw new ViolacaoDadosException(
+                    String.format("A pessoa '%s' não é um titular habilitado para esta operação.", pessoa.getNome()));
+        }
     }
 
     /**
@@ -178,6 +186,16 @@ public class PessoaService {
         pessoa.setTitular(Boolean.TRUE.equals(dto.titular()));
 
         return pessoa;
+    }
+
+    /**
+     * Converte a entidade {@link Pessoa} para um {@link PessoaDTO}.
+     *
+     * @param pessoa A entidade vinda do banco.
+     * @return O DTO correspondente.
+     */
+    private PessoaDTO paraDTO(Pessoa pessoa) {
+        return new PessoaDTO(pessoa);
     }
 
     /**
@@ -198,7 +216,8 @@ public class PessoaService {
 
             return pessoaRepository.saveAndFlush(pessoa);
         } catch (DataIntegrityViolationException _) {
-            throw excecaoNomeDuplicado(pessoa.getNome());
+            MetodosUteis.validarUnicidade(true, Pessoa.class.getSimpleName(), pessoa.getNome());
+            return null;
         }
     }
 
@@ -206,39 +225,49 @@ public class PessoaService {
      * Valida se já existe uma pessoa com o mesmo nome para o usuário autenticado.
      *
      * <p>
-     * A validação segue as seguintes regras de normalização:
-     * <ul>
-     * <li>Ignora diferenças de acentuação e caixa (via {@link Collator}).</li>
-     * <li>Ignora espaços em branco no início e fim (trim).</li>
-     * </ul>
-     * Exemplo: " joao " será considerado duplicado de "João".
+     * A validação é realizada em memória para garantir portabilidade entre
+     * diferentes bancos de dados (H2, Postgres), utilizando normalização de strings
+     * para ignorar acentos e diferenças de caixa.
      *
-     * @param pessoa A entidade {@link Pessoa} contendo o nome e o ID (se houver) a
-     *               ser validada.
-     * @throws ViolacaoDadosException Caso o nome já esteja cadastrado para este
-     *                                usuário.
+     * @param pessoa A entidade {@link Pessoa} a ser validada.
+     * @throws ViolacaoDadosException Caso o nome já esteja cadastrado.
      */
-    private void validarUnicidadeNome(Pessoa pessoa) {
-        List<Pessoa> pessoasDoUsuario = pessoaRepository.findByUsuario(pessoa.getUsuario());
+    private void validarUnicidadeNome(Pessoa pessoa) throws ViolacaoDadosException {
+        UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
+        String nomeNovoNormalizado = MetodosUteis.normalizarParaBusca(pessoa.getNome());
 
-        boolean existeDuplicado = pessoasDoUsuario.stream()
-                .filter(p -> !Objects.equals(p.getId(), pessoa.getId()))
-                .anyMatch(p -> collator.equals(p.getNome().trim(), pessoa.getNome().trim()));
+        boolean existeDuplicado = pessoaRepository.findByUsuarioId(usuarioId)
+                .stream()
+                .filter(p -> pessoa.getId() == null || !p.getId().equals(pessoa.getId()))
+                .anyMatch(p -> MetodosUteis.normalizarParaBusca(p.getNome()).equals(nomeNovoNormalizado));
 
-        if (existeDuplicado) {
-            throw excecaoNomeDuplicado(pessoa.getNome());
-        }
+        MetodosUteis.validarUnicidade(existeDuplicado, Pessoa.class.getSimpleName(), pessoa.getNome());
     }
 
     /**
-     * Cria a instância da exceção de regra de negócio para nome duplicado.
-     * Centraliza a mensagem de erro para garantir consistência.
+     * Valida se a pessoa possui dependências ativas que impeçam sua exclusão.
      *
-     * @param nome O nome que causou o conflito de duplicidade.
-     * @return A exceção {@link ViolacaoDadosException} pronta para ser lançada.
+     * <p>
+     * Consulta os serviços de domínio dependentes (Contas e Transações) para
+     * verificar se existem registros vinculados a esta pessoa. Delega a
+     * formatação da mensagem e o lançamento da exceção para a classe utilitária.
+     *
+     * @param pessoa A entidade {@link Pessoa} que está sendo avaliada para
+     *               exclusão.
+     * @throws ViolacaoDadosException Caso existam contas ou transações vinculadas.
      */
-    private ViolacaoDadosException excecaoNomeDuplicado(String nome) {
-        return new ViolacaoDadosException(
-                String.format("Já existe uma pessoa cadastrada com o nome '%s'.", nome));
+    private void validarDependenciasParaExclusao(Pessoa pessoa) throws ViolacaoDadosException {
+        List<String> dependencias = new ArrayList<>();
+        UUID pessoaId = pessoa.getId();
+
+        if (contaService.existeContaVinculadaAPessoa(pessoaId)) {
+            dependencias.add("Contas");
+        }
+
+        if (transacaoService.existeTransacaoVinculadaAPessoa(pessoaId)) {
+            dependencias.add("Transações");
+        }
+
+        MetodosUteis.validarDependenciasExclusao(pessoa.getNome(), dependencias);
     }
 }

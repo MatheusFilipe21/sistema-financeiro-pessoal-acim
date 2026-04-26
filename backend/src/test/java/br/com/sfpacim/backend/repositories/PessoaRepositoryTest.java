@@ -1,6 +1,7 @@
 package br.com.sfpacim.backend.repositories;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -57,21 +58,65 @@ class PessoaRepositoryTest {
     }
 
     /**
-     * Testa o método {@link PessoaRepository#findByUsuario(Usuario)}.
+     * Testa o método
+     * {@link PessoaRepository#findByUsuarioIdAndId(UUID, UUID)}.
      *
      * <p>
-     * Valida o cenário de sucesso, onde as pessoas vinculadas ao usuário
-     * são retornadas corretamente.
+     * Valida o cenário de sucesso, onde a pessoa é encontrada e pertence
+     * ao usuário informado.
      */
     @Test
-    @DisplayName("findByUsuario quando existirem registros, deve retornar lista com as pessoas")
-    void testeFindByUsuario_QuandoExistiremRegistros_DeveRetornarLista() {
+    @DisplayName("findByUsuarioIdAndId quando registro existir e pertencer ao usuário, deve retornar Optional com a pessoa")
+    void testeFindByUsuarioIdAndId_QuandoRegistroExistir_DeveRetornarOptionalComPessoa() {
+        entityManager.persist(usuario);
+        entityManager.persist(pessoa1);
+        entityManager.flush();
+
+        Optional<Pessoa> resultado = pessoaRepository.findByUsuarioIdAndId(usuario.getId(), pessoa1.getId());
+
+        assertTrue(resultado.isPresent(), "O Optional não deveria estar vazio");
+        assertEquals(NOME_PESSOA_1, resultado.get().getNome(), "Deveria retornar a pessoa correta");
+    }
+
+    /**
+     * Testa o isolamento de dados no método
+     * {@link PessoaRepository#findByUsuarioIdAndId(UUID, UUID)}.
+     *
+     * <p>
+     * Valida se a busca não retorna uma pessoa que existe no banco, mas que
+     * pertence a um usuário diferente do informado na consulta (Defense in Depth).
+     */
+    @Test
+    @DisplayName("findByUsuarioIdAndId quando pessoa pertencer a outro usuário, deve retornar Optional vazio")
+    void testeFindByUsuarioIdAndId_QuandoPessoaDeOutroUsuario_DeveRetornarOptionalVazio() {
+        entityManager.persist(usuario);
+        entityManager.persist(pessoa1);
+
+        Usuario usuarioIntruso = new Usuario("Intruso", "intruso@email.com", "123");
+        entityManager.persist(usuarioIntruso);
+        entityManager.flush();
+
+        Optional<Pessoa> resultado = pessoaRepository.findByUsuarioIdAndId(usuarioIntruso.getId(), pessoa1.getId());
+
+        assertFalse(resultado.isPresent(), "O Optional deveria estar vazio pois a pessoa pertence a outro usuário");
+    }
+
+    /**
+     * Testa o método {@link PessoaRepository#findByUsuarioId}.
+     *
+     * <p>
+     * Valida o cenário de sucesso, onde as pessoas vinculadas ao ID do usuário
+     * são retornadas corretamente em uma lista.
+     */
+    @Test
+    @DisplayName("findByUsuarioId quando existirem registros, deve retornar lista com as pessoas")
+    void testeFindByUsuarioId_QuandoExistiremRegistros_DeveRetornarLista() {
         entityManager.persist(usuario);
         entityManager.persist(pessoa1);
         entityManager.persist(pessoa2);
         entityManager.flush();
 
-        List<Pessoa> resultado = pessoaRepository.findByUsuario(usuario);
+        List<Pessoa> resultado = pessoaRepository.findByUsuarioId(usuario.getId());
 
         assertFalse(resultado.isEmpty(), "A lista não deveria estar vazia");
         assertEquals(2, resultado.size(), "Deveria retornar exatos 2 registros");
@@ -81,14 +126,15 @@ class PessoaRepositoryTest {
     }
 
     /**
-     * Testa o isolamento de dados.
+     * Testa o isolamento de dados no método
+     * {@link PessoaRepository#findByUsuarioId(UUID)}.
      *
      * <p>
      * Valida se a busca NÃO retorna registros que pertencem a outro usuário.
      */
     @Test
-    @DisplayName("findByUsuario não deve retornar registros de outro usuário")
-    void testeFindByUsuario_QuandoUsuarioForDiferente_NaoDeveRetornarRegistros() {
+    @DisplayName("findByUsuarioId não deve retornar registros de outro usuário")
+    void testeFindByUsuarioId_QuandoUsuarioForDiferente_NaoDeveRetornarRegistros() {
         entityManager.persist(usuario);
         entityManager.persist(pessoa1);
 
@@ -96,7 +142,7 @@ class PessoaRepositoryTest {
         entityManager.persist(usuarioIntruso);
         entityManager.flush();
 
-        List<Pessoa> resultado = pessoaRepository.findByUsuario(usuarioIntruso);
+        List<Pessoa> resultado = pessoaRepository.findByUsuarioId(usuarioIntruso.getId());
 
         assertTrue(resultado.isEmpty(), "A lista deveria estar vazia para o usuário sem registros");
     }

@@ -3,6 +3,8 @@ package br.com.sfpacim.backend.services;
 import java.util.List;
 import java.util.UUID;
 
+import jakarta.persistence.EntityNotFoundException;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,14 +16,15 @@ import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 import br.com.sfpacim.backend.models.Categoria;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.CategoriaRepository;
-import jakarta.persistence.EntityNotFoundException;
+import br.com.sfpacim.backend.utils.MetodosUteis;
 
 /**
  * Serviço responsável pela lógica de negócio relacionada à entidade
  * {@link Categoria}.
  *
  * <p>
- * Gerencia o ciclo de vida das categorias (pessoais e globais).
+ * Gerencia o ciclo de vida das categorias (pessoais e globais), aplicando
+ * o conceito de Defense in Depth para garantir isolamento de dados.
  *
  * @author Matheus F. N. Pereira
  */
@@ -35,8 +38,7 @@ public class CategoriaService {
      * Construtor para Injeção de Dependências.
      *
      * @param categoriaRepository    O repositório de categorias.
-     * @param contextoUsuarioService O serviço para recuperar o usuário
-     *                               autenticado.
+     * @param contextoUsuarioService O serviço para recuperar o usuário autenticado.
      */
     public CategoriaService(CategoriaRepository categoriaRepository,
             ContextoUsuarioService contextoUsuarioService) {
@@ -59,16 +61,11 @@ public class CategoriaService {
     public CategoriaDTO cadastrar(CriarAtualizarCategoriaDTO dto) throws ViolacaoDadosException {
         Usuario usuario = contextoUsuarioService.getUsuarioAutenticado();
 
-        String nomeSanitizado = dto.nome().trim();
+        Categoria categoria = new Categoria(dto.nome().trim(), dto.tipo(), dto.icone(), dto.cor(), usuario);
 
-        if (categoriaRepository.existsByNomeAndUsuarioConflitoCadastro(nomeSanitizado, usuario)) {
-            throw excecaoNomeDuplicado(nomeSanitizado);
-        }
+        validarUnicidadeNome(categoria);
 
-        Categoria categoria = new Categoria(nomeSanitizado, dto.tipo(), dto.icone(), dto.cor(), usuario);
-        categoria = salvarEntidade(categoria);
-
-        return paraDTO(categoria);
+        return paraDTO(salvarEntidade(categoria));
     }
 
     /**
@@ -81,12 +78,12 @@ public class CategoriaService {
      */
     @Transactional(readOnly = true)
     public List<CategoriaDTO> listar() {
-        Usuario usuario = contextoUsuarioService.getUsuarioAutenticado();
+        UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
 
-        List<Categoria> categorias = categoriaRepository.findByUsuarioOrUsuarioIsNullOrderByNomeAsc(usuario);
+        List<Categoria> categorias = categoriaRepository.findByUsuarioIdOrUsuarioIsNullOrderByNomeAsc(usuarioId);
 
         return categorias.stream()
-                .map(CategoriaDTO::new)
+                .map(this::paraDTO)
                 .toList();
     }
 
@@ -96,34 +93,29 @@ public class CategoriaService {
      * <p>
      * Categorias do sistema são imutáveis e não podem ser alteradas pelo usuário.
      *
-     * @param id  O identificador da categoria.
-     * @param dto Os novos dados.
+     * @param categoriaId O identificador da categoria.
+     * @param dto         Os novos dados.
      * @return O {@link CategoriaDTO} atualizado.
      * @throws RegraDeNegocioException Se tentar alterar uma categoria do sistema.
+     * @throws ViolacaoDadosException  Se o novo nome gerar duplicidade.
      */
     @Transactional
-    public CategoriaDTO atualizar(UUID id, CriarAtualizarCategoriaDTO dto) {
-        Usuario usuario = contextoUsuarioService.getUsuarioAutenticado();
-        Categoria categoria = buscarCategoriaValidada(id, usuario);
+    public CategoriaDTO atualizar(UUID categoriaId, CriarAtualizarCategoriaDTO dto) {
+        UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
+        Categoria categoria = obterEntidadeValidada(usuarioId, categoriaId);
 
         if (categoria.isDoSistema()) {
             throw new RegraDeNegocioException("Categorias padrão do sistema não podem ser alteradas.");
         }
 
-        String novoNome = dto.nome().trim();
-
-        if (categoriaRepository.existsByNomeAndUsuarioConflito(novoNome, usuario, id)) {
-            throw excecaoNomeDuplicado(novoNome);
-        }
-
-        categoria.setNome(novoNome);
+        categoria.setNome(dto.nome().trim());
         categoria.setTipo(dto.tipo());
         categoria.setIcone(dto.icone());
         categoria.setCor(dto.cor());
 
-        salvarEntidade(categoria);
+        validarUnicidadeNome(categoria);
 
-        return paraDTO(categoria);
+        return paraDTO(salvarEntidade(categoria));
     }
 
     /**
@@ -132,13 +124,13 @@ public class CategoriaService {
      * <p>
      * Categorias do sistema não podem ser excluídas.
      *
-     * @param id O identificador da categoria.
+     * @param categoriaId O identificador da categoria.
      * @throws RegraDeNegocioException Se a categoria for padrão do sistema.
      */
     @Transactional
-    public void excluir(UUID id) {
-        Usuario usuario = contextoUsuarioService.getUsuarioAutenticado();
-        Categoria categoria = buscarCategoriaValidada(id, usuario);
+    public void excluir(UUID categoriaId) {
+        UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
+        Categoria categoria = obterEntidadeValidada(usuarioId, categoriaId);
 
         if (categoria.isDoSistema()) {
             throw new RegraDeNegocioException("Não é possível excluir uma categoria padrão do sistema.");
@@ -148,21 +140,50 @@ public class CategoriaService {
     }
 
     /**
-     * Busca uma categoria e valida se o usuário tem permissão de visualização.
+     * Busca uma categoria e valida se o usuário tem permissão de visualização
+     * direto no banco de dados.
      *
-     * @param id      ID da categoria.
-     * @param usuario Usuário autenticado.
+     * @param usuarioId   ID do usuário autenticado.
+     * @param categoriaId ID da categoria.
      * @return Entidade Categoria.
+     * @throws EntityNotFoundException Se a categoria não existir ou não for
+     *                                 visível.
      */
-    private Categoria buscarCategoriaValidada(UUID id, Usuario usuario) {
-        return categoriaRepository.findById(id)
-                .filter(c -> c.getUsuario() == null || c.getUsuario().equals(usuario))
+    Categoria obterEntidadeValidada(UUID usuarioId, UUID categoriaId) {
+        return categoriaRepository.findByUsuarioIdOrSistemaAndId(usuarioId, categoriaId)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        String.format("Categoria com id %s não encontrada ou acesso negado.", id)));
+                        String.format("Categoria com id %s não encontrada ou acesso negado.", categoriaId)));
+    }
+
+    /**
+     * Valida se já existe uma categoria com o mesmo nome (sistema ou do usuário).
+     *
+     * <p>
+     * A validação é realizada em memória buscando as categorias visíveis ao
+     * usuário,
+     * garantindo portabilidade (H2, Postgres) e ignorando case/acentos.
+     *
+     * @param categoria A entidade a ser validada.
+     * @throws ViolacaoDadosException Se duplicidade for detectada.
+     */
+    private void validarUnicidadeNome(Categoria categoria) {
+        UUID usuarioId = categoria.getUsuario().getId();
+        String nomeNovoNormalizado = MetodosUteis.normalizarParaBusca(categoria.getNome());
+
+        boolean existeDuplicado = categoriaRepository.findByUsuarioIdOrUsuarioIsNullOrderByNomeAsc(usuarioId)
+                .stream()
+                .filter(c -> categoria.getId() == null || !c.getId().equals(categoria.getId()))
+                .anyMatch(c -> MetodosUteis.normalizarParaBusca(c.getNome()).equals(nomeNovoNormalizado));
+
+        MetodosUteis.validarUnicidade(existeDuplicado, Categoria.class.getSimpleName(), categoria.getNome());
     }
 
     /**
      * Tenta salvar a categoria no banco de dados.
+     *
+     * <p>
+     * Captura {@link DataIntegrityViolationException} como uma camada extra
+     * de segurança para a constraint de unicidade.
      *
      * @param categoria Entidade a ser salva.
      * @return Entidade salva.
@@ -171,15 +192,17 @@ public class CategoriaService {
         try {
             return categoriaRepository.saveAndFlush(categoria);
         } catch (DataIntegrityViolationException _) {
-            throw excecaoNomeDuplicado(categoria.getNome());
+            MetodosUteis.validarUnicidade(true, Categoria.class.getSimpleName(), categoria.getNome());
+            return null;
         }
     }
 
-    private ViolacaoDadosException excecaoNomeDuplicado(String nome) {
-        return new ViolacaoDadosException(
-                String.format("Já existe uma categoria '%s' cadastrada.", nome));
-    }
-
+    /**
+     * Converte a entidade {@link Categoria} para o DTO de resposta.
+     *
+     * @param categoria A entidade carregada do banco.
+     * @return O {@link CategoriaDTO} correspondente.
+     */
     private CategoriaDTO paraDTO(Categoria categoria) {
         return new CategoriaDTO(categoria);
     }

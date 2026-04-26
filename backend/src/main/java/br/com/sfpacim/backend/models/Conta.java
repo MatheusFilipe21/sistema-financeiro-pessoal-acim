@@ -16,6 +16,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -73,6 +75,7 @@ public class Conta {
      * Saldo inicial informado no momento do cadastro.
      * Serve como ponto de partida para o histórico.
      */
+    @Setter(AccessLevel.NONE)
     @Column(name = "saldo_inicial", nullable = false, precision = 19, scale = 2)
     private BigDecimal saldoInicial;
 
@@ -84,6 +87,7 @@ public class Conta {
      * (Performance).
      * Fórmula: Saldo Inicial + Receitas - Despesas.
      */
+    @Setter(AccessLevel.NONE)
     @Column(name = "saldo_atual", nullable = false, precision = 19, scale = 2)
     private BigDecimal saldoAtual;
 
@@ -108,10 +112,57 @@ public class Conta {
      * @param pessoa       Pessoa titular.
      */
     public Conta(String nome, InstituicaoFinanceira instituicao, BigDecimal saldoInicial, Pessoa pessoa) {
+        if (saldoInicial == null) {
+            throw new IllegalArgumentException(
+                    "O saldo inicial não pode ser nulo. Use zero caso a conta esteja vazia.");
+        }
+
         this.nome = nome;
         this.instituicao = instituicao;
         this.saldoInicial = saldoInicial;
         this.saldoAtual = saldoInicial;
         this.pessoa = pessoa;
+    }
+
+    /**
+     * Altera o saldo inicial e reajusta o saldo atual automaticamente
+     * com base na diferença.
+     *
+     * @param novoSaldoInicial O novo valor de saldo inicial informado.
+     */
+    public void alterarSaldoInicial(BigDecimal novoSaldoInicial) {
+        if (novoSaldoInicial == null) {
+            throw new IllegalArgumentException("O novo saldo inicial não pode ser nulo.");
+        }
+
+        BigDecimal diferenca = novoSaldoInicial.subtract(this.saldoInicial);
+        this.saldoAtual = this.saldoAtual.add(diferenca);
+        this.saldoInicial = novoSaldoInicial;
+    }
+
+    /**
+     * Adiciona um valor ao saldo atual da conta.
+     *
+     * @param valor O valor a ser creditado. Deve ser maior que zero.
+     */
+    public void creditar(BigDecimal valor) {
+        if (valor == null || valor.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("O valor para crédito deve ser maior que zero.");
+        }
+
+        this.saldoAtual = this.saldoAtual.add(valor);
+    }
+
+    /**
+     * Subtrai um valor do saldo atual da conta.
+     *
+     * @param valor O valor a ser debitado. Deve ser maior que zero.
+     */
+    public void debitar(BigDecimal valor) {
+        if (valor == null || valor.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("O valor para débito deve ser maior que zero.");
+        }
+
+        this.saldoAtual = this.saldoAtual.subtract(valor);
     }
 }
