@@ -31,8 +31,8 @@ import lombok.ToString;
  *
  * <p>
  * Armazena o saldo financeiro e serve como origem/destino de transações.
- * Possui validação de unicidade para não permitir nomes repetidos para a mesma
- * {@link Pessoa}.
+ * Possui validação de unicidade composta, garantindo que uma {@link Pessoa} não
+ * possua contas com o mesmo nome dentro da mesma instituição financeira.
  *
  * @author Matheus F. N. Pereira
  */
@@ -44,7 +44,8 @@ import lombok.ToString;
 @EqualsAndHashCode(of = "id")
 @Entity
 @Table(name = "contas", uniqueConstraints = {
-        @UniqueConstraint(columnNames = { "nome", "pessoa_id" })
+        @UniqueConstraint(columnNames = { "nome", "pessoa_id",
+                "instituicao" })
 })
 public class Conta {
 
@@ -57,8 +58,9 @@ public class Conta {
     private UUID id;
 
     /**
-     * Nome de identificação da conta (ex: "Nubank", "Cofre").
-     * Obrigatório e deve ser único para a pessoa vinculada.
+     * Nome de identificação da conta (ex: "Conta Corrente", "Poupança").
+     * Obrigatório. Deve ser único para a combinação de pessoa titular e
+     * instituição.
      */
     @Column(nullable = false)
     private String nome;

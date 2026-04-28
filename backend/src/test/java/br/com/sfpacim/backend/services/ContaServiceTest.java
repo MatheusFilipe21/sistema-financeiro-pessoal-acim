@@ -430,4 +430,42 @@ class ContaServiceTest {
         assertTrue(excecao.getMessage().contains(NOME_CONTA_NOVO));
         verify(contaRepository, never()).saveAndFlush(any());
     }
+
+    /**
+     * Testa a nova regra de unicidade no método
+     * {@link ContaService#atualizar(UUID, CriarAtualizarContaDTO)}.
+     *
+     * <p>
+     * Cobre o cenário onde o nome desejado já existe na memória, porém
+     * pertence a uma instituição financeira diferente, permitindo a atualização.
+     */
+    @Test
+    @DisplayName("atualizar: Quando nome repetido mas instituição diferente, deve permitir atualizar")
+    void testeAtualizar_QuandoNomeRepetidoMasInstituicaoDiferente_DeveAtualizar() {
+        UUID contaId = conta.getId();
+        UUID usuarioId = usuario.getId();
+
+        CriarAtualizarContaDTO dtoAtualizacao = new CriarAtualizarContaDTO(
+                "Conta Corrente",
+                InstituicaoFinanceira.MERCADO_PAGO,
+                SALDO_INICIAL,
+                pessoaTitular.getId());
+
+        Conta outraContaExistente = new Conta("Conta Corrente", InstituicaoFinanceira.NUBANK, SALDO_INICIAL,
+                pessoaTitular);
+        outraContaExistente.setId(UUID.randomUUID());
+
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+        when(contaRepository.findByPessoaUsuarioIdAndId(usuarioId, contaId)).thenReturn(Optional.of(conta));
+
+        when(contaRepository.findByPessoaUsuarioIdAndPessoaId(usuarioId, pessoaTitular.getId()))
+                .thenReturn(List.of(conta, outraContaExistente));
+
+        when(contaRepository.saveAndFlush(any(Conta.class))).thenReturn(conta);
+
+        ContaDTO resultado = assertDoesNotThrow(() -> contaService.atualizar(contaId, dtoAtualizacao));
+
+        assertEquals("Conta Corrente", resultado.nome());
+        verify(contaRepository).saveAndFlush(any(Conta.class));
+    }
 }

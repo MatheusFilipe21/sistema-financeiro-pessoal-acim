@@ -260,6 +260,7 @@ public class ContaService {
         boolean existeDuplicado = contaRepository.findByPessoaUsuarioIdAndPessoaId(usuarioId, pessoaId)
                 .stream()
                 .filter(c -> conta.getId() == null || !c.getId().equals(conta.getId()))
+                .filter(c -> c.getInstituicao() == conta.getInstituicao())
                 .anyMatch(c -> MetodosUteis.normalizarParaBusca(c.getNome()).equals(nomeNovoNormalizado));
 
         MetodosUteis.validarUnicidade(existeDuplicado, Conta.class.getSimpleName(), conta.getNome(),
