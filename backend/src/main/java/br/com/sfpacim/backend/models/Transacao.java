@@ -42,7 +42,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
 @Entity
-@Table(name = "lancamentos")
+@Table(name = "transacoes")
 public class Transacao {
 
     /**
