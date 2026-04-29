@@ -1,6 +1,9 @@
 spring:
   application:
     name: backend
+  sql:
+    init:
+      mode: always
 
 server:
   servlet:
