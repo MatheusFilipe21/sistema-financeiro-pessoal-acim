@@ -1,0 +1,68 @@
+spring:
+  # =======================================================
+  # CONFIGURAÇÕES DO BANCO DE DADOS
+  # =======================================================
+  datasource:
+    # Define a URL de conexão JDBC para o ambiente de desenvolvimento.
+    # Usa 'host.docker.internal' (DNS especial do Docker) para permitir
+    # que o Spring (rodando no Dev Container) acesse o Postgres
+    # (rodando no Host Docker, exposto na porta 5433).
+    url: jdbc:postgresql://host.docker.internal:5433/sfpacim_db_test
+    # Define o usuário do banco (deve ser o mesmo do docker-compose.yml).
+    username: user
+    # Define a senha do banco (deve ser a mesma do docker-compose.yml).
+    password: password
+    # Especifica a classe exata do driver do Postgres.
+    driver-class-name: org.postgresql.Driver
+
+  # =======================================================
+  # CONFIGURAÇÕES DO JPA
+  # =======================================================
+  jpa:
+    hibernate:
+      # Define a estratégia de Geração de Schema (DDL) do Hibernate.
+      ddl-auto: create-drop
+
+    # Habilita a exibição dos comandos SQL gerados no console.
+    show-sql: true
+    properties:
+      hibernate:
+        # Formata a saída do SQL para ser legível (com quebra de linhas).
+        "[format_sql]": true
+        # Informa ao Hibernate qual "dialeto" SQL ele deve usar.
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # =======================================================
+  # CONFIGURAÇÕES DE E-MAIL (MAILHOG)
+  # =======================================================
+  mail:
+    # O endereço do servidor SMTP.
+    host: ${MAIL_HOST:host.docker.internal}
+    port: ${MAIL_PORT:1025}
+
+    # Define o REMETENTE que aparecerá no e-mail (usado pelo @Value no DevEmailService).
+    username: ${MAIL_USERNAME:teste-test@sfpacim.local}
+    password: ${MAIL_PASSWORD:}
+
+    # Propriedades específicas do JavaMail para desligar a segurança (necessário para Mailhog)
+    properties:
+      mail:
+        smtp:
+          # Se MAIL_AUTH não for informado, assume 'false' (Mailhog)
+          auth: ${MAIL_AUTH:false}
+          starttls:
+            # Se MAIL_STARTTLS não for informado, assume 'false' (Mailhog)
+            enable: ${MAIL_STARTTLS:false}
+
+# =======================================================
+# CONFIGURAÇÕES DA API (SFP-ACIM)
+# =======================================================
+api:
+  security:
+    token:
+      # Chave secreta para assinar o JWT.
+      secret: "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970"
+
+      # Tempo de expiração do token (em milissegundos)
+      # Ex: 28800000 = 8 horas
+      expiration-ms: 28800000

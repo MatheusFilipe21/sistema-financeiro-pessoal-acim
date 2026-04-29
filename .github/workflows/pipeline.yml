@@ -50,18 +50,30 @@ jobs:
           distribution: "temurin"
           cache: "maven"
 
-      # 3. Executar o Build (mvn verify)
+      # 3. Iniciar o Banco de Dados de Testes
+      - name: Iniciar PostgreSQL (Banco de Testes)
+        run: docker compose up -d --build postgres-db
+
+      # 4. Aguardar inicialização do banco
+      - name: Aguardar inicialização do banco
+        run: |
+          timeout 60s bash -c 'until docker exec sfpacim_postgres pg_isready -U user; do
+            echo "Aguardando o PostgreSQL inicializar e processar os scripts SQL..."
+            sleep 2
+          done'
+
+      # 5. Executar o Build (mvn verify)
       - name: Executar Maven Verify (Testes + Relatório JaCoCo XML)
         # Define o diretório de trabalho para este passo
         working-directory: ./backend
         run: mvn -B verify org.jacoco:jacoco-maven-plugin:report
 
-      # 4. Copiar as dependências JAR para análise do SonarQube
+      # 6. Copiar as dependências JAR para análise do SonarQube
       - name: Copiar Dependências para o SonarScanner
         working-directory: ./backend
         run: mvn dependency:copy-dependencies -DoutputDirectory=target/dependency-jars
 
-      # 5. Carrega os relatórios para o Job 3
+      # 7. Carrega os relatórios para o Job 3
       - name: Carregar Artefatos do Backend (JaCoCo XML + Surefire)
         uses: actions/upload-artifact@v6
         with:

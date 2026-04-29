@@ -7,6 +7,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import br.com.sfpacim.backend.config.SegurancaConfig;
@@ -19,6 +20,7 @@ import br.com.sfpacim.backend.services.interfaces.EmailService;
  *
  * @author Matheus F. N. Pereira
  */
+@ActiveProfiles("test")
 @CucumberContextConfiguration
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "api.security.token.secret=chave-secreta-de-teste-minimo-32-bytes-para-jjwt",

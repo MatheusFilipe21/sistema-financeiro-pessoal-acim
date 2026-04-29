@@ -4,7 +4,9 @@ services:
   # Serviço 1: Banco de Dados PostgreSQL (DB)
   # ==========================================
   postgres-db:
-    image: postgres:18-alpine # Usa a imagem oficial do Postgres, versão 18 (leve).
+    build:
+      context: .
+      dockerfile: ./docker/postgres/Dockerfile
     container_name: sfpacim_postgres
     restart: always # Reinicia o container automaticamente se ele falhar.
     environment:
