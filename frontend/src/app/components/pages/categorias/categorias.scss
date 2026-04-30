@@ -6,12 +6,6 @@
   flex-direction: column;
 }
 
-#barra-controle-visualizacao {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 16px;
-}
-
 #area-conteudo-dados {
   flex: 1;
   overflow-y: auto;
