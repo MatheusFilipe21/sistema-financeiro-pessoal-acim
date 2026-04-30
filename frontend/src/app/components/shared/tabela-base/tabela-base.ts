@@ -106,22 +106,23 @@ export class TabelaBase implements AfterViewInit, OnChanges {
   }
 
   /**
-   * Recria o DataSource com os novos dados recebidos e configura a lógica de ordenação personalizada.
+   * Atualiza os dados do DataSource mantendo as instâncias de Paginator e Sort intactas.
+   * Configura a lógica de ordenação personalizada para campos aninhados.
    */
   private atualizarFonteDados() {
-    this.dataSource = new MatTableDataSource(this.dados);
+    this.dataSource.data = this.dados;
 
-    this.dataSource.sortingDataAccessor = (item: any, property: string) => {
-      const coluna = this.colunas.find((c) => c.chave === property);
+    if (!this.dataSource.sortingDataAccessor) {
+      this.dataSource.sortingDataAccessor = (item: any, property: string) => {
+        const coluna = this.colunas.find((c) => c.chave === property);
 
-      if (coluna?.caminhoOrdenacao) {
-        return this.obterValorAninhado(item, coluna.caminhoOrdenacao);
-      }
+        if (coluna?.caminhoOrdenacao) {
+          return this.obterValorAninhado(item, coluna.caminhoOrdenacao);
+        }
 
-      return item[property];
-    };
-
-    this.dataSource.sort = this.sort;
+        return item[property];
+      };
+    }
   }
 
   /**
