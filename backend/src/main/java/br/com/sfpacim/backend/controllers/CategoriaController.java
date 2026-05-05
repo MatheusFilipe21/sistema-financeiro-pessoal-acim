@@ -4,6 +4,13 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+import jakarta.validation.Valid;
+
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,11 +22,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import br.com.sfpacim.backend.doc.ExemplosDocumentacao;
 import br.com.sfpacim.backend.dtos.categoria.CategoriaDTO;
 import br.com.sfpacim.backend.dtos.categoria.CriarAtualizarCategoriaDTO;
+import br.com.sfpacim.backend.dtos.categoria.FiltroCategoriaDTO;
+import br.com.sfpacim.backend.dtos.categoria.SelecaoCategoriaDTO;
 import br.com.sfpacim.backend.dtos.erro.ErroPadraoDTO;
 import br.com.sfpacim.backend.dtos.erro.ErroValidacaoDTO;
+import br.com.sfpacim.backend.dtos.utils.PaginacaoDTO;
 import br.com.sfpacim.backend.exceptions.RegraDeNegocioException;
 import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 import br.com.sfpacim.backend.services.CategoriaService;
@@ -30,7 +39,6 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 
 /**
  * Controlador REST responsável pelos endpoints de Categorias de Transação.
@@ -42,9 +50,9 @@ import jakarta.validation.Valid;
  *
  * @author Matheus F. N. Pereira
  */
-@Tag(name = "Categorias", description = "Gestão de Categorias")
+@Tag(name = "${categoria.nome.plural}", description = "${categoria.controller.descricao}")
 @RestController
-@RequestMapping("/categorias")
+@RequestMapping(value = "/categorias", produces = MediaType.APPLICATION_JSON_VALUE)
 public class CategoriaController {
 
     private final CategoriaService categoriaService;
@@ -65,11 +73,11 @@ public class CategoriaController {
      * @return HTTP 201 (Created) com o DTO criado e Header Location.
      * @throws ViolacaoDadosException Caso o nome já exista para o usuário.
      */
-    @Operation(summary = "Cadastra uma nova categoria", description = "Cria uma nova categoria personalizada para o usuário. O nome deve ser único.", responses = {
-            @ApiResponse(responseCode = "201", description = "Categoria criada com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CategoriaDTO.class)), headers = @Header(name = "Location", description = "URL do novo recurso criado")),
-            @ApiResponse(responseCode = "409", description = "Conflito (Nome Duplicado)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_409))),
-            @ApiResponse(responseCode = "422", description = "Erro de Validação", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroValidacaoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_422))),
-            @ApiResponse(responseCode = "500", description = "Erro Interno do Servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_500)))
+    @Operation(summary = "${categoria.controller.cadastro.resumo}", description = "${categoria.controller.cadastro.descricao}", responses = {
+            @ApiResponse(responseCode = "201", description = "${categoria.controller.cadastro.resposta.201}", content = @Content(schema = @Schema(implementation = CategoriaDTO.class)), headers = @Header(name = "Location", description = "${geral.header.location.descricao}", schema = @Schema(type = "string", example = "${categoria.controller.cadastro.header.location.exemplo}"))),
+            @ApiResponse(responseCode = "409", description = "${geral.resposta.409.duplicado}", content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = "${categoria.controller.cadastro.exemplo.409}"))),
+            @ApiResponse(responseCode = "422", description = "${geral.resposta.422.validacao}", content = @Content(schema = @Schema(implementation = ErroValidacaoDTO.class), examples = @ExampleObject(value = "${categoria.controller.cadastro.exemplo.422}"))),
+            @ApiResponse(responseCode = "500", description = "${erro.500.titulo}", content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = "${categoria.controller.cadastro.exemplo.500}")))
     })
     @PostMapping
     public ResponseEntity<CategoriaDTO> cadastrar(@Valid @RequestBody CriarAtualizarCategoriaDTO dto)
@@ -85,17 +93,56 @@ public class CategoriaController {
     }
 
     /**
-     * Endpoint para listar todas as categorias visíveis para o usuário.
+     * Endpoint para listar as categorias do usuário e do sistema de forma paginada
+     * e filtrada.
      *
-     * @return HTTP 200 (OK) com a lista de categorias.
+     * @param filtro   Objeto contendo os filtros opcionais (nome, tipo e origem).
+     * @param pageable Configurações de paginação injetadas pelo Spring.
+     * @return HTTP 200 (OK) com a página de categorias envelopada no padrão da API.
      */
-    @Operation(summary = "Lista as categorias", description = "Retorna todas as categorias visíveis para o usuário, incluindo as personalizadas e as globais do sistema. Ordenado por nome.", responses = {
-            @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CategoriaDTO.class))),
-            @ApiResponse(responseCode = "500", description = "Erro Interno do Servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_500)))
+    @Operation(summary = "${categoria.controller.listar.resumo}", description = "${categoria.controller.listar.descricao}", responses = {
+            @ApiResponse(responseCode = "200", description = "${geral.resposta.200.listagem-paginada}", content = @Content(schema = @Schema(implementation = PaginacaoDTO.class), examples = @ExampleObject(value = "${categoria.controller.listar.exemplo.200}"))),
+            @ApiResponse(responseCode = "500", description = "${erro.500.titulo}", content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = "${categoria.controller.listar.exemplo.500}")))
     })
     @GetMapping
-    public ResponseEntity<List<CategoriaDTO>> listar() {
-        return ResponseEntity.ok(categoriaService.listar());
+    public ResponseEntity<PaginacaoDTO<CategoriaDTO>> listar(
+            @ParameterObject @Valid FiltroCategoriaDTO filtro,
+            @ParameterObject @PageableDefault(size = 25, sort = "nome", direction = Sort.Direction.ASC) Pageable pageable) {
+        return ResponseEntity.ok(new PaginacaoDTO<>(categoriaService.listar(filtro, pageable)));
+    }
+
+    /**
+     * Endpoint para listar as categorias formatadas para componentes de seleção.
+     *
+     * <p>
+     * Retorna uma lista leve (sem paginação) contendo os dados essenciais e visuais
+     * (ID, Nome, Tipo, Ícone e Cor) para preencher Dropdowns/Selects no frontend.
+     *
+     * @return HTTP 200 (OK) com a lista de opções de categorias.
+     */
+    @Operation(summary = "${categoria.controller.listar-selecao.resumo}", description = "${categoria.controller.listar-selecao.descricao}", responses = {
+            @ApiResponse(responseCode = "200", description = "${geral.resposta.200.listagem-simples}", content = @Content(examples = @ExampleObject(value = "${categoria.controller.listar-selecao.exemplo.200}"))),
+            @ApiResponse(responseCode = "500", description = "${erro.500.titulo}", content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = "${categoria.controller.listar-selecao.exemplo.500}")))
+    })
+    @GetMapping("/selecao")
+    public ResponseEntity<List<SelecaoCategoriaDTO>> listarOpcoesSelecao() {
+        return ResponseEntity.ok(categoriaService.listarOpcoes());
+    }
+
+    /**
+     * Endpoint para buscar uma categoria pelo ID.
+     *
+     * @param id O UUID da categoria a ser buscada.
+     * @return HTTP 200 (OK) com os dados da categoria.
+     */
+    @Operation(summary = "${categoria.controller.buscar-por-id.resumo}", description = "${categoria.controller.buscar-por-id.descricao}", responses = {
+            @ApiResponse(responseCode = "200", description = "${categoria.controller.buscar-por-id.resposta.200}", content = @Content(schema = @Schema(implementation = CategoriaDTO.class))),
+            @ApiResponse(responseCode = "404", description = "${erro.404.titulo}", content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = "${categoria.controller.buscar-por-id.exemplo.404}"))),
+            @ApiResponse(responseCode = "500", description = "${erro.500.titulo}", content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = "${categoria.controller.buscar-por-id.exemplo.500}")))
+    })
+    @GetMapping("/{id}")
+    public ResponseEntity<CategoriaDTO> buscarPorId(@PathVariable UUID id) {
+        return ResponseEntity.ok(categoriaService.buscarPorId(id));
     }
 
     /**
@@ -106,12 +153,16 @@ public class CategoriaController {
      * @return HTTP 200 (OK) com o DTO atualizado.
      * @throws RegraDeNegocioException Se tentar alterar uma categoria do sistema.
      */
-    @Operation(summary = "Atualiza uma categoria", description = "Atualiza os dados de uma categoria personalizada. Categorias do sistema não podem ser alteradas.", responses = {
-            @ApiResponse(responseCode = "200", description = "Categoria atualizada com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CategoriaDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Categoria não encontrada ou acesso negado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_404))),
-            @ApiResponse(responseCode = "409", description = "Conflito (Nome Duplicado ou Categoria do Sistema)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_409))),
-            @ApiResponse(responseCode = "422", description = "Erro de Validação", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroValidacaoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_422))),
-            @ApiResponse(responseCode = "500", description = "Erro Interno do Servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_500)))
+    @Operation(summary = "${categoria.controller.atualizar.resumo}", description = "${categoria.controller.atualizar.descricao}", responses = {
+            @ApiResponse(responseCode = "200", description = "${categoria.controller.atualizar.resposta.200}", content = @Content(schema = @Schema(implementation = CategoriaDTO.class))),
+            @ApiResponse(responseCode = "404", description = "${erro.404.titulo}", content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = "${categoria.controller.atualizar.exemplo.404}"))),
+            @ApiResponse(responseCode = "409", description = "${geral.resposta.409.duplicado}", content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = "${categoria.controller.atualizar.exemplo.409}"))),
+            @ApiResponse(responseCode = "422", description = "${geral.resposta.422.negocio-validacao}", content = @Content(schema = @Schema(oneOf = {
+                    ErroValidacaoDTO.class, ErroPadraoDTO.class }), examples = {
+                            @ExampleObject(name = "${erro.exemplo.dropdown.validacao}", value = "${categoria.controller.atualizar.exemplo.422.validacao}"),
+                            @ExampleObject(name = "${erro.exemplo.dropdown.negocio}", value = "${categoria.controller.atualizar.exemplo.422.negocio}")
+                    })),
+            @ApiResponse(responseCode = "500", description = "${erro.500.titulo}", content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = "${categoria.controller.atualizar.exemplo.500}")))
     })
     @PutMapping("/{id}")
     public ResponseEntity<CategoriaDTO> atualizar(@PathVariable UUID id,
@@ -127,11 +178,12 @@ public class CategoriaController {
      * @param id O UUID da categoria a ser excluída.
      * @return HTTP 204 (No Content).
      */
-    @Operation(summary = "Exclui uma categoria", description = "Remove uma categoria personalizada. Categorias do sistema não podem ser excluídas.", responses = {
-            @ApiResponse(responseCode = "204", description = "Categoria excluída com sucesso", content = @Content(schema = @Schema(hidden = true))),
-            @ApiResponse(responseCode = "404", description = "Categoria não encontrada ou acesso negado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_404))),
-            @ApiResponse(responseCode = "409", description = "Conflito (Categoria do Sistema ou Vínculos)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_409))),
-            @ApiResponse(responseCode = "500", description = "Erro Interno do Servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = ExemplosDocumentacao.ERRO_500)))
+    @Operation(summary = "${categoria.controller.excluir.resumo}", description = "${categoria.controller.excluir.descricao}", responses = {
+            @ApiResponse(responseCode = "204", description = "${categoria.controller.excluir.resposta.204}", content = @Content(schema = @Schema(hidden = true))),
+            @ApiResponse(responseCode = "404", description = "${erro.404.titulo}", content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = "${categoria.controller.excluir.exemplo.404}"))),
+            @ApiResponse(responseCode = "409", description = "${geral.resposta.409.vinculo}", content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = "${categoria.controller.excluir.exemplo.409}"))),
+            @ApiResponse(responseCode = "422", description = "${geral.resposta.422.validacao}", content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = "${categoria.controller.excluir.exemplo.422}"))),
+            @ApiResponse(responseCode = "500", description = "${erro.500.titulo}", content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class), examples = @ExampleObject(value = "${categoria.controller.excluir.exemplo.500}")))
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluir(@PathVariable UUID id) {
