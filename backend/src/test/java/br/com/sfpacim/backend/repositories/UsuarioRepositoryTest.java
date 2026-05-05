@@ -21,7 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * 
  * <p>
  * Foca em testar a camada de persistência (JPA) e as consultas SQL geradas,
- * utilizando um banco de dados em memória (H2) configurado pelo @DataJpaTest.
+ * utilizando o banco de dados real configurado na classe base
+ * {@link BaseRepositoryTest}.
  *
  * @author Matheus F. N. Pereira
  */
@@ -49,13 +50,43 @@ class UsuarioRepositoryTest extends BaseRepositoryTest {
     }
 
     /**
+     * Testa o método {@link UsuarioRepository#existsByEmail(String)}.
+     * 
+     * <p>
+     * Valida o cenário de sucesso, onde o e-mail já está em uso.
+     */
+    @Test
+    @DisplayName("existsByEmail: quando e-mail existir, deve retornar true")
+    void testeExistsByEmail_QuandoEmailExistir_DeveRetornarTrue() {
+        entityManager.persistAndFlush(usuario);
+
+        boolean existe = usuarioRepository.existsByEmail(EMAIL);
+
+        assertTrue(existe, "Deveria retornar true para um e-mail que já está cadastrado");
+    }
+
+    /**
+     * Testa o método {@link UsuarioRepository#existsByEmail(String)}.
+     * 
+     * <p>
+     * Valida o cenário onde o e-mail está disponível para uso.
+     */
+    @Test
+    @DisplayName("existsByEmail: quando e-mail não existir, deve retornar false")
+    void testeExistsByEmail_QuandoEmailNaoExistir_DeveRetornarFalse() {
+        boolean existe = usuarioRepository.existsByEmail(EMAIL_INEXISTENTE);
+
+        assertFalse(existe, "Deveria retornar false para um e-mail que não está cadastrado");
+    }
+
+    /**
      * Testa o método {@link UsuarioRepository#findByEmail(String)}.
      * 
      * <p>
      * Valida o cenário de sucesso, onde o usuário é encontrado.
      */
     @Test
-    @DisplayName("findByEmail quando e-mail existir, deve retornar Optional com Usuario")
+    @DisplayName("findByEmail: quando e-mail existir, deve retornar Optional com Usuario")
     void testeFindByEmail_QuandoEmailExistir_DeveRetornarUsuario() {
         entityManager.persistAndFlush(usuario);
 
@@ -72,7 +103,7 @@ class UsuarioRepositoryTest extends BaseRepositoryTest {
      * Valida o cenário de falha, onde o e-mail não existe no banco.
      */
     @Test
-    @DisplayName("findByEmail quando e-mail não existir, deve retornar Optional vazio")
+    @DisplayName("findByEmail: quando e-mail não existir, deve retornar Optional vazio")
     void testeFindByEmail_QuandoEmailNaoExistir_DeveRetornarVazio() {
         Optional<Usuario> usuarioEncontrado = usuarioRepository.findByEmail(EMAIL_INEXISTENTE);
 
@@ -84,7 +115,7 @@ class UsuarioRepositoryTest extends BaseRepositoryTest {
      * definida com {@code @Column(unique=true)} na entidade {@link Usuario}.
      */
     @Test
-    @DisplayName("persist quando e-mail for duplicado, deve lançar DataIntegrityViolationException")
+    @DisplayName("persist: quando e-mail for duplicado, deve lançar DataIntegrityViolationException")
     void testePersist_QuandoEmailDuplicado_DeveLancarExcecao() {
         entityManager.persistAndFlush(usuario);
 
@@ -93,6 +124,6 @@ class UsuarioRepositoryTest extends BaseRepositoryTest {
 
         assertThrows(DataIntegrityViolationException.class, () -> {
             usuarioRepository.saveAndFlush(usuarioDuplicado);
-        }, "Deveria lançar DataIntegrityViolationException ao salvar e-mail duplicado");
+        }, "Deveria lançar DataIntegrityViolationException ao tentar salvar um usuário com e-mail já existente");
     }
 }

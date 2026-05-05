@@ -3,12 +3,16 @@ package br.com.sfpacim.backend.services;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
+import org.springframework.context.MessageSource;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
@@ -19,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,11 +43,35 @@ class UserDetailsServiceImplTest {
     @Mock
     private UsuarioRepository usuarioRepository;
 
+    @Mock
+    private MessageSource messageSource;
+
     @InjectMocks
     private UserDetailsServiceImpl userDetailsService;
 
     private static final String EMAIL = "matheusfnpereira@gmail.com";
     private static final String EMAIL_INEXISTENTE = "naoexiste@email.com";
+
+    /**
+     * Configura o cenário comum e padroniza as respostas do MessageSource.
+     */
+    @BeforeEach
+    void setUp() {
+        Answer<String> answerMensagemDinamica = invocation -> {
+            String codigo = invocation.getArgument(0);
+            if ("erro.usuario.email.nao-encontrado".equals(codigo)) {
+
+                Object[] args = invocation.getArgument(1);
+                String emailArg = (args != null && args.length > 0) ? args[0].toString() : "";
+                return "Usuário não encontrado com o e-mail: " + emailArg;
+            }
+            return "Mensagem Mockada";
+        };
+
+        Mockito.lenient()
+                .when(messageSource.getMessage(anyString(), any(Object[].class), any()))
+                .thenAnswer(answerMensagemDinamica);
+    }
 
     /**
      * Testa o método {@link UserDetailsServiceImpl#loadUserByUsername(String)}.
@@ -79,9 +109,8 @@ class UserDetailsServiceImplTest {
     void testeLoadUserByUsername_QuandoEmailNaoExistir_DeveLancarExcecao() {
         when(usuarioRepository.findByEmail(EMAIL_INEXISTENTE)).thenReturn(Optional.empty());
 
-        UsernameNotFoundException excecao = assertThrows(UsernameNotFoundException.class, () -> {
-            userDetailsService.loadUserByUsername(EMAIL_INEXISTENTE);
-        });
+        UsernameNotFoundException excecao = assertThrows(UsernameNotFoundException.class,
+                () -> userDetailsService.loadUserByUsername(EMAIL_INEXISTENTE));
 
         assertTrue(excecao.getMessage().contains("Usuário não encontrado com o e-mail: " + EMAIL_INEXISTENTE));
     }

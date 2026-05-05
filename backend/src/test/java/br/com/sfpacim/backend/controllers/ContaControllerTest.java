@@ -12,6 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -23,6 +26,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import br.com.sfpacim.backend.config.JacksonConfig;
 import br.com.sfpacim.backend.dtos.conta.ContaDTO;
 import br.com.sfpacim.backend.dtos.conta.CriarAtualizarContaDTO;
+import br.com.sfpacim.backend.dtos.conta.FiltroContaDTO;
+import br.com.sfpacim.backend.dtos.conta.ListagemContaDTO;
+import br.com.sfpacim.backend.dtos.conta.SelecaoContaDTO;
 import br.com.sfpacim.backend.dtos.pessoa.PessoaDTO;
 import br.com.sfpacim.backend.exceptions.TratadorDeErrosGlobal;
 import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
@@ -81,18 +87,13 @@ class ContaControllerTest {
     private static final PessoaDTO PESSOA_DTO = new PessoaDTO(ID_PESSOA, "Matheus Filipe do Nascimento Pereira", true);
 
     /**
-     * Testa o endpoint POST /contas.
-     * Valida o cenário de sucesso.
-     *
-     * <p>
-     * Verifica se, ao enviar dados válidos, o controlador retorna HTTP 201
-     * (Created), o DTO criado e o cabeçalho 'Location'.
+     * Testa o método {@link ContaController#cadastrar(CriarAtualizarContaDTO)}.
      */
     @Test
     @DisplayName("cadastrar: Quando dados válidos, deve retornar HTTP 201 Created")
     void testeCadastrar_QuandoDadosValidos_DeveRetornar201() throws Exception {
         CriarAtualizarContaDTO dtoEntrada = new CriarAtualizarContaDTO(NOME, INSTITUICAO, SALDO_INICIAL, ID_PESSOA);
-        ContaDTO dtoSaida = new ContaDTO(ID_CONTA, NOME, INSTITUICAO, SALDO_INICIAL, SALDO_INICIAL, PESSOA_DTO);
+        ContaDTO dtoSaida = new ContaDTO(ID_CONTA, NOME, INSTITUICAO, SALDO_INICIAL, SALDO_INICIAL, ID_PESSOA);
 
         when(contaService.cadastrar(any(CriarAtualizarContaDTO.class))).thenReturn(dtoSaida);
 
@@ -109,10 +110,8 @@ class ContaControllerTest {
     }
 
     /**
-     * Testa a validação do endpoint POST /contas (Nome Obrigatório).
-     *
-     * <p>
-     * Verifica se o @Valid barra nomes em branco, retornando HTTP 422.
+     * Testa a validação do DTO no método
+     * {@link ContaController#cadastrar(CriarAtualizarContaDTO)}.
      */
     @Test
     @DisplayName("cadastrar: Quando nome em branco (DTO Validation), deve retornar HTTP 422")
@@ -128,11 +127,8 @@ class ContaControllerTest {
     }
 
     /**
-     * Testa o erro de conflito (Nome Duplicado) no cadastro.
-     *
-     * <p>
-     * Simula o serviço lançando ViolacaoDadosException e verifica se o
-     * TratadorDeErrosGlobal converte corretamente para HTTP 409 (Conflict).
+     * Testa o conflito no método
+     * {@link ContaController#cadastrar(CriarAtualizarContaDTO)}.
      */
     @Test
     @DisplayName("cadastrar: Quando nome duplicado, deve retornar HTTP 409 Conflict")
@@ -150,18 +146,35 @@ class ContaControllerTest {
     }
 
     /**
-     * Testa o endpoint GET /contas.
-     * Valida o cenário de sucesso.
+     * Testa o método {@link ContaController#listar(FiltroContaDTO, Pageable)}.
      */
     @Test
-    @DisplayName("listar: Deve retornar HTTP 200 OK e a lista de contas")
-    void testeListar_DeveRetornarLista() throws Exception {
-        List<ContaDTO> lista = List
-                .of(new ContaDTO(ID_CONTA, NOME, INSTITUICAO, SALDO_INICIAL, SALDO_INICIAL, PESSOA_DTO));
+    @DisplayName("listar: Deve retornar HTTP 200 OK e a paginação de contas")
+    void testeListar_DeveRetornarPaginacao200() throws Exception {
+        ListagemContaDTO dto = new ListagemContaDTO(ID_CONTA, NOME, INSTITUICAO, SALDO_INICIAL, PESSOA_DTO.nome());
+        Page<ListagemContaDTO> pagina = new PageImpl<>(List.of(dto));
 
-        when(contaService.listar()).thenReturn(lista);
+        when(contaService.listar(any(FiltroContaDTO.class), any(Pageable.class))).thenReturn(pagina);
 
         mockMvc.perform(get("/contas")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.itens[0].id").value(ID_CONTA.toString()))
+                .andExpect(jsonPath("$.itens[0].nome").value(NOME))
+                .andExpect(jsonPath("$.paginaAtual").value(0));
+    }
+
+    /**
+     * Testa o método {@link ContaController#listarOpcoesSelecao()}.
+     */
+    @Test
+    @DisplayName("listarOpcoesSelecao: Deve retornar HTTP 200 OK e a lista simplificada")
+    void testeListarOpcoesSelecao_DeveRetornarLista200() throws Exception {
+        SelecaoContaDTO selecao = new SelecaoContaDTO(ID_CONTA, NOME, INSTITUICAO, PESSOA_DTO.nome());
+
+        when(contaService.listarOpcoes()).thenReturn(List.of(selecao));
+
+        mockMvc.perform(get("/contas/selecao")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(ID_CONTA.toString()))
@@ -169,15 +182,45 @@ class ContaControllerTest {
     }
 
     /**
-     * Testa o endpoint PUT /contas/{id}.
-     * Valida o cenário de sucesso.
+     * Testa o método {@link ContaController#buscarPorId(UUID)}.
+     */
+    @Test
+    @DisplayName("buscarPorId: Quando encontrada, deve retornar HTTP 200 OK e o DTO")
+    void testeBuscarPorId_QuandoValido_DeveRetornar200() throws Exception {
+        ContaDTO dtoSaida = new ContaDTO(ID_CONTA, NOME, INSTITUICAO, SALDO_INICIAL, SALDO_INICIAL, ID_PESSOA);
+
+        when(contaService.buscarPorId(ID_CONTA)).thenReturn(dtoSaida);
+
+        mockMvc.perform(get("/contas/{id}", ID_CONTA)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(ID_CONTA.toString()))
+                .andExpect(jsonPath("$.nome").value(NOME));
+    }
+
+    /**
+     * Testa o erro 404 no método {@link ContaController#buscarPorId(UUID)}.
+     */
+    @Test
+    @DisplayName("buscarPorId: Quando não encontrada, deve retornar HTTP 404 Not Found")
+    void testeBuscarPorId_QuandoNaoEncontrado_DeveRetornar404() throws Exception {
+        when(contaService.buscarPorId(ID_CONTA)).thenThrow(new EntityNotFoundException("Não encontrado"));
+
+        mockMvc.perform(get("/contas/{id}", ID_CONTA)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    /**
+     * Testa o método
+     * {@link ContaController#atualizar(UUID, CriarAtualizarContaDTO)}.
      */
     @Test
     @DisplayName("atualizar: Quando válido, deve retornar HTTP 200 OK com dados atualizados")
     void testeAtualizar_QuandoValido_DeveRetornar200() throws Exception {
         CriarAtualizarContaDTO dtoEntrada = new CriarAtualizarContaDTO("Novo Nome", INSTITUICAO, SALDO_INICIAL,
                 ID_PESSOA);
-        ContaDTO dtoSaida = new ContaDTO(ID_CONTA, "Novo Nome", INSTITUICAO, SALDO_INICIAL, SALDO_INICIAL, PESSOA_DTO);
+        ContaDTO dtoSaida = new ContaDTO(ID_CONTA, "Novo Nome", INSTITUICAO, SALDO_INICIAL, SALDO_INICIAL, ID_PESSOA);
 
         when(contaService.atualizar(eq(ID_CONTA), any(CriarAtualizarContaDTO.class))).thenReturn(dtoSaida);
 
@@ -191,10 +234,8 @@ class ContaControllerTest {
     }
 
     /**
-     * Testa o endpoint PUT /contas/{id} quando o registro não existe.
-     *
-     * <p>
-     * Simula EntityNotFoundException e espera HTTP 404 (Not Found).
+     * Testa o erro 404 no método
+     * {@link ContaController#atualizar(UUID, CriarAtualizarContaDTO)}.
      */
     @Test
     @DisplayName("atualizar: Quando não encontrado, deve retornar HTTP 404")
@@ -212,8 +253,7 @@ class ContaControllerTest {
     }
 
     /**
-     * Testa o endpoint DELETE /contas/{id}.
-     * Valida o cenário de sucesso.
+     * Testa o método {@link ContaController#excluir(UUID)}.
      */
     @Test
     @DisplayName("excluir: Quando válido, deve retornar HTTP 204 No Content")
@@ -223,11 +263,8 @@ class ContaControllerTest {
     }
 
     /**
-     * Testa o endpoint DELETE /contas/{id} quando há violação de integridade.
-     * (Ex: Tentar excluir conta com transações).
-     *
-     * <p>
-     * Espera HTTP 409 Conflict.
+     * Testa os vínculos de integridade no método
+     * {@link ContaController#excluir(UUID)}.
      */
     @Test
     @DisplayName("excluir: Quando houver vínculos (Regra de Negócio), deve retornar HTTP 409")

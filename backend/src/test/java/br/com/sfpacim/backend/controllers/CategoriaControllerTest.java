@@ -11,6 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -22,6 +25,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import br.com.sfpacim.backend.config.JacksonConfig;
 import br.com.sfpacim.backend.dtos.categoria.CategoriaDTO;
 import br.com.sfpacim.backend.dtos.categoria.CriarAtualizarCategoriaDTO;
+import br.com.sfpacim.backend.dtos.categoria.FiltroCategoriaDTO;
+import br.com.sfpacim.backend.dtos.categoria.SelecaoCategoriaDTO;
 import br.com.sfpacim.backend.exceptions.RegraDeNegocioException;
 import br.com.sfpacim.backend.exceptions.TratadorDeErrosGlobal;
 import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
@@ -79,12 +84,9 @@ class CategoriaControllerTest {
     private static final UUID ID_CATEGORIA = UUID.randomUUID();
 
     /**
-     * Testa o endpoint POST /categorias.
-     * Valida o cenário de sucesso.
-     *
-     * <p>
-     * Verifica se, ao enviar dados válidos, o controlador retorna HTTP 201
-     * (Created), o DTO criado e o cabeçalho 'Location'.
+     * Testa o método
+     * {@link CategoriaController#cadastrar(CriarAtualizarCategoriaDTO)}.
+     * Valida o cenário de sucesso garantindo a geração do Location.
      */
     @Test
     @DisplayName("cadastrar: Quando dados válidos, deve retornar HTTP 201 Created")
@@ -107,10 +109,8 @@ class CategoriaControllerTest {
     }
 
     /**
-     * Testa a validação do endpoint POST /categorias (Nome Obrigatório).
-     *
-     * <p>
-     * Verifica se o @Valid barra nomes em branco, retornando HTTP 422.
+     * Testa a validação do DTO no método
+     * {@link CategoriaController#cadastrar(CriarAtualizarCategoriaDTO)}.
      */
     @Test
     @DisplayName("cadastrar: Quando nome em branco (DTO Validation), deve retornar HTTP 422")
@@ -125,11 +125,8 @@ class CategoriaControllerTest {
     }
 
     /**
-     * Testa o erro de conflito (Nome Duplicado) no cadastro.
-     *
-     * <p>
-     * Simula o serviço lançando ViolacaoDadosException e verifica se o
-     * TratadorDeErrosGlobal converte corretamente para HTTP 409 (Conflict).
+     * Testa a conversão de exceção de violação no método
+     * {@link CategoriaController#cadastrar(CriarAtualizarCategoriaDTO)}.
      */
     @Test
     @DisplayName("cadastrar: Quando nome duplicado, deve retornar HTTP 409 Conflict")
@@ -147,18 +144,38 @@ class CategoriaControllerTest {
     }
 
     /**
-     * Testa o endpoint GET /categorias.
-     * Valida o cenário de sucesso.
+     * Testa o método
+     * {@link CategoriaController#listar(FiltroCategoriaDTO, Pageable)}.
+     * Valida o retorno do envelopamento de paginação.
      */
     @Test
-    @DisplayName("listar: Deve retornar HTTP 200 OK e a lista de categorias")
-    void testeListar_DeveRetornarLista() throws Exception {
-        List<CategoriaDTO> lista = List
-                .of(new CategoriaDTO(ID_CATEGORIA, NOME, TIPO, ICONE, COR, false));
+    @DisplayName("listar: Deve retornar HTTP 200 OK e a paginação de categorias")
+    void testeListar_DeveRetornarPaginacao200() throws Exception {
+        CategoriaDTO dto = new CategoriaDTO(ID_CATEGORIA, NOME, TIPO, ICONE, COR, false);
+        Page<CategoriaDTO> pagina = new PageImpl<>(List.of(dto));
 
-        when(categoriaService.listar()).thenReturn(lista);
+        when(categoriaService.listar(any(), any())).thenReturn(pagina);
 
         mockMvc.perform(get("/categorias")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.itens[0].id").value(ID_CATEGORIA.toString()))
+                .andExpect(jsonPath("$.itens[0].nome").value(NOME))
+                .andExpect(jsonPath("$.paginaAtual").value(0));
+    }
+
+    /**
+     * Testa o método {@link CategoriaController#listarOpcoesSelecao()}.
+     * Valida o retorno da lista simples.
+     */
+    @Test
+    @DisplayName("listarOpcoesSelecao: Deve retornar HTTP 200 OK e a lista simplificada")
+    void testeListarOpcoesSelecao_DeveRetornarLista200() throws Exception {
+        SelecaoCategoriaDTO selecao = new SelecaoCategoriaDTO(ID_CATEGORIA, NOME, TIPO, ICONE, COR);
+
+        when(categoriaService.listarOpcoes()).thenReturn(List.of(selecao));
+
+        mockMvc.perform(get("/categorias/selecao")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(ID_CATEGORIA.toString()))
@@ -166,8 +183,40 @@ class CategoriaControllerTest {
     }
 
     /**
-     * Testa o endpoint PUT /categorias/{id}.
-     * Valida o cenário de sucesso.
+     * Testa o método {@link CategoriaController#buscarPorId(UUID)}.
+     * Valida a resposta com a entidade encontrada.
+     */
+    @Test
+    @DisplayName("buscarPorId: Quando encontrada, deve retornar HTTP 200 OK e o DTO")
+    void testeBuscarPorId_QuandoValido_DeveRetornar200() throws Exception {
+        CategoriaDTO dtoSaida = new CategoriaDTO(ID_CATEGORIA, NOME, TIPO, ICONE, COR, false);
+
+        when(categoriaService.buscarPorId(ID_CATEGORIA)).thenReturn(dtoSaida);
+
+        mockMvc.perform(get("/categorias/{id}", ID_CATEGORIA)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(ID_CATEGORIA.toString()))
+                .andExpect(jsonPath("$.nome").value(NOME));
+    }
+
+    /**
+     * Testa o erro 404 no método {@link CategoriaController#buscarPorId(UUID)}.
+     */
+    @Test
+    @DisplayName("buscarPorId: Quando não encontrada, deve retornar HTTP 404 Not Found")
+    void testeBuscarPorId_QuandoNaoEncontrado_DeveRetornar404() throws Exception {
+        when(categoriaService.buscarPorId(ID_CATEGORIA)).thenThrow(new EntityNotFoundException("Não encontrado"));
+
+        mockMvc.perform(get("/categorias/{id}", ID_CATEGORIA)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    /**
+     * Testa o método
+     * {@link CategoriaController#atualizar(UUID, CriarAtualizarCategoriaDTO)}.
+     * Valida a persistência e retorno.
      */
     @Test
     @DisplayName("atualizar: Quando válido, deve retornar HTTP 200 OK com dados atualizados")
@@ -187,13 +236,11 @@ class CategoriaControllerTest {
     }
 
     /**
-     * Testa o endpoint PUT /categorias/{id} quando o registro não existe.
-     *
-     * <p>
-     * Simula EntityNotFoundException e espera HTTP 404 (Not Found).
+     * Testa o erro 404 no método
+     * {@link CategoriaController#atualizar(UUID, CriarAtualizarCategoriaDTO)}.
      */
     @Test
-    @DisplayName("atualizar: Quando não encontrado, deve retornar HTTP 404")
+    @DisplayName("atualizar: Quando não encontrado, deve retornar HTTP 404 Not Found")
     void testeAtualizar_QuandoNaoEncontrado_DeveRetornar404() throws Exception {
         CriarAtualizarCategoriaDTO dtoEntrada = new CriarAtualizarCategoriaDTO(NOME, TIPO, ICONE, COR);
         String jsonRequisicao = objectMapper.writeValueAsString(dtoEntrada);
@@ -208,8 +255,26 @@ class CategoriaControllerTest {
     }
 
     /**
-     * Testa o endpoint DELETE /categorias/{id}.
-     * Valida o cenário de sucesso.
+     * Testa erro de negócio no método
+     * {@link CategoriaController#atualizar(UUID, CriarAtualizarCategoriaDTO)}.
+     */
+    @Test
+    @DisplayName("atualizar: Quando for categoria do sistema, deve retornar HTTP 422")
+    void testeAtualizar_QuandoSistema_DeveRetornar422() throws Exception {
+        CriarAtualizarCategoriaDTO dtoEntrada = new CriarAtualizarCategoriaDTO(NOME, TIPO, ICONE, COR);
+        String jsonRequisicao = objectMapper.writeValueAsString(dtoEntrada);
+
+        when(categoriaService.atualizar(eq(ID_CATEGORIA), any(CriarAtualizarCategoriaDTO.class)))
+                .thenThrow(new RegraDeNegocioException("Não pode alterar categoria do sistema"));
+
+        mockMvc.perform(put("/categorias/{id}", ID_CATEGORIA)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonRequisicao))
+                .andExpect(status().isUnprocessableContent());
+    }
+
+    /**
+     * Testa o método {@link CategoriaController#excluir(UUID)}.
      */
     @Test
     @DisplayName("excluir: Quando válido, deve retornar HTTP 204 No Content")
@@ -219,13 +284,8 @@ class CategoriaControllerTest {
     }
 
     /**
-     * Testa o endpoint DELETE /categorias/{id} quando há regra de negócio
-     * impeditiva.
-     * (Ex: Tentar excluir categoria padrão do sistema).
-     *
-     * <p>
-     * O TratadorDeErrosGlobal mapeia RegraDeNegocioException para 422 Unprocessable
-     * Entity.
+     * Testa a proteção de sistema no método
+     * {@link CategoriaController#excluir(UUID)}.
      */
     @Test
     @DisplayName("excluir: Quando for categoria do sistema (Regra de Negócio), deve retornar HTTP 422")
@@ -235,5 +295,19 @@ class CategoriaControllerTest {
 
         mockMvc.perform(delete("/categorias/{id}", ID_CATEGORIA))
                 .andExpect(status().isUnprocessableContent());
+    }
+
+    /**
+     * Testa o bloqueio por vínculos de integridade no método
+     * {@link CategoriaController#excluir(UUID)}.
+     */
+    @Test
+    @DisplayName("excluir: Quando possuir vínculos (ViolacaoDadosException), deve retornar HTTP 409")
+    void testeExcluir_QuandoVinculo_DeveRetornar409() throws Exception {
+        doThrow(new ViolacaoDadosException("Existem transações atreladas."))
+                .when(categoriaService).excluir(ID_CATEGORIA);
+
+        mockMvc.perform(delete("/categorias/{id}", ID_CATEGORIA))
+                .andExpect(status().isConflict());
     }
 }

@@ -14,14 +14,20 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
+import org.springframework.context.MessageSource;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import br.com.sfpacim.backend.dtos.transacao.CriarAtualizarTransacaoDTO;
+import br.com.sfpacim.backend.dtos.transacao.FiltroTransacaoDTO;
+import br.com.sfpacim.backend.dtos.transacao.ListagemTransacaoDTO;
 import br.com.sfpacim.backend.dtos.transacao.TransacaoDTO;
 import br.com.sfpacim.backend.exceptions.RegraDeNegocioException;
 import br.com.sfpacim.backend.models.Categoria;
@@ -43,6 +49,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -74,6 +82,9 @@ class TransacaoServiceTest {
 
     @Mock
     private ContextoUsuarioService contextoUsuarioService;
+
+    @Mock
+    private MessageSource messageSource;
 
     @InjectMocks
     private TransacaoService transacaoService;
@@ -119,14 +130,31 @@ class TransacaoServiceTest {
                 .conta(conta)
                 .pessoa(pessoa)
                 .build();
+
+        Answer<String> answerMensagemDinamica = invocation -> {
+            String codigo = invocation.getArgument(0);
+            if ("erro.filtro.data.invalida".equals(codigo))
+                return "A data de início não pode ser posterior à data final.";
+            if ("erro.transacao.integridade.salvar".equals(codigo))
+                return "Erro de integridade ao salvar transação.";
+            if ("erro.recurso.nao-encontrado".equals(codigo))
+                return "Transação não encontrada ou acesso negado.";
+            if ("transacao.nome.singular".equals(codigo))
+                return "Transação";
+            return "Mensagem Mockada";
+        };
+
+        Mockito.lenient().when(messageSource.getMessage(anyString(), any(), any())).thenAnswer(answerMensagemDinamica);
+        Mockito.lenient().when(messageSource.getMessage(anyString(), any(), anyString(), any()))
+                .thenAnswer(answerMensagemDinamica);
     }
 
     /**
      * Testa cadastro de Despesa Paga no método
      * {@link TransacaoService#cadastrar(CriarAtualizarTransacaoDTO)}.
+     * 
      * <p>
      * Cobre efetivação de Débito.
-     * </p>
      */
     @Test
     @DisplayName("cadastrar: Quando Despesa PAGA, deve efetivar débito na conta e salvar")
@@ -146,13 +174,42 @@ class TransacaoServiceTest {
         TransacaoDTO resultado = transacaoService.cadastrar(dto);
 
         assertNotNull(resultado);
-
         assertEquals(new BigDecimal("900.00"), conta.getSaldoAtual());
         verify(transacaoRepository).saveAndFlush(any(Transacao.class));
     }
 
     /**
-     * Testa cadastro de Receita Pendente sem Pessoa.
+     * Testa cadastro de Receita Paga no método
+     * {@link TransacaoService#cadastrar(CriarAtualizarTransacaoDTO)}.
+     * 
+     * <p>
+     * Cobre efetivação de Crédito.
+     */
+    @Test
+    @DisplayName("cadastrar: Quando Receita PAGA, deve efetivar crédito na conta e salvar")
+    void testeCadastrar_QuandoReceitaPaga_DeveCreditarESalvar() {
+        CriarAtualizarTransacaoDTO dto = new CriarAtualizarTransacaoDTO(
+                "Salário", VALOR_TRANSACAO, LocalDate.now(), LocalDate.now(), LocalDate.now(),
+                TipoTransacao.RECEITA, StatusTransacao.PAGO, null,
+                categoria.getId(), conta.getId(), pessoa.getId());
+
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+        when(categoriaService.obterEntidadeValidada(usuario.getId(), dto.categoriaId())).thenReturn(categoria);
+        when(contaService.obterEntidadeValidada(usuario.getId(), dto.contaId())).thenReturn(conta);
+        when(pessoaService.obterEntidadeValidada(usuario.getId(), dto.pessoaId())).thenReturn(pessoa);
+
+        when(transacaoRepository.saveAndFlush(any(Transacao.class))).thenAnswer(i -> i.getArguments()[0]);
+
+        TransacaoDTO resultado = transacaoService.cadastrar(dto);
+
+        assertNotNull(resultado);
+        assertEquals(new BigDecimal("1100.00"), conta.getSaldoAtual());
+        verify(transacaoRepository).saveAndFlush(any(Transacao.class));
+    }
+
+    /**
+     * Testa cadastro de Receita Pendente sem Pessoa no método
+     * {@link TransacaoService#cadastrar(CriarAtualizarTransacaoDTO)}.
      *
      * <p>
      * Cobre ramo Sem Pessoa e Sem Efetivação.
@@ -178,94 +235,70 @@ class TransacaoServiceTest {
     }
 
     /**
-     * Testa listagem por período (paginada) no método
-     * {@link TransacaoService#listarPorPeriodo(LocalDate, LocalDate, Pageable)}.
+     * Testa erro de integridade de banco na persistência da transação no método
+     * {@link TransacaoService#cadastrar(CriarAtualizarTransacaoDTO)}.
      */
     @Test
-    @DisplayName("listarPorPeriodo: Deve retornar página de TransacaoDTO")
-    void testeListarPorPeriodo_DeveRetornarPagina() {
+    @DisplayName("cadastrar: Quando erro de banco, deve lançar RegraDeNegocioException")
+    void testeCadastrar_QuandoErroDeIntegridade_DeveLancarExcecao() {
+        CriarAtualizarTransacaoDTO dto = new CriarAtualizarTransacaoDTO(
+                "Teste Constraint", VALOR_TRANSACAO, LocalDate.now(), LocalDate.now(), null,
+                TipoTransacao.DESPESA, StatusTransacao.PENDENTE, null,
+                categoria.getId(), conta.getId(), null);
+
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+        when(categoriaService.obterEntidadeValidada(any(), any())).thenReturn(categoria);
+        when(contaService.obterEntidadeValidada(any(), any())).thenReturn(conta);
+
+        when(transacaoRepository.saveAndFlush(any(Transacao.class)))
+                .thenThrow(new DataIntegrityViolationException("Erro SQL no banco"));
+
+        RegraDeNegocioException excecao = assertThrows(RegraDeNegocioException.class,
+                () -> transacaoService.cadastrar(dto));
+
+        assertEquals("Erro de integridade ao salvar transação.", excecao.getMessage());
+    }
+
+    /**
+     * Testa listagem paginada no método
+     * {@link TransacaoService#listar(FiltroTransacaoDTO, Pageable)}.
+     */
+    @Test
+    @DisplayName("listar: Deve retornar página de ListagemTransacaoDTO")
+    @SuppressWarnings("unchecked")
+    void testeListar_DeveRetornarPagina() {
+        FiltroTransacaoDTO filtro = new FiltroTransacaoDTO(
+                null, null, null, LocalDate.now(), LocalDate.now().plusDays(5), null, null,
+                null, null, null);
         Pageable pageable = PageRequest.of(0, 10);
-        LocalDate inicio = LocalDate.now().minusDays(5);
-        LocalDate fim = LocalDate.now().plusDays(5);
         Page<Transacao> pagina = new PageImpl<>(List.of(transacao));
 
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(transacaoRepository.findByUsuarioIdAndDataVencimentoBetween(usuario.getId(), inicio, fim, pageable))
-                .thenReturn(pagina);
+        when(transacaoRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(pagina);
 
-        Page<TransacaoDTO> resultado = transacaoService.listarPorPeriodo(inicio, fim, pageable);
+        Page<ListagemTransacaoDTO> resultado = transacaoService.listar(filtro, pageable);
 
         assertFalse(resultado.isEmpty());
         assertEquals(1, resultado.getTotalElements());
     }
 
     /**
-     * Testa listagem por período (paginada) no método
-     * {@link TransacaoService#listarPorPeriodo(LocalDate, LocalDate, Pageable)}.
-     * Cenário: A data inicial é posterior à data final.
+     * Testa validação de datas na listagem no método
+     * {@link TransacaoService#listar(FiltroTransacaoDTO, Pageable)}.
      */
     @Test
-    @DisplayName("listarPorPeriodo: Deve lançar RegraDeNegocioException quando data inicial for maior que final")
-    void testeListarPorPeriodo_DataInicialMaior_DeveLancarExcecao() {
+    @DisplayName("listar: Deve lançar RegraDeNegocioException quando data inicial for maior que final")
+    void testeListar_DataInicialMaior_DeveLancarExcecao() {
+        FiltroTransacaoDTO filtro = new FiltroTransacaoDTO(
+                null, null, null, LocalDate.now().plusDays(1), LocalDate.now(), null, null,
+                null, null, null);
         Pageable pageable = PageRequest.of(0, 10);
 
-        LocalDate inicio = LocalDate.now().plusDays(1);
-        LocalDate fim = LocalDate.now();
-
-        RegraDeNegocioException exception = assertThrows(
-                RegraDeNegocioException.class,
-                () -> transacaoService.listarPorPeriodo(inicio, fim, pageable));
+        RegraDeNegocioException exception = assertThrows(RegraDeNegocioException.class,
+                () -> transacaoService.listar(filtro, pageable));
 
         assertEquals("A data de início não pode ser posterior à data final.", exception.getMessage());
-
         verifyNoInteractions(contextoUsuarioService, transacaoRepository);
-    }
-
-    /**
-     * Testa listagem por período (paginada) no método
-     * {@link TransacaoService#listarPorPeriodo(LocalDate, LocalDate, Pageable)}.
-     * Cenário: O período selecionado tem mais de 90 dias.
-     */
-    @Test
-    @DisplayName("listarPorPeriodo: Deve lançar RegraDeNegocioException quando período for maior que 90 dias")
-    void testeListarPorPeriodo_PeriodoMaiorQue90Dias_DeveLancarExcecao() {
-        Pageable pageable = PageRequest.of(0, 10);
-        LocalDate inicio = LocalDate.now();
-
-        LocalDate fim = LocalDate.now().plusDays(91);
-
-        RegraDeNegocioException exception = assertThrows(
-                RegraDeNegocioException.class,
-                () -> transacaoService.listarPorPeriodo(inicio, fim, pageable));
-
-        assertEquals("O período de consulta não pode ultrapassar 90 dias.", exception.getMessage());
-
-        verifyNoInteractions(contextoUsuarioService, transacaoRepository);
-    }
-
-    /**
-     * Testa listagem por período (paginada) no método
-     * {@link TransacaoService#listarPorPeriodo(LocalDate, LocalDate, Pageable)}.
-     * Cenário de Limite: O período tem exatamente 90 dias.
-     */
-    @Test
-    @DisplayName("listarPorPeriodo: Deve retornar página quando período for exatamente 90 dias (Limite)")
-    void testeListarPorPeriodo_PeriodoExatamente90Dias_DeveRetornarPagina() {
-        Pageable pageable = PageRequest.of(0, 10);
-        LocalDate inicio = LocalDate.now();
-
-        LocalDate fim = LocalDate.now().plusDays(90);
-        Page<Transacao> pagina = new PageImpl<>(List.of(transacao));
-
-        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(transacaoRepository.findByUsuarioIdAndDataVencimentoBetween(usuario.getId(), inicio, fim, pageable))
-                .thenReturn(pagina);
-
-        Page<TransacaoDTO> resultado = transacaoService.listarPorPeriodo(inicio, fim, pageable);
-
-        assertFalse(resultado.isEmpty());
-
-        verify(transacaoRepository).findByUsuarioIdAndDataVencimentoBetween(usuario.getId(), inicio, fim, pageable);
     }
 
     /**
@@ -283,29 +316,6 @@ class TransacaoServiceTest {
 
         assertEquals(transacao.getDescricao(), resultado.descricao());
         assertEquals(transacao.getCategoria().getId(), resultado.categoriaId());
-    }
-
-    /**
-     * Testa erro de integridade de banco na persistência da transação.
-     */
-    @Test
-    @DisplayName("salvarEntidade: Quando erro de banco, deve lançar RegraDeNegocioException")
-    void testeCadastrar_QuandoErroDeIntegridade_DeveLancarExcecao() {
-        CriarAtualizarTransacaoDTO dto = new CriarAtualizarTransacaoDTO(
-                "Teste Constraint", VALOR_TRANSACAO, LocalDate.now(), LocalDate.now(), null,
-                TipoTransacao.DESPESA, StatusTransacao.PENDENTE, null,
-                categoria.getId(), conta.getId(), null);
-
-        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(categoriaService.obterEntidadeValidada(any(), any())).thenReturn(categoria);
-        when(contaService.obterEntidadeValidada(any(), any())).thenReturn(conta);
-
-        when(transacaoRepository.saveAndFlush(any(Transacao.class)))
-                .thenThrow(new DataIntegrityViolationException("Erro SQL no banco"));
-
-        RegraDeNegocioException excecao = assertThrows(RegraDeNegocioException.class,
-                () -> transacaoService.cadastrar(dto));
-        assertTrue(excecao.getMessage().contains("Erro de integridade"));
     }
 
     /**
@@ -354,7 +364,6 @@ class TransacaoServiceTest {
     @Test
     @DisplayName("atualizar: Estornando original (Despesa Paga), removendo pessoa e virando Pendente")
     void testeAtualizar_EstornandoMantendoRelacionamentosERemovendoPessoa() {
-
         transacao.setStatus(StatusTransacao.PAGO);
         conta.debitar(VALOR_TRANSACAO);
 
@@ -378,8 +387,37 @@ class TransacaoServiceTest {
     }
 
     /**
-     * Testa ramificação do IF onde a transação NÃO TINHA pessoa e passa a ter.
-     * Cobre a condição: dto.pessoaId() != null && transacao.getPessoa() == null.
+     * Testa estorno de Crédito, com transação mantendo a mesma pessoa no método
+     * {@link TransacaoService#atualizar(UUID, CriarAtualizarTransacaoDTO)}.
+     */
+    @Test
+    @DisplayName("atualizar: Estornando original (Receita Paga), mantendo a mesma pessoa")
+    void testeAtualizar_EstornandoReceitaMantendoAMesmaPessoa() {
+        transacao.setTipo(TipoTransacao.RECEITA);
+        transacao.setStatus(StatusTransacao.PAGO);
+        conta.creditar(VALOR_TRANSACAO);
+
+        CriarAtualizarTransacaoDTO dto = new CriarAtualizarTransacaoDTO(
+                "Manteve Pessoa", VALOR_TRANSACAO, LocalDate.now(), LocalDate.now(), null,
+                TipoTransacao.RECEITA, StatusTransacao.PENDENTE, null,
+                categoria.getId(), conta.getId(), pessoa.getId());
+
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+        when(transacaoRepository.findByUsuarioIdAndId(usuario.getId(), transacao.getId()))
+                .thenReturn(Optional.of(transacao));
+        when(transacaoRepository.saveAndFlush(any(Transacao.class))).thenAnswer(i -> i.getArguments()[0]);
+
+        TransacaoDTO resultado = transacaoService.atualizar(transacao.getId(), dto);
+
+        assertEquals(new BigDecimal("1000.00"), conta.getSaldoAtual());
+        assertEquals(pessoa.getId(), resultado.pessoaId());
+
+        verify(pessoaService, never()).obterEntidadeValidada(any(), any());
+    }
+
+    /**
+     * Testa ramificação do IF onde a transação NÃO TINHA pessoa e passa a ter no
+     * método {@link TransacaoService#atualizar(UUID, CriarAtualizarTransacaoDTO)}.
      */
     @Test
     @DisplayName("atualizar: Quando transação não tinha pessoa e DTO adiciona, deve buscar e vincular")
@@ -406,33 +444,6 @@ class TransacaoServiceTest {
     }
 
     /**
-     * Testa ramificação do IF onde a transação JÁ TINHA a mesma pessoa.
-     * Cobre a condição onde IDs são iguais e a lógica pula o bloco IF otimizando
-     * processamento.
-     */
-    @Test
-    @DisplayName("atualizar: Quando DTO envia a mesma pessoa, não deve buscar novamente no banco")
-    void testeAtualizar_MantendoAMesmaPessoa() {
-        UUID transacaoId = transacao.getId();
-        UUID usuarioId = usuario.getId();
-
-        CriarAtualizarTransacaoDTO dto = new CriarAtualizarTransacaoDTO(
-                "Manteve Pessoa", VALOR_TRANSACAO, LocalDate.now(), LocalDate.now(), null,
-                TipoTransacao.DESPESA, StatusTransacao.PENDENTE, null,
-                categoria.getId(), conta.getId(), pessoa.getId());
-
-        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(transacaoRepository.findByUsuarioIdAndId(usuarioId, transacaoId)).thenReturn(Optional.of(transacao));
-        when(transacaoRepository.saveAndFlush(any(Transacao.class))).thenAnswer(i -> i.getArguments()[0]);
-
-        TransacaoDTO resultado = transacaoService.atualizar(transacaoId, dto);
-
-        assertEquals(pessoa.getId(), resultado.pessoaId());
-
-        verify(pessoaService, never()).obterEntidadeValidada(any(), any());
-    }
-
-    /**
      * Testa exclusão estornando uma Receita Paga no método
      * {@link TransacaoService#excluir(UUID)}.
      */
@@ -454,7 +465,29 @@ class TransacaoServiceTest {
     }
 
     /**
-     * Testa exclusão de Despesa Pendente sem estorno.
+     * Testa exclusão estornando uma Despesa Paga no método
+     * {@link TransacaoService#excluir(UUID)}.
+     */
+    @Test
+    @DisplayName("excluir: Quando Despesa Paga, deve estornar (creditar) na conta e remover")
+    void testeExcluir_DespesaPaga_DeveEstornar() {
+        transacao.setTipo(TipoTransacao.DESPESA);
+        transacao.setStatus(StatusTransacao.PAGO);
+        conta.debitar(VALOR_TRANSACAO);
+
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+        when(transacaoRepository.findByUsuarioIdAndId(usuario.getId(), transacao.getId()))
+                .thenReturn(Optional.of(transacao));
+
+        assertDoesNotThrow(() -> transacaoService.excluir(transacao.getId()));
+
+        assertEquals(new BigDecimal("1000.00"), conta.getSaldoAtual());
+        verify(transacaoRepository).delete(transacao);
+    }
+
+    /**
+     * Testa exclusão de Despesa Pendente sem estorno no método
+     * {@link TransacaoService#excluir(UUID)}.
      */
     @Test
     @DisplayName("excluir: Quando Despesa Pendente, não deve estornar, apenas remover")
@@ -472,7 +505,8 @@ class TransacaoServiceTest {
     }
 
     /**
-     * Testa verificações booleanas de vínculos (Pessoa e Conta).
+     * Testa verificações booleanas de vínculos (Pessoa, Conta e Categoria)
+     * delegando para o repositório.
      */
     @Test
     @DisplayName("Verificações de vínculos: Devem repassar a chamada de validação para o repository")
@@ -485,11 +519,14 @@ class TransacaoServiceTest {
 
         when(transacaoRepository.existsByUsuarioIdAndContaId(usuario.getId(), idAlvo)).thenReturn(false);
         assertFalse(transacaoService.existeTransacaoVinculadaAConta(idAlvo));
+
+        when(transacaoRepository.existsByUsuarioIdAndCategoriaId(usuario.getId(), idAlvo)).thenReturn(true);
+        assertTrue(transacaoService.existeTransacaoVinculadaACategoria(idAlvo));
     }
 
     /**
      * Testa blindagem da consulta no método privado de validação
-     * (EntityNotFoundException).
+     * {@link TransacaoService#obterEntidadeValidada(UUID, UUID)}.
      */
     @Test
     @DisplayName("obterEntidadeValidada: Quando transação não encontrada, deve lançar EntityNotFoundException")
@@ -504,5 +541,47 @@ class TransacaoServiceTest {
                 () -> transacaoService.obterEntidadeValidada(usuarioId, idDesconhecido));
 
         assertTrue(excecao.getMessage().contains("não encontrada ou acesso negado"));
+    }
+
+    /**
+     * Testa validação de datas na listagem no método
+     * {@link TransacaoService#listar(FiltroTransacaoDTO, Pageable)}.
+     * Cenário: Data inicial é nula (cobre short-circuit do inicio != null).
+     */
+    @Test
+    @DisplayName("listar: Quando data inicial for nula, não deve validar coerência e deve listar com sucesso")
+    @SuppressWarnings("unchecked")
+    void testeListar_DataInicialNula_DevePassarSemLancarExcecao() {
+        FiltroTransacaoDTO filtro = new FiltroTransacaoDTO(
+                null, null, null, null, LocalDate.now(), null, null,
+                null, null, null);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Transacao> pagina = new PageImpl<>(List.of(transacao));
+
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+        when(transacaoRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(pagina);
+
+        assertDoesNotThrow(() -> transacaoService.listar(filtro, pageable));
+    }
+
+    /**
+     * Testa validação de datas na listagem no método
+     * {@link TransacaoService#listar(FiltroTransacaoDTO, Pageable)}.
+     * Cenário: Data final é nula (cobre short-circuit do fim != null).
+     */
+    @Test
+    @DisplayName("listar: Quando data final for nula, não deve validar coerência e deve listar com sucesso")
+    @SuppressWarnings("unchecked")
+    void testeListar_DataFinalNula_DevePassarSemLancarExcecao() {
+        FiltroTransacaoDTO filtro = new FiltroTransacaoDTO(
+                null, null, null, LocalDate.now(), null, null, null,
+                null, null, null);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Transacao> pagina = new PageImpl<>(List.of(transacao));
+
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+        when(transacaoRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(pagina);
+
+        assertDoesNotThrow(() -> transacaoService.listar(filtro, pageable));
     }
 }

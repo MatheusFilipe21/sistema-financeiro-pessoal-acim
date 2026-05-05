@@ -26,6 +26,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import br.com.sfpacim.backend.config.JacksonConfig;
 import br.com.sfpacim.backend.dtos.transacao.CriarAtualizarTransacaoDTO;
+import br.com.sfpacim.backend.dtos.transacao.FiltroTransacaoDTO;
+import br.com.sfpacim.backend.dtos.transacao.ListagemTransacaoDTO;
 import br.com.sfpacim.backend.dtos.transacao.TransacaoDTO;
 import br.com.sfpacim.backend.exceptions.RegraDeNegocioException;
 import br.com.sfpacim.backend.exceptions.TratadorDeErrosGlobal;
@@ -37,6 +39,7 @@ import br.com.sfpacim.backend.services.TransacaoService;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -86,13 +89,8 @@ class TransacaoControllerTest {
     private static final BigDecimal VALOR = new BigDecimal("250.00");
 
     /**
-     * Testa o cenário de sucesso no cadastro de transação via
+     * Testa o método
      * {@link TransacaoController#cadastrar(CriarAtualizarTransacaoDTO)}.
-     *
-     * <p>
-     * Verifica se, ao enviar dados válidos, o controlador retorna HTTP 201
-     * (Created), o corpo contém os dados processados e o cabeçalho 'Location'
-     * está presente.
      */
     @Test
     @DisplayName("cadastrar: Quando dados válidos, deve retornar HTTP 201 Created")
@@ -121,11 +119,8 @@ class TransacaoControllerTest {
     }
 
     /**
-     * Testa a validação de entrada do Bean Validation no endpoint de cadastro.
-     *
-     * <p>
-     * Garante que o controlador rejeite valores negativos, retornando
-     * HTTP 422 (Unprocessable Entity).
+     * Testa a validação de entrada do Bean Validation no endpoint
+     * {@link TransacaoController#cadastrar(CriarAtualizarTransacaoDTO)}.
      */
     @Test
     @DisplayName("cadastrar: Quando valor negativo (Validation), deve retornar HTTP 422")
@@ -145,34 +140,54 @@ class TransacaoControllerTest {
 
     /**
      * Testa a listagem paginada no método
-     * {@link TransacaoController#listarPorPeriodo(LocalDate, LocalDate, Pageable)}.
-     *
-     * <p>
-     * Valida a correta recepção dos parâmetros de URL (query params) e a
-     * serialização da estrutura de página do Spring Data.
+     * {@link TransacaoController#listar(FiltroTransacaoDTO, Pageable)}.
      */
     @Test
-    @DisplayName("listarPorPeriodo: Deve retornar HTTP 200 OK e a página de transações")
-    void testeListarPorPeriodo_DeveRetornarPagina() throws Exception {
-        String inicio = "2026-01-01";
-        String fim = "2026-01-31";
+    @DisplayName("listar: Deve retornar HTTP 200 OK e a página de transações")
+    void testeListar_DeveRetornarPaginacao200() throws Exception {
+        ListagemTransacaoDTO dtoMock = mock(ListagemTransacaoDTO.class);
+        Page<ListagemTransacaoDTO> pagina = new PageImpl<>(List.of(dtoMock));
 
-        TransacaoDTO dto = new TransacaoDTO(ID_TRANSACAO, DESCRICAO, VALOR, LocalDate.now(),
-                LocalDate.now(), null, TipoTransacao.DESPESA, StatusTransacao.PENDENTE,
-                null, ID_CATEGORIA, ID_CONTA, ID_PESSOA);
-
-        Page<TransacaoDTO> pagina = new PageImpl<>(List.of(dto));
-
-        when(transacaoService.listarPorPeriodo(any(LocalDate.class), any(LocalDate.class), any(Pageable.class)))
-                .thenReturn(pagina);
+        when(transacaoService.listar(any(FiltroTransacaoDTO.class), any(Pageable.class))).thenReturn(pagina);
 
         mockMvc.perform(get("/transacoes")
-                .param("inicio", inicio)
-                .param("fim", fim)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.itens[0].id").value(ID_TRANSACAO.toString()))
+                .andExpect(jsonPath("$.paginaAtual").value(0))
                 .andExpect(jsonPath("$.totalElementos").value(1));
+    }
+
+    /**
+     * Testa o método {@link TransacaoController#buscarPorId(UUID)}.
+     */
+    @Test
+    @DisplayName("buscarPorId: Quando encontrada, deve retornar HTTP 200 OK e o DTO")
+    void testeBuscarPorId_QuandoValido_DeveRetornar200() throws Exception {
+        TransacaoDTO dtoSaida = new TransacaoDTO(
+                ID_TRANSACAO, DESCRICAO, VALOR, LocalDate.now(), LocalDate.now(), null,
+                TipoTransacao.DESPESA, StatusTransacao.PENDENTE, null,
+                ID_CATEGORIA, ID_CONTA, ID_PESSOA);
+
+        when(transacaoService.buscarPorId(ID_TRANSACAO)).thenReturn(dtoSaida);
+
+        mockMvc.perform(get("/transacoes/{id}", ID_TRANSACAO)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(ID_TRANSACAO.toString()))
+                .andExpect(jsonPath("$.descricao").value(DESCRICAO));
+    }
+
+    /**
+     * Testa o erro 404 no método {@link TransacaoController#buscarPorId(UUID)}.
+     */
+    @Test
+    @DisplayName("buscarPorId: Quando não encontrada, deve retornar HTTP 404 Not Found")
+    void testeBuscarPorId_QuandoNaoEncontrado_DeveRetornar404() throws Exception {
+        when(transacaoService.buscarPorId(ID_TRANSACAO)).thenThrow(new EntityNotFoundException("Não encontrado"));
+
+        mockMvc.perform(get("/transacoes/{id}", ID_TRANSACAO)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
     }
 
     /**
@@ -207,14 +222,10 @@ class TransacaoControllerTest {
     /**
      * Testa o tratamento de exceção de negócio no método
      * {@link TransacaoController#atualizar(UUID, CriarAtualizarTransacaoDTO)}.
-     *
-     * <p>
-     * Verifica se a {@link RegraDeNegocioException} lançada pelo serviço é
-     * capturada e convertida para HTTP 400 (Bad Request).
      */
     @Test
-    @DisplayName("atualizar: Quando ID de dependência for inválido, deve retornar HTTP 400 Bad Request")
-    void testeAtualizar_QuandoErroNegocio_DeveRetornar400() throws Exception {
+    @DisplayName("atualizar: Quando ID de dependência for inválido, deve retornar HTTP 422 Unprocessable Entity")
+    void testeAtualizar_QuandoErroNegocio_DeveRetornar422() throws Exception {
         CriarAtualizarTransacaoDTO dto = new CriarAtualizarTransacaoDTO(
                 DESCRICAO, VALOR, LocalDate.now(), LocalDate.now(), null,
                 TipoTransacao.DESPESA, StatusTransacao.PENDENTE, null,
@@ -232,6 +243,29 @@ class TransacaoControllerTest {
     }
 
     /**
+     * Testa o tratamento de exceção 404 no método
+     * {@link TransacaoController#atualizar(UUID, CriarAtualizarTransacaoDTO)}.
+     */
+    @Test
+    @DisplayName("atualizar: Quando transação não for encontrada, deve retornar HTTP 404 Not Found")
+    void testeAtualizar_QuandoNaoEncontrado_DeveRetornar404() throws Exception {
+        CriarAtualizarTransacaoDTO dto = new CriarAtualizarTransacaoDTO(
+                DESCRICAO, VALOR, LocalDate.now(), LocalDate.now(), null,
+                TipoTransacao.DESPESA, StatusTransacao.PENDENTE, null,
+                ID_CATEGORIA, ID_CONTA, ID_PESSOA);
+
+        String jsonRequisicao = objectMapper.writeValueAsString(dto);
+
+        when(transacaoService.atualizar(eq(ID_TRANSACAO), any(CriarAtualizarTransacaoDTO.class)))
+                .thenThrow(new EntityNotFoundException("Não encontrado"));
+
+        mockMvc.perform(put("/transacoes/{id}", ID_TRANSACAO)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonRequisicao))
+                .andExpect(status().isNotFound());
+    }
+
+    /**
      * Testa o endpoint de exclusão {@link TransacaoController#excluir(UUID)}.
      */
     @Test
@@ -242,11 +276,8 @@ class TransacaoControllerTest {
     }
 
     /**
-     * Testa o cenário de transação inexistente na exclusão.
-     *
-     * <p>
-     * Verifica se a {@link EntityNotFoundException} do serviço resulta em
-     * HTTP 404 (Not Found).
+     * Testa o cenário de transação inexistente na exclusão do método
+     * {@link TransacaoController#excluir(UUID)}.
      */
     @Test
     @DisplayName("excluir: Quando não encontrada, deve retornar HTTP 404 Not Found")

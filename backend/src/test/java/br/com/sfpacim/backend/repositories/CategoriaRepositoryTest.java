@@ -10,12 +10,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
+import br.com.sfpacim.backend.dtos.categoria.FiltroCategoriaDTO;
+import br.com.sfpacim.backend.dtos.categoria.SelecaoCategoriaDTO;
 import br.com.sfpacim.backend.models.Categoria;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.models.enums.TipoCategoria;
+import br.com.sfpacim.backend.repositories.specifications.CategoriaSpec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -23,8 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>
  * Foca em testar a camada de persistência (JPA) e as consultas geradas,
- * garantindo o isolamento de dados entre usuários (Defense in Depth) e o
- * correto funcionamento da busca híbrida (sistema + usuário).
+ * garantindo o isolamento de dados entre usuários, o funcionamento da busca
+ * híbrida (sistema + usuário) e a filtragem dinâmica.
  *
  * @author Matheus F. N. Pereira
  */
@@ -45,38 +49,39 @@ class CategoriaRepositoryTest extends BaseRepositoryTest {
     private static final String CAT_COR = "#FF0000";
 
     private Usuario usuario;
+    private Usuario usuarioInvasor;
     private Categoria categoriaSistema;
     private Categoria categoriaUsuario;
 
     /**
      * Configura o cenário inicial antes de cada teste.
-     * Instancia o usuário e as categorias.
+     * Instancia os usuários e as categorias necessárias.
      */
     @BeforeEach
     void setUp() {
         usuario = new Usuario(NOME_USUARIO, EMAIL_USUARIO, SENHA_USUARIO);
+        usuarioInvasor = new Usuario("Usuario Invasor", "invasor@gmail.com", SENHA_USUARIO);
 
         categoriaSistema = new Categoria(CAT_SISTEMA_NOME, TipoCategoria.DESPESA, CAT_ICONE, CAT_COR, null);
-
         categoriaUsuario = new Categoria(CAT_USUARIO_NOME, TipoCategoria.DESPESA, "tv", "#0000FF", usuario);
     }
 
     /**
      * Testa o método
-     * {@link CategoriaRepository#findByUsuarioIdAndId(UUID, UUID)}.
+     * {@link CategoriaRepository#buscarPorIdEUsuarioOuSistema(UUID, UUID)}.
      *
      * <p>
      * Valida o cenário de sucesso garantindo que o usuário consegue
      * acessar a sua própria categoria pelo ID.
      */
     @Test
-    @DisplayName("findByUsuarioIdOrSistemaAndId: Quando categoria pertencer ao usuário, deve retornar Optional com a categoria")
+    @DisplayName("buscarPorIdEUsuarioOuSistema: Quando categoria pertencer ao usuário, deve retornar Optional com a categoria")
     void testeFindByUsuarioIdOrSistemaAndId_QuandoCategoriaDoUsuario_DeveRetornarCategoria() {
         entityManager.persist(usuario);
         entityManager.persist(categoriaUsuario);
         entityManager.flush();
 
-        Optional<Categoria> resultado = categoriaRepository.findByUsuarioIdOrSistemaAndId(usuario.getId(),
+        Optional<Categoria> resultado = categoriaRepository.buscarPorIdEUsuarioOuSistema(usuario.getId(),
                 categoriaUsuario.getId());
 
         assertTrue(resultado.isPresent(), "O Optional não deveria estar vazio");
@@ -85,20 +90,20 @@ class CategoriaRepositoryTest extends BaseRepositoryTest {
 
     /**
      * Testa o método
-     * {@link CategoriaRepository#findByUsuarioIdOrSistemaAndId(UUID, UUID)}.
+     * {@link CategoriaRepository#buscarPorIdEUsuarioOuSistema(UUID, UUID)}.
      *
      * <p>
      * Valida o cenário de sucesso garantindo que o usuário consegue
-     * acessar uma categoria PADRÃO DO SISTEMA (usuario_id nulo) pelo ID.
+     * acessar uma categoria padrão do sistema (usuario nulo) pelo ID.
      */
     @Test
-    @DisplayName("findByUsuarioIdOrSistemaAndId: Quando categoria for do sistema, deve retornar Optional com a categoria")
+    @DisplayName("buscarPorIdEUsuarioOuSistema: Quando categoria for do sistema, deve retornar Optional com a categoria")
     void testeFindByUsuarioIdOrSistemaAndId_QuandoCategoriaDoSistema_DeveRetornarCategoria() {
         entityManager.persist(usuario);
         entityManager.persist(categoriaSistema);
         entityManager.flush();
 
-        Optional<Categoria> resultado = categoriaRepository.findByUsuarioIdOrSistemaAndId(usuario.getId(),
+        Optional<Categoria> resultado = categoriaRepository.buscarPorIdEUsuarioOuSistema(usuario.getId(),
                 categoriaSistema.getId());
 
         assertTrue(resultado.isPresent(), "O Optional não deveria estar vazio para categorias do sistema");
@@ -106,79 +111,189 @@ class CategoriaRepositoryTest extends BaseRepositoryTest {
     }
 
     /**
-     * Testa o isolamento no método
-     * {@link CategoriaRepository#findByUsuarioIdOrSistemaAndId(UUID, UUID)}.
+     * Testa o método
+     * {@link CategoriaRepository#buscarPorIdEUsuarioOuSistema(UUID, UUID)}.
      *
      * <p>
-     * Valida a proteção contra acesso indevido a categorias privadas de
-     * outros usuários, garantindo que o banco retorne vazio.
+     * Valida a restrição de segurança (Defense in Depth) garantindo que um usuário
+     * não consegue acessar a categoria pertencente a outro usuário.
      */
     @Test
-    @DisplayName("findByUsuarioIdOrSistemaAndId: Quando categoria for de outro usuário, deve retornar Optional vazio")
-    void testeFindByUsuarioIdOrSistemaAndId_QuandoOutroUsuario_DeveRetornarVazio() {
+    @DisplayName("buscarPorIdEUsuarioOuSistema: Quando categoria pertencer a outro usuário, deve retornar vazio")
+    void testeBuscarPorId_QuandoCategoriaDeOutroUsuario_DeveRetornarVazio() {
         entityManager.persist(usuario);
+        entityManager.persist(usuarioInvasor);
         entityManager.persist(categoriaUsuario);
-
-        Usuario intruso = new Usuario("Intruso", "intruso@email.com", "123");
-        entityManager.persist(intruso);
         entityManager.flush();
 
-        Optional<Categoria> resultado = categoriaRepository.findByUsuarioIdOrSistemaAndId(intruso.getId(),
+        Optional<Categoria> resultado = categoriaRepository.buscarPorIdEUsuarioOuSistema(usuarioInvasor.getId(),
                 categoriaUsuario.getId());
 
-        assertFalse(resultado.isPresent(), "O Optional deveria estar vazio para garantir o isolamento entre tenants");
+        assertFalse(resultado.isPresent(), "Não deveria encontrar a categoria de outro usuário");
     }
 
     /**
      * Testa o método
-     * {@link CategoriaRepository#findByUsuarioIdOrUsuarioIsNullOrderByNomeAsc(UUID)}.
+     * {@link CategoriaRepository#existeCategoriaDuplicada(UUID, String, UUID)}.
      *
      * <p>
-     * Valida se a listagem híbrida traz as categorias do usuário e as globais
-     * do sistema.
+     * Valida se a consulta identifica corretamente a duplicidade de nomes,
+     * ignorando diferenças de acentuação e letras maiúsculas/minúsculas,
+     * fazendo uso da função unaccent do PostgreSQL.
      */
     @Test
-    @DisplayName("findByUsuarioIdOrUsuarioIsNullOrderByNomeAsc: Quando existirem registros, deve retornar lista híbrida")
-    void testeFindByUsuarioIdOrUsuarioIsNullOrderByNomeAsc_QuandoExistiremRegistros_DeveRetornarLista() {
+    @DisplayName("existeCategoriaDuplicada: Deve retornar true ignorando acentos e maiúsculas")
+    void testeExisteDuplicada_IgnorandoAcentosECaixa_DeveRetornarTrue() {
         entityManager.persist(usuario);
-        entityManager.persist(categoriaSistema);
         entityManager.persist(categoriaUsuario);
         entityManager.flush();
 
-        List<Categoria> resultado = categoriaRepository.findByUsuarioIdOrUsuarioIsNullOrderByNomeAsc(usuario.getId());
+        boolean existe = categoriaRepository.existeCategoriaDuplicada(usuario.getId(), "stréAMing", null);
 
-        assertFalse(resultado.isEmpty(), "A lista não deveria estar vazia");
-        assertEquals(2, resultado.size(), "Deveria retornar exatos 2 registros (1 do sistema, 1 do usuário)");
-
-        assertTrue(resultado.stream().anyMatch(c -> c.getNome().equals(CAT_SISTEMA_NOME)));
-        assertTrue(resultado.stream().anyMatch(c -> c.getNome().equals(CAT_USUARIO_NOME)));
+        assertTrue(existe, "Deveria identificar a duplicidade ignorando acentos e caixa alta");
     }
 
     /**
-     * Testa o isolamento de dados no método de listagem.
+     * Testa o método
+     * {@link CategoriaRepository#existeCategoriaDuplicada(UUID, String, UUID)}.
      *
      * <p>
-     * Valida se a listagem híbrida ignora completamente as categorias privadas
-     * criadas por outros usuários.
+     * Valida o cenário de atualização, onde a busca por duplicidade deve ignorar
+     * a própria categoria que está sendo atualizada pelo usuário.
      */
     @Test
-    @DisplayName("findByUsuarioIdOrUsuarioIsNullOrderByNomeAsc: Não deve retornar categorias privadas de outro usuário")
-    void testeFindByUsuarioIdOrUsuarioIsNullOrderByNomeAsc_QuandoUsuarioDiferente_NaoDeveRetornarPrivadas() {
+    @DisplayName("existeCategoriaDuplicada: Ao atualizar a própria categoria com mesmo nome, deve retornar false")
+    void testeExisteDuplicada_QuandoForAtualizacaoDoMesmoRegistro_DeveRetornarFalse() {
+        entityManager.persist(usuario);
+        entityManager.persist(categoriaUsuario);
+        entityManager.flush();
+
+        boolean existe = categoriaRepository.existeCategoriaDuplicada(usuario.getId(), CAT_USUARIO_NOME,
+                categoriaUsuario.getId());
+
+        assertFalse(existe, "Não deve ser considerado duplicado se for o mesmo ID atualizando a si mesmo");
+    }
+
+    /**
+     * Testa o método {@link CategoriaRepository#buscarOpcoesParaSelecao(UUID)}.
+     *
+     * <p>
+     * Valida a projeção de dados para o DTO e garante que a lista final contém
+     * apenas as categorias do sistema e as categorias do próprio usuário.
+     */
+    @Test
+    @DisplayName("buscarOpcoesParaSelecao: Deve retornar DTOs apenas do usuário logado e do sistema")
+    void testeBuscarOpcoesParaSelecao_DeveMapearParaDTO() {
+        entityManager.persist(usuario);
+        entityManager.persist(usuarioInvasor);
+        entityManager.persist(categoriaSistema);
+        entityManager.persist(categoriaUsuario);
+        entityManager.persist(new Categoria("Secreta", TipoCategoria.RECEITA, CAT_ICONE, CAT_COR, usuarioInvasor));
+        entityManager.flush();
+
+        List<SelecaoCategoriaDTO> opcoes = categoriaRepository.buscarOpcoesParaSelecao(usuario.getId());
+
+        assertEquals(2, opcoes.size(), "Deveria retornar apenas categorias do sistema e do usuário");
+        assertNotNull(opcoes.get(0).id(), "O mapeamento AS id deve instanciar o record corretamente");
+        assertNotNull(opcoes.get(0).nome(), "O mapeamento AS nome deve instanciar o record corretamente");
+    }
+
+    /**
+     * Testa a {@link CategoriaSpec#comFiltros(UUID, FiltroCategoriaDTO)}.
+     *
+     * <p>
+     * Valida a aplicação do filtro por categorias padrão do sistema.
+     */
+    @Test
+    @DisplayName("CategoriaSpec comFiltros: Filtro de sistema igual a true deve trazer apenas categorias globais")
+    void testeCategoriaSpec_QuandoFiltroSistemaTrue_DeveTrazerApenasSistema() {
         entityManager.persist(usuario);
         entityManager.persist(categoriaSistema);
         entityManager.persist(categoriaUsuario);
-
-        Usuario outroUsuario = new Usuario("Outro", "outro@email.com", "senha");
-        entityManager.persist(outroUsuario);
-
-        Categoria categoriaOutro = new Categoria("Privada Outro", TipoCategoria.DESPESA, "icon", "#000", outroUsuario);
-        entityManager.persist(categoriaOutro);
         entityManager.flush();
 
-        List<Categoria> resultado = categoriaRepository.findByUsuarioIdOrUsuarioIsNullOrderByNomeAsc(usuario.getId());
+        FiltroCategoriaDTO filtro = new FiltroCategoriaDTO(null, null, true);
 
-        assertEquals(2, resultado.size(), "Deveria retornar apenas a do sistema e a do próprio usuário");
-        assertTrue(resultado.stream().noneMatch(c -> c.getNome().equals("Privada Outro")),
-                "Não deveria conter categorias personalizadas de outros usuários");
+        List<Categoria> resultado = categoriaRepository.findAll(CategoriaSpec.comFiltros(usuario.getId(), filtro));
+
+        assertEquals(1, resultado.size(), "Deveria retornar apenas a categoria do sistema");
+        assertEquals(CAT_SISTEMA_NOME, resultado.get(0).getNome(), "Deveria retornar a categoria de alimentação");
+    }
+
+    /**
+     * Testa a {@link CategoriaSpec#comFiltros(UUID, FiltroCategoriaDTO)}.
+     *
+     * <p>
+     * Valida a aplicação do filtro por tipo, garantindo que a busca por DESPESA
+     * traga categorias do tipo DESPESA e também categorias do tipo AMBOS.
+     */
+    @Test
+    @DisplayName("CategoriaSpec comFiltros: Filtro Tipo igual a DESPESA deve trazer categorias de DESPESA e AMBOS")
+    void testeCategoriaSpec_QuandoFiltroTipo_DeveTrazerExatoOuAmbos() {
+        entityManager.persist(usuario);
+        entityManager.persist(new Categoria("Conta de Luz", TipoCategoria.DESPESA, CAT_ICONE, CAT_COR, usuario));
+        entityManager.persist(new Categoria("Transferência", TipoCategoria.AMBOS, CAT_ICONE, CAT_COR, usuario));
+        entityManager.persist(new Categoria("Salário", TipoCategoria.RECEITA, CAT_ICONE, CAT_COR, usuario));
+        entityManager.flush();
+
+        FiltroCategoriaDTO filtro = new FiltroCategoriaDTO(null, TipoCategoria.DESPESA, null);
+
+        List<Categoria> resultado = categoriaRepository.findAll(CategoriaSpec.comFiltros(usuario.getId(), filtro));
+
+        assertEquals(2, resultado.size(), "Deveria encontrar a DESPESA e a AMBOS, ignorando a RECEITA");
+    }
+
+    /**
+     * Testa a {@link CategoriaSpec#comFiltros(UUID, FiltroCategoriaDTO)}.
+     *
+     * <p>
+     * Valida o comportamento de retorno antecipado quando o filtro fornecido
+     * for nulo, garantindo que a busca retorne tanto as categorias criadas
+     * pelo usuário quanto as categorias padrão do sistema, bloqueando invasores.
+     */
+    @Test
+    @DisplayName("CategoriaSpec comFiltros: Filtro nulo deve retornar categorias do usuário logado e do sistema")
+    void testeCategoriaSpec_QuandoFiltroNulo_DeveRetornarDoUsuarioEDoSistema() {
+        entityManager.persist(usuario);
+        entityManager.persist(usuarioInvasor);
+        entityManager.persist(categoriaSistema);
+        entityManager.persist(categoriaUsuario);
+
+        Categoria categoriaInvasor = new Categoria("Categoria Hacker", TipoCategoria.RECEITA, CAT_ICONE, CAT_COR,
+                usuarioInvasor);
+        entityManager.persist(categoriaInvasor);
+        entityManager.flush();
+
+        List<Categoria> resultado = categoriaRepository.findAll(CategoriaSpec.comFiltros(usuario.getId(), null));
+
+        assertEquals(2, resultado.size(), "Deveria retornar estritamente a categoria do usuário e a do sistema");
+        assertTrue(resultado.stream().anyMatch(c -> c.getNome().equals(CAT_USUARIO_NOME)),
+                "Deveria conter a categoria do usuário");
+        assertTrue(resultado.stream().anyMatch(c -> c.getNome().equals(CAT_SISTEMA_NOME)),
+                "Deveria conter a categoria do sistema");
+    }
+
+    /**
+     * Testa a {@link CategoriaSpec#comFiltros(UUID, FiltroCategoriaDTO)}.
+     *
+     * <p>
+     * Valida a aplicação do filtro de sistema igual a falso, garantindo que
+     * a busca retorne estritamente as categorias criadas pelo próprio usuário,
+     * ignorando as categorias padrão do sistema.
+     */
+    @Test
+    @DisplayName("CategoriaSpec comFiltros: Filtro de sistema igual a false deve trazer apenas categorias do usuário")
+    void testeCategoriaSpec_QuandoFiltroSistemaFalse_DeveTrazerApenasDoUsuario() {
+        entityManager.persist(usuario);
+        entityManager.persist(categoriaSistema);
+        entityManager.persist(categoriaUsuario);
+        entityManager.flush();
+
+        FiltroCategoriaDTO filtro = new FiltroCategoriaDTO(null, null, false);
+
+        List<Categoria> resultado = categoriaRepository.findAll(CategoriaSpec.comFiltros(usuario.getId(), filtro));
+
+        assertEquals(1, resultado.size(), "Deveria retornar apenas a categoria criada pelo usuário logado");
+        assertEquals(CAT_USUARIO_NOME, resultado.get(0).getNome(), "Deveria retornar a categoria personalizada");
     }
 }

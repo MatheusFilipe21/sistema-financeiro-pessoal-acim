@@ -3,12 +3,16 @@ package br.com.sfpacim.backend.services;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
+import org.springframework.context.MessageSource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -64,6 +68,9 @@ class AutenticacaoServiceTest {
     @Mock
     private UsuarioService usuarioService;
 
+    @Mock
+    private MessageSource messageSource;
+
     @InjectMocks
     private AutenticacaoService autenticacaoService;
 
@@ -74,6 +81,38 @@ class AutenticacaoServiceTest {
     private static final String TOKEN_JWT = "eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJTRlAtQUNJTSBBUEkiLCJzdWIiOiJtYXRoZXVzZm5wZXJlaXJhQGdtYWlsLmNvbSIsImlhdCI6MTc2MzMwNjE3NiwiZXhwIjoxNzYzMzM0OTc2fQ.e90EOyfiPFUE4Mu5LgbZEtrYnQIGzueecgm4G-fWIKTtSr7IuxC1X_hBkltJBRxHo9ocTvQFje44r0g84TqaiQ";
     private static final String TOKEN_RECUPERACAO = "eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJTRlAtQUNJTSBBUEkgUmVjdXBlcmFjYW8iLCJzdWIiOiJtYXRoZXVzZm5wZXJlaXJhQGdtYWlsLmNvbSIsImlhdCI6MTc2NTEwNDM1NywiZXhwIjoxNzY1MTE4NzU3fQ.bXRA5FUJ-7jJZS-7UCbz80PmHTsLGtOH_w0gG5FoR7w8JgJGbXyDC8dax9I_eNwWjgij1VGyapgR1hW5E3ddXQ";
     private static final String URL_FRONTEND = "http://localhost:4200";
+
+    /**
+     * Configura o cenário comum e mocks estáticos antes de cada teste.
+     */
+    @BeforeEach
+    void setUp() {
+        Answer<String> answerMensagemDinamica = invocation -> {
+            String codigo = invocation.getArgument(0);
+
+            if ("erro.autenticacao.token.invalido".equals(codigo)) {
+                return "Token inválido ou expirado.";
+            }
+            if ("email.recuperacao.senha.mensagem".equals(codigo)) {
+                Object[] args = invocation.getArgument(1);
+
+                String linkGerado = (args != null && args.length > 1) ? args[1].toString() : "";
+                return "Acesse o link de recuperação: " + linkGerado;
+            }
+            if ("email.recuperacao.senha.assunto".equals(codigo)) {
+                return "Assunto de Recuperação";
+            }
+            return "Mensagem Mockada";
+        };
+
+        Mockito.lenient()
+                .when(messageSource.getMessage(anyString(), any(), any()))
+                .thenAnswer(answerMensagemDinamica);
+
+        Mockito.lenient()
+                .when(messageSource.getMessage(anyString(), any(), anyString(), any()))
+                .thenAnswer(answerMensagemDinamica);
+    }
 
     /**
      * Testa o método {@link AutenticacaoService#login(DadosAutenticacaoDTO)}.

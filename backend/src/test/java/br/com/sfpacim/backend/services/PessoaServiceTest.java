@@ -1,5 +1,17 @@
 package br.com.sfpacim.backend.services;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,28 +24,26 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
+import org.springframework.context.MessageSource;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import br.com.sfpacim.backend.dtos.pessoa.CriarAtualizarPessoaDTO;
+import br.com.sfpacim.backend.dtos.pessoa.FiltroPessoaDTO;
 import br.com.sfpacim.backend.dtos.pessoa.PessoaDTO;
+import br.com.sfpacim.backend.dtos.pessoa.SelecaoPessoaDTO;
+import br.com.sfpacim.backend.exceptions.RegraDeNegocioException;
 import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 import br.com.sfpacim.backend.models.Pessoa;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.PessoaRepository;
-import br.com.sfpacim.backend.utils.MetodosUteis;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Testes unitários para a classe {@link PessoaService}.
@@ -46,6 +56,9 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 class PessoaServiceTest {
+
+    @Mock
+    private MessageSource messageSource;
 
     @Mock
     private PessoaRepository pessoaRepository;
@@ -73,7 +86,7 @@ class PessoaServiceTest {
 
     /**
      * Configura o cenário comum antes de cada teste com IDs simulados e
-     * dados básicos instanciados.
+     * padroniza as respostas do MessageSource através de uma Answer dinâmica.
      */
     @BeforeEach
     void setUp() {
@@ -86,358 +99,248 @@ class PessoaServiceTest {
         pessoa.setTitular(TITULAR);
 
         criarAtualizarPessoaDTO = new CriarAtualizarPessoaDTO(NOME, TITULAR);
+
+        Answer<String> answerMensagemDinamica = invocation -> {
+            String codigo = invocation.getArgument(0);
+            if (codigo.contains("erro.unicidade"))
+                return "Erro de Unicidade";
+            if (codigo.contains("erro.recurso.nao-encontrado"))
+                return "Não encontrado";
+            if (codigo.contains("erro.pessoa.titular.invalido"))
+                return "Titular inválido";
+            return "Mensagem Mockada";
+        };
+
+        Mockito.lenient().when(messageSource.getMessage(anyString(), any(), any())).thenAnswer(answerMensagemDinamica);
+        Mockito.lenient().when(messageSource.getMessage(anyString(), any(), anyString(), any()))
+                .thenAnswer(answerMensagemDinamica);
     }
 
     /**
      * Testa o cenário de sucesso no método
      * {@link PessoaService#cadastrar(CriarAtualizarPessoaDTO)}.
-     *
-     * <p>
-     * Garante que o DTO é convertido corretamente e que o repositório é
-     * chamado para persistir os dados vinculados ao usuário logado.
      */
     @Test
     @DisplayName("cadastrar: Quando dados válidos, deve vincular ao usuário e salvar")
     void testeCadastrar_QuandoDadosValidos_DeveSalvarPessoa() {
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(pessoaRepository.findByUsuarioId(usuario.getId())).thenReturn(List.of());
+        when(pessoaRepository.existeNomeDuplicado(usuario.getId(), NOME, null)).thenReturn(false);
         when(pessoaRepository.saveAndFlush(any(Pessoa.class))).thenReturn(pessoa);
 
         PessoaDTO resultado = pessoaService.cadastrar(criarAtualizarPessoaDTO);
 
-        assertNotNull(resultado, "O DTO retornado não deve ser nulo");
-        assertEquals(NOME, resultado.nome(), "O nome deve ser preservado");
+        assertNotNull(resultado);
+        assertEquals(NOME, resultado.nome());
         verify(pessoaRepository).saveAndFlush(any(Pessoa.class));
     }
 
     /**
-     * Testa a validação de unicidade de nome em memória no método
+     * Testa a validação proativa de unicidade no método
      * {@link PessoaService#cadastrar(CriarAtualizarPessoaDTO)}.
-     *
-     * <p>
-     * Valida se a normalização de texto impede o cadastro de nomes iguais
-     * com diferenças apenas em maiúsculas e minúsculas.
      */
     @Test
-    @DisplayName("cadastrar: Quando nome existir na memória (Case Insensitive), deve lançar ViolacaoDadosException")
-    void testeCadastrar_QuandoNomeDuplicadoEmMemoria_DeveLancarExcecao() {
-        Pessoa pessoaExistente = new Pessoa(NOME.toUpperCase(), usuario);
-        pessoaExistente.setId(UUID.randomUUID());
-
+    @DisplayName("cadastrar: Quando nome já existe no banco, deve lançar ViolacaoDadosException")
+    void testeCadastrar_QuandoNomeDuplicado_DeveLancarExcecao() {
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(pessoaRepository.findByUsuarioId(usuario.getId())).thenReturn(List.of(pessoaExistente));
+        when(pessoaRepository.existeNomeDuplicado(usuario.getId(), NOME, null)).thenReturn(true);
 
-        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
-                () -> pessoaService.cadastrar(criarAtualizarPessoaDTO));
-
-        assertEquals(String.format("Já existe uma Pessoa cadastrada com o nome '%s'.", NOME),
-                excecao.getMessage());
+        assertThrows(ViolacaoDadosException.class, () -> pessoaService.cadastrar(criarAtualizarPessoaDTO));
         verify(pessoaRepository, never()).saveAndFlush(any());
     }
 
     /**
-     * Testa a ramificação do 'return null' dentro do catch.
-     *
-     * <p>
-     * Utiliza MockedStatic para interceptar e emudecer o MetodosUteis. Como a
-     * exceção
-     * não será lançada, a execução atinge o 'return null'. O método 'paraDTO(null)'
-     * lançará um NullPointerException, confirmando que passamos pela linha.
+     * Testa a captura reativa de erro de integridade no método
+     * {@link PessoaService#cadastrar(CriarAtualizarPessoaDTO)}.
      */
     @Test
-    @DisplayName("cadastrar: Quando banco lançar erro, testa o catch cobrindo o return null (Mock Estático)")
-    void testeCadastrar_ErroBanco_CobrindoReturnNull() {
+    @DisplayName("cadastrar: Quando ocorrer erro de integridade no banco, deve lançar ViolacaoDadosException")
+    void testeCadastrar_ErroIntegridade_DeveLancarExcecao() {
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(pessoaRepository.findByUsuarioId(usuario.getId())).thenReturn(List.of());
+        when(pessoaRepository.existeNomeDuplicado(any(), any(), any())).thenReturn(false);
+        when(pessoaRepository.saveAndFlush(any())).thenThrow(new DataIntegrityViolationException("DB Error"));
 
-        when(pessoaRepository.saveAndFlush(any(Pessoa.class)))
-                .thenThrow(new DataIntegrityViolationException("Erro de constraint"));
-
-        try (MockedStatic<MetodosUteis> utilMock = mockStatic(MetodosUteis.class)) {
-            assertThrows(NullPointerException.class, () -> pessoaService.cadastrar(criarAtualizarPessoaDTO));
-
-            utilMock.verify(() -> MetodosUteis.validarUnicidade(true, Pessoa.class.getSimpleName(), NOME));
-        }
+        assertThrows(ViolacaoDadosException.class, () -> pessoaService.cadastrar(criarAtualizarPessoaDTO));
     }
 
     /**
-     * Testa o comportamento real do catch, garantindo que a exceção de integridade
-     * é transformada na ViolacaoDadosException pela classe utilitária.
+     * Testa a listagem paginada no método
+     * {@link PessoaService#listar(FiltroPessoaDTO, Pageable)}.
      */
     @Test
-    @DisplayName("cadastrar: Quando banco lançar erro de integridade, deve lançar ViolacaoDadosException")
-    void testeCadastrar_ErroBanco_LancaExcecaoReal() {
+    @DisplayName("listar: Deve retornar página de pessoas filtradas")
+    @SuppressWarnings("unchecked")
+    void testeListar_DeveRetornarPagina() {
+        FiltroPessoaDTO filtro = new FiltroPessoaDTO(null, null);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Pessoa> pagina = new PageImpl<>(List.of(pessoa));
+
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(pessoaRepository.findByUsuarioId(usuario.getId())).thenReturn(List.of());
+        when(pessoaRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(pagina);
 
-        when(pessoaRepository.saveAndFlush(any(Pessoa.class)))
-                .thenThrow(new DataIntegrityViolationException("Erro de constraint"));
+        Page<PessoaDTO> resultado = pessoaService.listar(filtro, pageable);
 
-        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
-                () -> pessoaService.cadastrar(criarAtualizarPessoaDTO));
-
-        assertTrue(excecao.getMessage().contains(NOME));
+        assertEquals(1, resultado.getContent().size());
+        assertEquals(NOME, resultado.getContent().get(0).nome());
     }
 
     /**
-     * Testa o método {@link PessoaService#listar()}.
-     *
-     * <p>
-     * Verifica se o Collator está ordenando os nomes alfabeticamente
-     * e respeitando apenas os registros do usuário logado.
+     * Testa a busca de opções simplificadas no método
+     * {@link PessoaService#listarOpcoes(Boolean)}.
      */
     @Test
-    @DisplayName("listar: Deve retornar apenas pessoas do usuário autenticado ordenadas por nome")
-    void testeListar_DeveRetornarRegistrosDoUsuarioOrdenados() {
-        Pessoa p1 = new Pessoa("Zélia", usuario);
-        Pessoa p2 = new Pessoa("Ana", usuario);
-
+    @DisplayName("listarOpcoes: Deve retornar lista simplificada para seleção")
+    void testeListarOpcoes_DeveRetornarLista() {
+        SelecaoPessoaDTO selecao = new SelecaoPessoaDTO(pessoa.getId(), NOME);
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(pessoaRepository.findByUsuarioId(usuario.getId())).thenReturn(List.of(p1, p2));
+        when(pessoaRepository.buscarOpcoesParaSelecao(usuario.getId(), true)).thenReturn(List.of(selecao));
 
-        List<PessoaDTO> resultado = pessoaService.listar();
+        List<SelecaoPessoaDTO> resultado = pessoaService.listarOpcoes(true);
 
-        assertEquals(2, resultado.size());
-        assertEquals("Ana", resultado.get(0).nome());
-        assertEquals("Zélia", resultado.get(1).nome());
+        assertEquals(1, resultado.size());
+        assertEquals(NOME, resultado.get(0).nome());
+    }
+
+    /**
+     * Testa a busca por ID no método {@link PessoaService#buscarPorId(UUID)}.
+     */
+    @Test
+    @DisplayName("buscarPorId: Deve retornar DTO quando encontrado")
+    void testeBuscarPorId_ComSucesso() {
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+        when(pessoaRepository.findByUsuarioIdAndId(usuario.getId(), pessoa.getId())).thenReturn(Optional.of(pessoa));
+
+        PessoaDTO resultado = pessoaService.buscarPorId(pessoa.getId());
+
+        assertNotNull(resultado);
+        assertEquals(NOME, resultado.nome());
     }
 
     /**
      * Testa a atualização com sucesso no método
      * {@link PessoaService#atualizar(UUID, CriarAtualizarPessoaDTO)}.
-     *
-     * <p>
-     * Verifica se os campos permitidos (nome e titularidade) são alterados
-     * corretamente.
      */
     @Test
-    @DisplayName("atualizar: Quando dados válidos, deve alterar nome e titular")
-    void testeAtualizar_QuandoValido_DeveAtualizarDados() {
-        CriarAtualizarPessoaDTO dtoNovo = new CriarAtualizarPessoaDTO(NOME_NOVO, TITULAR_NOVO);
-        UUID pessoaId = pessoa.getId();
+    @DisplayName("atualizar: Quando dados válidos, deve alterar dados e salvar")
+    void testeAtualizar_QuandoValido_DeveSalvar() {
+        CriarAtualizarPessoaDTO dto = new CriarAtualizarPessoaDTO(NOME_NOVO, TITULAR_NOVO);
+        UUID id = pessoa.getId();
 
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(pessoaRepository.findByUsuarioIdAndId(usuario.getId(), pessoaId)).thenReturn(Optional.of(pessoa));
-        when(pessoaRepository.findByUsuarioId(usuario.getId())).thenReturn(List.of(pessoa));
-        when(pessoaRepository.saveAndFlush(any(Pessoa.class))).thenReturn(pessoa);
+        when(pessoaRepository.findByUsuarioIdAndId(usuario.getId(), id)).thenReturn(Optional.of(pessoa));
+        when(pessoaRepository.existeNomeDuplicado(usuario.getId(), NOME_NOVO, id)).thenReturn(false);
+        when(pessoaRepository.saveAndFlush(any())).thenReturn(pessoa);
 
-        PessoaDTO resultado = pessoaService.atualizar(pessoaId, dtoNovo);
+        PessoaDTO resultado = pessoaService.atualizar(id, dto);
 
         assertEquals(NOME_NOVO, resultado.nome());
         assertEquals(TITULAR_NOVO, resultado.titular());
     }
 
     /**
-     * Testa a blindagem do serviço no método
+     * Testa a mesclagem quando o titular vem nulo no DTO no método
      * {@link PessoaService#atualizar(UUID, CriarAtualizarPessoaDTO)}.
-     *
-     * <p>
-     * Garante que uma tentativa de atualizar uma pessoa que não pertence
-     * ao usuário lance a exceção apropriada.
      */
     @Test
-    @DisplayName("atualizar: Quando ID não pertencer ao usuário, deve lançar EntityNotFoundException")
-    void testeAtualizar_QuandoAcessoNegado_DeveLancarExcecao() {
-        UUID pessoaId = pessoa.getId();
-
-        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(pessoaRepository.findByUsuarioIdAndId(usuario.getId(), pessoaId)).thenReturn(Optional.empty());
-
-        EntityNotFoundException excecao = assertThrows(EntityNotFoundException.class,
-                () -> pessoaService.atualizar(pessoaId, criarAtualizarPessoaDTO));
-
-        assertTrue(excecao.getMessage().contains("acesso negado"));
-        verify(pessoaRepository, never()).saveAndFlush(any());
-    }
-
-    /**
-     * Testa o comportamento de mesclagem parcial no método
-     * {@link PessoaService#atualizar(UUID, CriarAtualizarPessoaDTO)}.
-     *
-     * <p>
-     * Garante que ao receber um campo nulo (titular), o valor preexistente
-     * na base de dados seja preservado em vez de sobrescrito por erro.
-     */
-    @Test
-    @DisplayName("atualizar: Quando titular é nulo no DTO, deve manter valor original da entidade")
-    void testeAtualizar_QuandoTitularNulo_NaoDeveAlterarTitularOriginal() {
-        CriarAtualizarPessoaDTO dtoTitularNulo = new CriarAtualizarPessoaDTO(NOME_NOVO, null);
-        UUID pessoaId = pessoa.getId();
+    @DisplayName("atualizar: Quando titular for nulo, deve preservar o valor original")
+    void testeAtualizar_QuandoTitularNulo_DeveManterOriginal() {
+        CriarAtualizarPessoaDTO dto = new CriarAtualizarPessoaDTO(NOME_NOVO, null);
+        UUID id = pessoa.getId();
         pessoa.setTitular(true);
 
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(pessoaRepository.findByUsuarioIdAndId(usuario.getId(), pessoaId)).thenReturn(Optional.of(pessoa));
-        when(pessoaRepository.findByUsuarioId(usuario.getId())).thenReturn(List.of(pessoa));
-        when(pessoaRepository.saveAndFlush(any(Pessoa.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(pessoaRepository.findByUsuarioIdAndId(usuario.getId(), id)).thenReturn(Optional.of(pessoa));
+        when(pessoaRepository.existeNomeDuplicado(usuario.getId(), NOME_NOVO, id)).thenReturn(false);
+        when(pessoaRepository.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        PessoaDTO resultado = pessoaService.atualizar(pessoaId, dtoTitularNulo);
+        PessoaDTO resultado = pessoaService.atualizar(id, dto);
 
         assertEquals(NOME_NOVO, resultado.nome());
         assertTrue(resultado.titular());
     }
 
     /**
-     * Testa a validação de unicidade na atualização no método
+     * Testa falha de acesso no método
      * {@link PessoaService#atualizar(UUID, CriarAtualizarPessoaDTO)}.
-     * 
-     * <p>
-     * Este teste cobre a ramificação de busca em memória onde um nome normalizado
-     * coincide com o de outra pessoa já cadastrada, disparando a validação
-     * antes mesmo da tentativa de persistência no banco de dados.
      */
     @Test
-    @DisplayName("atualizar: Quando nome pertence a outra pessoa na memória, deve lançar ViolacaoDadosException")
-    void testeAtualizar_QuandoNomeDuplicadoOutroId_DeveLancarExcecao() {
-        UUID pessoaId = pessoa.getId();
-        Pessoa outraPessoa = new Pessoa(NOME_NOVO, usuario);
-        outraPessoa.setId(UUID.randomUUID());
-
+    @DisplayName("atualizar: Quando ID não pertencer ao usuário, deve lançar EntityNotFoundException")
+    void testeAtualizar_AcessoNegado_DeveLancarExcecao() {
+        UUID idInvalido = UUID.randomUUID();
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(pessoaRepository.findByUsuarioIdAndId(usuario.getId(), pessoaId)).thenReturn(Optional.of(pessoa));
-        when(pessoaRepository.findByUsuarioId(usuario.getId())).thenReturn(List.of(outraPessoa));
+        when(pessoaRepository.findByUsuarioIdAndId(any(), any())).thenReturn(Optional.empty());
 
-        CriarAtualizarPessoaDTO dtoConflito = new CriarAtualizarPessoaDTO(NOME_NOVO, false);
-
-        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
-                () -> pessoaService.atualizar(pessoaId, dtoConflito));
-
-        assertEquals(String.format("Já existe uma Pessoa cadastrada com o nome '%s'.", NOME_NOVO),
-                excecao.getMessage());
-        verify(pessoaRepository, never()).saveAndFlush(any());
+        assertThrows(EntityNotFoundException.class, () -> pessoaService.atualizar(idInvalido, criarAtualizarPessoaDTO));
     }
 
     /**
-     * Testa a captura de exceção de integridade no método
-     * {@link PessoaService#atualizar(UUID, CriarAtualizarPessoaDTO)}.
-     * 
-     * <p>
-     * Este teste foca especificamente na cobertura do bloco {@code catch},
-     * simulando um cenário onde a validação em memória passa, mas o banco de dados
-     * rejeita a transação. Garante que o método utilize o {@link MetodosUteis} para
-     * padronizar a exceção de retorno.
+     * Testa exclusão com sucesso no método {@link PessoaService#excluir(UUID)}.
      */
     @Test
-    @DisplayName("atualizar: Quando banco lançar exceção de integridade, deve tratar como ViolacaoDadosException")
-    void testeAtualizar_QuandoConstraintViolation_DeveLancarExcecao() {
-        UUID pessoaId = pessoa.getId();
-        CriarAtualizarPessoaDTO dtoNovo = new CriarAtualizarPessoaDTO(NOME_NOVO, TITULAR_NOVO);
-
+    @DisplayName("excluir: Quando não possuir vínculos, deve remover")
+    void testeExcluir_ComSucesso() {
+        UUID id = pessoa.getId();
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(pessoaRepository.findByUsuarioIdAndId(usuario.getId(), pessoaId)).thenReturn(Optional.of(pessoa));
+        when(pessoaRepository.findByUsuarioIdAndId(usuario.getId(), id)).thenReturn(Optional.of(pessoa));
+        when(contaService.existeContaVinculadaAPessoa(id)).thenReturn(false);
+        when(transacaoService.existeTransacaoVinculadaAPessoa(id)).thenReturn(false);
 
-        when(pessoaRepository.findByUsuarioId(usuario.getId())).thenReturn(List.of());
-
-        when(pessoaRepository.saveAndFlush(any(Pessoa.class)))
-                .thenThrow(new DataIntegrityViolationException("Simulação de erro de banco"));
-
-        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
-                () -> pessoaService.atualizar(pessoaId, dtoNovo));
-
-        assertNotNull(excecao);
-        verify(pessoaRepository).saveAndFlush(any(Pessoa.class));
-    }
-
-    /**
-     * Testa a exclusão favorável no método {@link PessoaService#excluir(UUID)}.
-     *
-     * <p>
-     * Valida que o repositório realiza a exclusão física caso não existam
-     * impedimentos relacionais.
-     */
-    @Test
-    @DisplayName("excluir: Quando não possuir vínculos, deve remover o registro")
-    void testeExcluir_QuandoValido_DeveDeletar() {
-        UUID pessoaId = pessoa.getId();
-
-        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(pessoaRepository.findByUsuarioIdAndId(usuario.getId(), pessoaId)).thenReturn(Optional.of(pessoa));
-        when(contaService.existeContaVinculadaAPessoa(pessoaId)).thenReturn(false);
-        when(transacaoService.existeTransacaoVinculadaAPessoa(pessoaId)).thenReturn(false);
-
-        assertDoesNotThrow(() -> pessoaService.excluir(pessoaId));
-
+        assertDoesNotThrow(() -> pessoaService.excluir(id));
         verify(pessoaRepository).delete(pessoa);
     }
 
     /**
-     * Testa o bloqueio de exclusão em cascata no método
+     * Testa bloqueio por contas vinculadas na exclusão no método
      * {@link PessoaService#excluir(UUID)}.
-     *
-     * <p>
-     * Garante que a exclusão seja interrompida e comunique o usuário se
-     * existirem Contas ativas vinculadas à pessoa.
      */
     @Test
-    @DisplayName("excluir: Quando possuir Contas vinculadas, deve lançar ViolacaoDadosException")
-    void testeExcluir_QuandoPossuiContas_DeveLancarExcecao() {
-        UUID pessoaId = pessoa.getId();
-
+    @DisplayName("excluir: Quando possuir contas, deve lançar ViolacaoDadosException")
+    void testeExcluir_ComContas_DeveLancarExcecao() {
+        UUID id = pessoa.getId();
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(pessoaRepository.findByUsuarioIdAndId(usuario.getId(), pessoaId)).thenReturn(Optional.of(pessoa));
-        when(contaService.existeContaVinculadaAPessoa(pessoaId)).thenReturn(true);
+        when(pessoaRepository.findByUsuarioIdAndId(usuario.getId(), id)).thenReturn(Optional.of(pessoa));
+        when(contaService.existeContaVinculadaAPessoa(id)).thenReturn(true);
 
-        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
-                () -> pessoaService.excluir(pessoaId));
-
-        assertTrue(excecao.getMessage().contains("Contas vinculadas"));
-        verify(pessoaRepository, never()).delete(any());
+        assertThrows(ViolacaoDadosException.class, () -> pessoaService.excluir(id));
     }
 
     /**
-     * Testa o bloqueio de exclusão em cascata no método
-     * {@link PessoaService#excluir(UUID)}.
-     *
-     * <p>
-     * Garante que a exclusão seja interrompida se existirem transações
-     * históricas ou futuras atreladas à pessoa.
+     * Testa a falha de titularidade no método
+     * {@link PessoaService#validarTitularidade(Pessoa)}.
      */
     @Test
-    @DisplayName("excluir: Quando possuir Transações vinculadas, deve lançar ViolacaoDadosException")
-    void testeExcluir_QuandoPossuiTransacoes_DeveLancarExcecao() {
-        UUID pessoaId = pessoa.getId();
-
-        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(pessoaRepository.findByUsuarioIdAndId(usuario.getId(), pessoaId)).thenReturn(Optional.of(pessoa));
-        when(contaService.existeContaVinculadaAPessoa(pessoaId)).thenReturn(false);
-        when(transacaoService.existeTransacaoVinculadaAPessoa(pessoaId)).thenReturn(true);
-
-        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
-                () -> pessoaService.excluir(pessoaId));
-
-        assertTrue(excecao.getMessage().contains("Transações vinculadas"));
-        verify(pessoaRepository, never()).delete(any());
+    @DisplayName("validarTitularidade: Quando não for titular, deve lançar RegraDeNegocioException")
+    void testeValidarTitularidade_DeveLancarExcecao() {
+        pessoa.setTitular(false);
+        assertThrows(RegraDeNegocioException.class, () -> pessoaService.validarTitularidade(pessoa));
     }
 
     /**
-     * Testa o sucesso no método {@link PessoaService#validarTitularidade(Pessoa)}.
-     *
-     * <p>
-     * Confirma que uma pessoa assinalada como titular passa
-     * na validação sem lançar exceções.
+     * Testa o sucesso de titularidade no método
+     * {@link PessoaService#validarTitularidade(Pessoa)}.
      */
     @Test
-    @DisplayName("validarTitularidade: Quando titular for verdadeiro, não deve lançar exceção")
-    void testeValidarTitularidade_QuandoTitular_NaoDeveLancarExcecao() {
+    @DisplayName("validarTitularidade: Quando for titular, não deve lançar exceção")
+    void testeValidarTitularidade_Sucesso() {
         pessoa.setTitular(true);
-
         assertDoesNotThrow(() -> pessoaService.validarTitularidade(pessoa));
     }
 
     /**
-     * Testa o bloqueio no método {@link PessoaService#validarTitularidade(Pessoa)}.
-     *
-     * <p>
-     * Confirma que uma pessoa não assinalada como titular lança exceção
-     * interrompendo a vinculação indevida com contas.
+     * Testa o bloqueio de exclusão especificamente por dependência de transações
+     * no método {@link PessoaService#excluir(UUID)}.
      */
     @Test
-    @DisplayName("validarTitularidade: Quando não for titular, deve lançar ViolacaoDadosException")
-    void testeValidarTitularidade_QuandoNaoForTitular_DeveLancarExcecao() {
-        pessoa.setTitular(false);
+    @DisplayName("excluir: Quando possuir apenas Transações vinculadas, deve lançar ViolacaoDadosException")
+    void testeExcluir_QuandoPossuiApenasTransacoes_DeveLancarExcecao() {
+        UUID id = pessoa.getId();
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+        when(pessoaRepository.findByUsuarioIdAndId(usuario.getId(), id)).thenReturn(Optional.of(pessoa));
 
-        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
-                () -> pessoaService.validarTitularidade(pessoa));
+        when(contaService.existeContaVinculadaAPessoa(id)).thenReturn(false);
+        when(transacaoService.existeTransacaoVinculadaAPessoa(id)).thenReturn(true);
 
-        assertTrue(excecao.getMessage().contains("não é um titular habilitado"));
+        assertThrows(ViolacaoDadosException.class, () -> pessoaService.excluir(id));
+
+        verify(pessoaRepository, never()).delete(any(Pessoa.class));
     }
 }

@@ -1,6 +1,16 @@
 package br.com.sfpacim.backend.services;
 
-import java.util.Collections;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -13,30 +23,26 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.MessageSource;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import br.com.sfpacim.backend.dtos.categoria.CategoriaDTO;
 import br.com.sfpacim.backend.dtos.categoria.CriarAtualizarCategoriaDTO;
+import br.com.sfpacim.backend.dtos.categoria.FiltroCategoriaDTO;
+import br.com.sfpacim.backend.dtos.categoria.SelecaoCategoriaDTO;
 import br.com.sfpacim.backend.exceptions.RegraDeNegocioException;
 import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 import br.com.sfpacim.backend.models.Categoria;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.models.enums.TipoCategoria;
 import br.com.sfpacim.backend.repositories.CategoriaRepository;
-import br.com.sfpacim.backend.utils.MetodosUteis;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Testes unitários para a classe {@link CategoriaService}.
@@ -52,10 +58,16 @@ import static org.mockito.Mockito.when;
 class CategoriaServiceTest {
 
     @Mock
+    private MessageSource messageSource;
+
+    @Mock
     private CategoriaRepository categoriaRepository;
 
     @Mock
     private ContextoUsuarioService contextoUsuarioService;
+
+    @Mock
+    private TransacaoService transacaoService;
 
     @InjectMocks
     private CategoriaService categoriaService;
@@ -86,6 +98,9 @@ class CategoriaServiceTest {
         categoriaSistema.setId(UUID.randomUUID());
 
         criarAtualizarDTO = new CriarAtualizarCategoriaDTO(NOME_CATEGORIA, TIPO, ICONE, COR);
+
+        Mockito.lenient().when(messageSource.getMessage(anyString(), any(), any(), any()))
+                .thenReturn("Mensagem Mockada");
     }
 
     /**
@@ -93,11 +108,11 @@ class CategoriaServiceTest {
      * {@link CategoriaService#cadastrar(CriarAtualizarCategoriaDTO)}.
      */
     @Test
-    @DisplayName("cadastrar: Quando dados válidos, deve salvar e retornar CategoriaDTO")
-    void testeCadastrar_QuandoDadosValidos_DeveSalvar() {
+    @DisplayName("cadastrar: Deve salvar e retornar CategoriaDTO com sucesso")
+    void testeCadastrar_ComSucesso() {
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(categoriaRepository.findByUsuarioIdOrUsuarioIsNullOrderByNomeAsc(usuario.getId()))
-                .thenReturn(Collections.emptyList());
+        when(categoriaRepository.existeCategoriaDuplicada(usuario.getId(), NOME_CATEGORIA, null))
+                .thenReturn(false);
         when(categoriaRepository.saveAndFlush(any(Categoria.class))).thenReturn(categoriaUsuario);
 
         CategoriaDTO resultado = categoriaService.cadastrar(criarAtualizarDTO);
@@ -108,130 +123,126 @@ class CategoriaServiceTest {
     }
 
     /**
-     * Testa a validação em memória no método
+     * Testa a validação proativa de unicidade de nome no método
      * {@link CategoriaService#cadastrar(CriarAtualizarCategoriaDTO)}.
      */
     @Test
-    @DisplayName("cadastrar: Quando nome duplicado na memória, deve lançar ViolacaoDadosException")
-    void testeCadastrar_QuandoNomeDuplicadoEmMemoria_DeveLancarExcecao() {
+    @DisplayName("cadastrar: Deve lançar exceção quando o banco apontar nome duplicado (Proativo)")
+    void testeCadastrar_NomeDuplicado_DeveLancarExcecao() {
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(categoriaRepository.findByUsuarioIdOrUsuarioIsNullOrderByNomeAsc(usuario.getId()))
-                .thenReturn(List.of(categoriaUsuario));
+        when(categoriaRepository.existeCategoriaDuplicada(usuario.getId(), NOME_CATEGORIA, null))
+                .thenReturn(true);
 
-        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
-                () -> categoriaService.cadastrar(criarAtualizarDTO));
-
-        assertTrue(excecao.getMessage().contains(NOME_CATEGORIA));
-        verify(categoriaRepository, never()).saveAndFlush(any());
+        assertThrows(ViolacaoDadosException.class, () -> categoriaService.cadastrar(criarAtualizarDTO));
+        verify(categoriaRepository, never()).saveAndFlush(any(Categoria.class));
     }
 
     /**
-     * Testa o bloqueio real do banco de dados no método
+     * Testa a ramificação do bloqueio reativo de banco de dados no método
      * {@link CategoriaService#cadastrar(CriarAtualizarCategoriaDTO)}.
      */
     @Test
-    @DisplayName("cadastrar: Quando banco lançar exceção de integridade, deve tratar como ViolacaoDadosException")
-    void testeCadastrar_ErroBanco_LancaExcecaoReal() {
+    @DisplayName("cadastrar: Deve lançar ViolacaoDadosException quando ocorrer DataIntegrityViolationException (Reativo)")
+    void testeCadastrar_DataIntegrityViolation_DeveLancarExcecao() {
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(categoriaRepository.findByUsuarioIdOrUsuarioIsNullOrderByNomeAsc(usuario.getId()))
-                .thenReturn(Collections.emptyList());
-
+        when(categoriaRepository.existeCategoriaDuplicada(any(), any(), any())).thenReturn(false);
         when(categoriaRepository.saveAndFlush(any(Categoria.class)))
-                .thenThrow(new DataIntegrityViolationException("Simulação constraint"));
+                .thenThrow(new DataIntegrityViolationException("Constraint violation"));
 
-        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
-                () -> categoriaService.cadastrar(criarAtualizarDTO));
-
-        assertTrue(excecao.getMessage().contains(NOME_CATEGORIA));
+        assertThrows(ViolacaoDadosException.class, () -> categoriaService.cadastrar(criarAtualizarDTO));
     }
 
     /**
-     * Testa a ramificação do 'return null' no método
-     * {@link CategoriaService#cadastrar(CriarAtualizarCategoriaDTO)}.
+     * Testa a listagem paginada e filtrada no método
+     * {@link CategoriaService#listar(FiltroCategoriaDTO, Pageable)}.
      */
     @Test
-    @DisplayName("cadastrar: Quando banco lançar erro, testa o catch cobrindo o return null (Mock Estático)")
-    void testeCadastrar_ErroBanco_CobrindoReturnNull() {
+    @DisplayName("listar: Deve retornar a página de categorias filtradas")
+    @SuppressWarnings("unchecked")
+    void testeListar_ComSucesso() {
+        FiltroCategoriaDTO filtro = new FiltroCategoriaDTO(null, null, null);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Categoria> pagina = new PageImpl<>(List.of(categoriaSistema, categoriaUsuario));
+
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(categoriaRepository.findByUsuarioIdOrUsuarioIsNullOrderByNomeAsc(usuario.getId()))
-                .thenReturn(Collections.emptyList());
+        when(categoriaRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(pagina);
 
-        when(categoriaRepository.saveAndFlush(any(Categoria.class)))
-                .thenThrow(new DataIntegrityViolationException("Erro"));
+        Page<CategoriaDTO> resultado = categoriaService.listar(filtro, pageable);
 
-        try (MockedStatic<MetodosUteis> utilMock = mockStatic(MetodosUteis.class)) {
-            assertThrows(NullPointerException.class, () -> categoriaService.cadastrar(criarAtualizarDTO));
-            utilMock.verify(() -> MetodosUteis.validarUnicidade(true, Categoria.class.getSimpleName(), NOME_CATEGORIA));
-        }
+        assertEquals(2, resultado.getContent().size());
     }
 
     /**
-     * Testa a listagem mista no método {@link CategoriaService#listar()}.
+     * Testa a listagem de opções para seleção (Dropdowns) no método
+     * {@link CategoriaService#listarOpcoes()}.
      */
     @Test
-    @DisplayName("listar: Deve retornar as categorias do usuário e do sistema ordenadas")
-    void testeListar_DeveRetornarCategorias() {
+    @DisplayName("listarOpcoes: Deve retornar as opções simplificadas")
+    void testeListarOpcoes_ComSucesso() {
+        SelecaoCategoriaDTO selecao = new SelecaoCategoriaDTO(categoriaUsuario.getId(), NOME_CATEGORIA, TIPO, ICONE,
+                COR);
+
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(categoriaRepository.findByUsuarioIdOrUsuarioIsNullOrderByNomeAsc(usuario.getId()))
-                .thenReturn(List.of(categoriaSistema, categoriaUsuario));
+        when(categoriaRepository.buscarOpcoesParaSelecao(usuario.getId())).thenReturn(List.of(selecao));
 
-        List<CategoriaDTO> resultado = categoriaService.listar();
+        List<SelecaoCategoriaDTO> resultado = categoriaService.listarOpcoes();
 
-        assertEquals(2, resultado.size());
-        assertEquals(NOME_CATEGORIA_SISTEMA, resultado.get(0).nome());
-        assertEquals(NOME_CATEGORIA, resultado.get(1).nome());
+        assertEquals(1, resultado.size());
+        assertEquals(NOME_CATEGORIA, resultado.get(0).nome());
     }
 
     /**
-     * Testa atualização com sucesso no método
+     * Testa a busca pelo identificador no método
+     * {@link CategoriaService#buscarPorId(UUID)}.
+     */
+    @Test
+    @DisplayName("buscarPorId: Deve retornar a CategoriaDTO quando encontrada")
+    void testeBuscarPorId_ComSucesso() {
+        UUID id = categoriaUsuario.getId();
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+        when(categoriaRepository.buscarPorIdEUsuarioOuSistema(usuario.getId(), id))
+                .thenReturn(Optional.of(categoriaUsuario));
+
+        CategoriaDTO resultado = categoriaService.buscarPorId(id);
+
+        assertNotNull(resultado);
+        assertEquals(categoriaUsuario.getNome(), resultado.nome());
+    }
+
+    /**
+     * Testa a blindagem da consulta no método privado de validação
+     * quando a entidade não pertence ao usuário ou não existe.
+     */
+    @Test
+    @DisplayName("obterEntidadeValidada: Deve lançar EntityNotFoundException na falha do lambda orElseThrow")
+    void testeObterEntidadeValidada_NaoEncontrada_DeveLancarExcecao() {
+        UUID id = UUID.randomUUID();
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+        when(categoriaRepository.buscarPorIdEUsuarioOuSistema(usuario.getId(), id))
+                .thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> categoriaService.buscarPorId(id));
+    }
+
+    /**
+     * Testa a atualização com sucesso no método
      * {@link CategoriaService#atualizar(UUID, CriarAtualizarCategoriaDTO)}.
      */
     @Test
-    @DisplayName("atualizar: Quando categoria do usuário e dados válidos, deve atualizar")
-    void testeAtualizar_QuandoValido_DeveAtualizar() {
+    @DisplayName("atualizar: Deve atualizar categoria do usuário com sucesso")
+    void testeAtualizar_ComSucesso() {
         UUID id = categoriaUsuario.getId();
-        CriarAtualizarCategoriaDTO dtoNovo = new CriarAtualizarCategoriaDTO("Internet", TIPO, "wifi", COR);
-
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(categoriaRepository.findByUsuarioIdOrSistemaAndId(usuario.getId(), id))
+        when(categoriaRepository.buscarPorIdEUsuarioOuSistema(usuario.getId(), id))
                 .thenReturn(Optional.of(categoriaUsuario));
-
-        when(categoriaRepository.findByUsuarioIdOrUsuarioIsNullOrderByNomeAsc(usuario.getId()))
-                .thenReturn(List.of(categoriaUsuario));
+        when(categoriaRepository.existeCategoriaDuplicada(usuario.getId(), NOME_CATEGORIA, id))
+                .thenReturn(false);
         when(categoriaRepository.saveAndFlush(any(Categoria.class))).thenReturn(categoriaUsuario);
 
-        CategoriaDTO resultado = categoriaService.atualizar(id, dtoNovo);
+        CategoriaDTO resultado = categoriaService.atualizar(id, criarAtualizarDTO);
 
-        assertEquals("Internet", resultado.nome());
-        verify(categoriaRepository).saveAndFlush(any(Categoria.class));
-    }
-
-    /**
-     * Testa ramificação de conflito de IDs (outra categoria com o nome desejado) no
-     * atualizar.
-     */
-    @Test
-    @DisplayName("atualizar: Quando nome pertence a outra categoria na memória, deve lançar ViolacaoDadosException")
-    void testeAtualizar_QuandoNomeDuplicadoOutroId_DeveLancarExcecao() {
-        UUID id = categoriaUsuario.getId();
-
-        Categoria outraCategoria = new Categoria("Internet", TIPO, "wifi", COR, usuario);
-        outraCategoria.setId(UUID.randomUUID());
-
-        CriarAtualizarCategoriaDTO dtoConflito = new CriarAtualizarCategoriaDTO("Internet", TIPO, "wifi", COR);
-
-        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(categoriaRepository.findByUsuarioIdOrSistemaAndId(usuario.getId(), id))
-                .thenReturn(Optional.of(categoriaUsuario));
-
-        when(categoriaRepository.findByUsuarioIdOrUsuarioIsNullOrderByNomeAsc(usuario.getId()))
-                .thenReturn(List.of(outraCategoria));
-
-        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
-                () -> categoriaService.atualizar(id, dtoConflito));
-
-        assertTrue(excecao.getMessage().contains("Internet"));
-        verify(categoriaRepository, never()).saveAndFlush(any());
+        assertNotNull(resultado);
+        verify(categoriaRepository).saveAndFlush(categoriaUsuario);
     }
 
     /**
@@ -239,19 +250,32 @@ class CategoriaServiceTest {
      * {@link CategoriaService#atualizar(UUID, CriarAtualizarCategoriaDTO)}.
      */
     @Test
-    @DisplayName("atualizar: Quando tentar alterar categoria do sistema, deve lançar RegraDeNegocioException")
-    void testeAtualizar_QuandoCategoriaSistema_DeveLancarExcecao() {
+    @DisplayName("atualizar: Deve lançar exceção se tentar alterar categoria do sistema")
+    void testeAtualizar_CategoriaSistema_DeveLancarExcecao() {
         UUID id = categoriaSistema.getId();
-
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(categoriaRepository.findByUsuarioIdOrSistemaAndId(usuario.getId(), id))
+        when(categoriaRepository.buscarPorIdEUsuarioOuSistema(usuario.getId(), id))
                 .thenReturn(Optional.of(categoriaSistema));
 
-        RegraDeNegocioException excecao = assertThrows(RegraDeNegocioException.class,
-                () -> categoriaService.atualizar(id, criarAtualizarDTO));
+        assertThrows(RegraDeNegocioException.class, () -> categoriaService.atualizar(id, criarAtualizarDTO));
+        verify(categoriaRepository, never()).saveAndFlush(any(Categoria.class));
+    }
 
-        assertTrue(excecao.getMessage().contains("não podem ser alteradas"));
-        verify(categoriaRepository, never()).saveAndFlush(any());
+    /**
+     * Testa exclusão com sucesso no método
+     * {@link CategoriaService#excluir(UUID)}.
+     */
+    @Test
+    @DisplayName("excluir: Deve remover a categoria com sucesso")
+    void testeExcluir_ComSucesso() {
+        UUID id = categoriaUsuario.getId();
+        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
+        when(categoriaRepository.buscarPorIdEUsuarioOuSistema(usuario.getId(), id))
+                .thenReturn(Optional.of(categoriaUsuario));
+        when(transacaoService.existeTransacaoVinculadaACategoria(id)).thenReturn(false);
+
+        assertDoesNotThrow(() -> categoriaService.excluir(id));
+        verify(categoriaRepository).delete(categoriaUsuario);
     }
 
     /**
@@ -259,52 +283,32 @@ class CategoriaServiceTest {
      * {@link CategoriaService#excluir(UUID)}.
      */
     @Test
-    @DisplayName("excluir: Quando tentar excluir categoria do sistema, deve lançar RegraDeNegocioException")
-    void testeExcluir_QuandoCategoriaSistema_DeveLancarExcecao() {
+    @DisplayName("excluir: Deve lançar exceção se tentar excluir categoria do sistema")
+    void testeExcluir_CategoriaSistema_DeveLancarExcecao() {
         UUID id = categoriaSistema.getId();
-
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(categoriaRepository.findByUsuarioIdOrSistemaAndId(usuario.getId(), id))
+        when(categoriaRepository.buscarPorIdEUsuarioOuSistema(usuario.getId(), id))
                 .thenReturn(Optional.of(categoriaSistema));
 
-        RegraDeNegocioException excecao = assertThrows(RegraDeNegocioException.class,
-                () -> categoriaService.excluir(id));
-
-        assertTrue(excecao.getMessage().contains("Não é possível excluir"));
-        verify(categoriaRepository, never()).delete(any());
+        assertThrows(RegraDeNegocioException.class, () -> categoriaService.excluir(id));
+        verify(transacaoService, never()).existeTransacaoVinculadaACategoria(any());
+        verify(categoriaRepository, never()).delete(any(Categoria.class));
     }
 
     /**
-     * Testa exclusão com sucesso no método {@link CategoriaService#excluir(UUID)}.
+     * Testa validação de dependências no método
+     * {@link CategoriaService#excluir(UUID)}.
      */
     @Test
-    @DisplayName("excluir: Quando categoria do usuário, deve remover com sucesso")
-    void testeExcluir_QuandoValido_DeveDeletar() {
+    @DisplayName("excluir: Deve lançar ViolacaoDadosException quando possuir transações vinculadas")
+    void testeExcluir_ComTransacoesVinculadas_DeveLancarExcecao() {
         UUID id = categoriaUsuario.getId();
-
         when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(categoriaRepository.findByUsuarioIdOrSistemaAndId(usuario.getId(), id))
+        when(categoriaRepository.buscarPorIdEUsuarioOuSistema(usuario.getId(), id))
                 .thenReturn(Optional.of(categoriaUsuario));
+        when(transacaoService.existeTransacaoVinculadaACategoria(id)).thenReturn(true);
 
-        assertDoesNotThrow(() -> categoriaService.excluir(id));
-
-        verify(categoriaRepository).delete(categoriaUsuario);
-    }
-
-    /**
-     * Testa blindagem da consulta no método privado de validação.
-     */
-    @Test
-    @DisplayName("buscarCategoriaValidada: Quando não encontrada, deve lançar EntityNotFoundException")
-    void testeBuscarCategoriaValidada_QuandoNaoEncontrada_DeveLancarExcecao() {
-        UUID id = categoriaUsuario.getId();
-
-        when(contextoUsuarioService.getUsuarioAutenticado()).thenReturn(usuario);
-        when(categoriaRepository.findByUsuarioIdOrSistemaAndId(usuario.getId(), id)).thenReturn(Optional.empty());
-
-        EntityNotFoundException excecao = assertThrows(EntityNotFoundException.class,
-                () -> categoriaService.excluir(id));
-
-        assertTrue(excecao.getMessage().contains("não encontrada ou acesso negado"));
+        assertThrows(ViolacaoDadosException.class, () -> categoriaService.excluir(id));
+        verify(categoriaRepository, never()).delete(any(Categoria.class));
     }
 }

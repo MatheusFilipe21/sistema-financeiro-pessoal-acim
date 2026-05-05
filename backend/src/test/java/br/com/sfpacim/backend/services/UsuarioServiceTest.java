@@ -2,13 +2,16 @@ package br.com.sfpacim.backend.services;
 
 import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.mockito.stubbing.Answer;
+import org.springframework.context.MessageSource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import br.com.sfpacim.backend.dtos.usuario.DadosCadastroUsuarioDTO;
@@ -22,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -49,6 +53,9 @@ class UsuarioServiceTest {
     @Mock
     private PessoaRepository pessoaRepository;
 
+    @Mock
+    private MessageSource messageSource;
+
     @InjectMocks
     private UsuarioService usuarioService;
 
@@ -58,83 +65,95 @@ class UsuarioServiceTest {
     private static final String SENHA_HASH = "$2a$10$VUI0N7kPFDVnD6XZbLni6uyg3UF0RU/fQRNHnZb6oWhTGT3R9YqgK";
 
     /**
-     * Testa o método {@link UsuarioService#registrar(DadosCadastroUsuarioDTO)}.
-     * Valida o cenário de sucesso.
-     * 
-     * <p>
-     * Verifica se o serviço chama o PasswordEncoder e o Repository.saveAndFlush()
-     * corretamente e retorna o DTO esperado.
+     * Configura o cenário comum e padroniza as respostas do MessageSource.
      */
-    @Test
-    @DisplayName("registrar: Quando dados válidos forem fornecidos, deve hashear a senha e salvar o usuário")
-    void testeRegistrar_QuandoDadosValidos_DeveSalvarUsuario() {
-        DadosCadastroUsuarioDTO dadosCadastro = new DadosCadastroUsuarioDTO(NOME, EMAIL, SENHA);
+    @BeforeEach
+    void setUp() {
+        Answer<String> answerMensagemDinamica = invocation -> {
+            String codigo = invocation.getArgument(0);
+            if ("erro.usuario.email.duplicado".equals(codigo)) {
+                Object[] args = invocation.getArgument(1);
+                String emailArg = (args != null && args.length > 0) ? args[0].toString() : "";
+                return String.format("O e-mail: %s já está cadastrado.", emailArg);
+            }
+            return "Mensagem Mockada";
+        };
 
-        Usuario usuarioSalvo = new Usuario(UUID.randomUUID(), NOME, EMAIL, SENHA_HASH);
-
-        when(passwordEncoder.encode(SENHA)).thenReturn(SENHA_HASH);
-        when(usuarioRepository.saveAndFlush(any(Usuario.class))).thenReturn(usuarioSalvo);
-
-        UsuarioDTO resultadoDTO = usuarioService.registrar(dadosCadastro);
-
-        assertNotNull(resultadoDTO, "O DTO retornado não deve ser nulo");
-        assertEquals(NOME, resultadoDTO.nome(), "O nome no DTO de resposta deve ser o mesmo da entrada");
-        assertEquals(EMAIL, resultadoDTO.email(), "O e-mail no DTO de resposta deve ser o mesmo da entrada");
-
-        verify(passwordEncoder, times(1)).encode(SENHA);
-        verify(usuarioRepository, times(1)).saveAndFlush(any(Usuario.class));
-
-        verify(pessoaRepository).saveAndFlush(argThat(pessoa -> pessoa.getNome().equals(NOME) &&
-                pessoa.isTitular() == true));
+        Mockito.lenient()
+                .when(messageSource.getMessage(anyString(), any(Object[].class), any()))
+                .thenAnswer(answerMensagemDinamica);
     }
 
     /**
      * Testa o método {@link UsuarioService#registrar(DadosCadastroUsuarioDTO)}.
-     * Valida o cenário de falha por e-mail duplicado.
+     * Valida o cenário de sucesso.
      * 
      * <p>
-     * Verifica se o serviço captura a DataIntegrityViolationException (lançada
-     * pelo mock do repositório) e a relança como ViolacaoDadosException.
+     * Verifica se o serviço chama o PasswordEncoder, persiste o usuário e
+     * cria automaticamente a pessoa titular vinculada.
      */
     @Test
-    @DisplayName("registrar: Quando e-mail duplicado, deve lançar ViolacaoDadosException")
-    void testeRegistrar_QuandoEmailDuplicado_DeveLancarViolacaoDadosException() {
+    @DisplayName("registrar: Quando dados válidos, deve hashear a senha, salvar usuário e criar pessoa titular")
+    void testeRegistrar_QuandoDadosValidos_DeveSalvarUsuarioEPessoa() {
         DadosCadastroUsuarioDTO dadosCadastro = new DadosCadastroUsuarioDTO(NOME, EMAIL, SENHA);
+        Usuario usuarioSalvo = new Usuario(NOME, EMAIL, SENHA_HASH);
+        usuarioSalvo.setId(UUID.randomUUID());
 
+        when(usuarioRepository.existsByEmail(EMAIL)).thenReturn(false);
         when(passwordEncoder.encode(SENHA)).thenReturn(SENHA_HASH);
-        when(usuarioRepository.saveAndFlush(any(Usuario.class)))
-                .thenThrow(new DataIntegrityViolationException("E-mail duplicado"));
+        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioSalvo);
 
-        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class, () -> {
-            usuarioService.registrar(dadosCadastro);
-        });
+        UsuarioDTO resultadoDTO = usuarioService.registrar(dadosCadastro);
 
-        assertEquals(excecao.getMessage(), String.format("O e-mail: %s já está cadastrado.", EMAIL));
-        verify(pessoaRepository, never()).saveAndFlush(any());
+        assertNotNull(resultadoDTO);
+        assertEquals(NOME, resultadoDTO.nome());
+        assertEquals(EMAIL, resultadoDTO.email());
+
+        verify(usuarioRepository).existsByEmail(EMAIL);
+        verify(passwordEncoder, times(1)).encode(SENHA);
+        verify(usuarioRepository).save(any(Usuario.class));
+        verify(pessoaRepository).save(argThat(pessoa -> pessoa.getNome().equals(NOME) && pessoa.isTitular()));
+    }
+
+    /**
+     * Testa o método {@link UsuarioService#registrar(DadosCadastroUsuarioDTO)}.
+     * Valida o cenário de falha por e-mail duplicado (Verificação Proativa).
+     * 
+     * <p>
+     * Aplica a correção java:S5778 isolando a chamada que lança exceção.
+     */
+    @Test
+    @DisplayName("registrar: Quando e-mail já existe, deve lançar ViolacaoDadosException")
+    void testeRegistrar_QuandoEmailDuplicado_DeveLancarExcecao() {
+        DadosCadastroUsuarioDTO dadosCadastro = new DadosCadastroUsuarioDTO(NOME, EMAIL, SENHA);
+        when(usuarioRepository.existsByEmail(EMAIL)).thenReturn(true);
+
+        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
+                () -> usuarioService.registrar(dadosCadastro));
+
+        assertEquals(String.format("O e-mail: %s já está cadastrado.", EMAIL), excecao.getMessage());
+        verify(usuarioRepository, never()).save(any());
+        verify(pessoaRepository, never()).save(any());
     }
 
     /**
      * Testa o método {@link UsuarioService#atualizarSenha(Usuario, String)}.
      * Valida o fluxo de alteração de senha.
-     *
-     * <p>
-     * Verifica se a nova senha é encriptada e se a entidade é salva
-     * no repositório com o novo hash.
      */
     @Test
     @DisplayName("atualizarSenha: Deve gerar novo hash e salvar as alterações")
     void testeAtualizarSenha_DeveCodificarESalvar() {
         String novaSenha = "NovaSenha123";
-        String novoHash = "$2a$10$VUI0N7kPFDVnD6XZbLni6uyg3UF0RU/fQRNHnZb6oWhTGT3R9YqgG";
-        Usuario usuarioMock = new Usuario(UUID.randomUUID(), NOME, EMAIL, SENHA_HASH);
+        String novoHash = "$2a$10$HASH_NOVO";
+        Usuario usuarioMock = new Usuario(NOME, EMAIL, SENHA_HASH);
+        usuarioMock.setId(UUID.randomUUID());
 
         when(passwordEncoder.encode(novaSenha)).thenReturn(novoHash);
 
         usuarioService.atualizarSenha(usuarioMock, novaSenha);
 
-        assertEquals(novoHash, usuarioMock.getSenha(), "A senha do objeto deve ser atualizada para o novo hash");
-
+        assertEquals(novoHash, usuarioMock.getSenha());
         verify(passwordEncoder).encode(novaSenha);
-        verify(usuarioRepository).saveAndFlush(usuarioMock);
+        verify(usuarioRepository).save(usuarioMock);
     }
 }

@@ -11,6 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -21,7 +24,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import br.com.sfpacim.backend.config.JacksonConfig;
 import br.com.sfpacim.backend.dtos.pessoa.CriarAtualizarPessoaDTO;
+import br.com.sfpacim.backend.dtos.pessoa.FiltroPessoaDTO;
 import br.com.sfpacim.backend.dtos.pessoa.PessoaDTO;
+import br.com.sfpacim.backend.dtos.pessoa.SelecaoPessoaDTO;
 import br.com.sfpacim.backend.exceptions.TratadorDeErrosGlobal;
 import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 import br.com.sfpacim.backend.services.PessoaService;
@@ -75,12 +80,7 @@ class PessoaControllerTest {
     private static final UUID ID_PESSOA = UUID.randomUUID();
 
     /**
-     * Testa o endpoint POST /pessoas.
-     * Valida o cenário de sucesso.
-     *
-     * <p>
-     * Verifica se, ao enviar dados válidos, o controlador retorna HTTP 201
-     * (Created), o DTO criado e o cabeçalho 'Location'.
+     * Testa o método {@link PessoaController#cadastrar(CriarAtualizarPessoaDTO)}.
      */
     @Test
     @DisplayName("cadastrar: Quando dados válidos, deve retornar HTTP 201 Created")
@@ -102,10 +102,8 @@ class PessoaControllerTest {
     }
 
     /**
-     * Testa a validação do endpoint POST /pessoas (Nome Obrigatório).
-     *
-     * <p>
-     * Verifica se o @Valid barra nomes em branco, retornando HTTP 422.
+     * Testa a validação do DTO no método
+     * {@link PessoaController#cadastrar(CriarAtualizarPessoaDTO)}.
      */
     @Test
     @DisplayName("cadastrar: Quando nome em branco (DTO Validation), deve retornar HTTP 422")
@@ -120,11 +118,8 @@ class PessoaControllerTest {
     }
 
     /**
-     * Testa o erro de conflito (Nome Duplicado) no cadastro.
-     *
-     * <p>
-     * Simula o serviço lançando ViolacaoDadosException e verifica se o
-     * TratadorDeErrosGlobal converte corretamente para HTTP 409 (Conflict).
+     * Testa o conflito no método
+     * {@link PessoaController#cadastrar(CriarAtualizarPessoaDTO)}.
      */
     @Test
     @DisplayName("cadastrar: Quando nome duplicado, deve retornar HTTP 409 Conflict")
@@ -142,26 +137,75 @@ class PessoaControllerTest {
     }
 
     /**
-     * Testa o endpoint GET /pessoas.
-     * Valida o cenário de sucesso.
+     * Testa o método {@link PessoaController#listar(FiltroPessoaDTO, Pageable)}.
      */
     @Test
-    @DisplayName("listar: Deve retornar HTTP 200 OK e a lista de pessoas")
-    void testeListar_DeveRetornarLista() throws Exception {
-        List<PessoaDTO> lista = List.of(new PessoaDTO(ID_PESSOA, NOME, TITULAR));
+    @DisplayName("listar: Deve retornar HTTP 200 OK e a paginação de pessoas")
+    void testeListar_DeveRetornarPaginacao200() throws Exception {
+        PessoaDTO dto = new PessoaDTO(ID_PESSOA, NOME, TITULAR);
+        Page<PessoaDTO> pagina = new PageImpl<>(List.of(dto));
 
-        when(pessoaService.listar()).thenReturn(lista);
+        when(pessoaService.listar(any(FiltroPessoaDTO.class), any(Pageable.class))).thenReturn(pagina);
 
         mockMvc.perform(get("/pessoas")
                 .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.itens[0].id").value(ID_PESSOA.toString()))
+                .andExpect(jsonPath("$.itens[0].nome").value(NOME))
+                .andExpect(jsonPath("$.paginaAtual").value(0));
+    }
+
+    /**
+     * Testa o método {@link PessoaController#listarOpcoesSelecao(Boolean)}.
+     */
+    @Test
+    @DisplayName("listarOpcoesSelecao: Deve retornar HTTP 200 OK e a lista simplificada")
+    void testeListarOpcoesSelecao_DeveRetornarLista200() throws Exception {
+        SelecaoPessoaDTO selecao = new SelecaoPessoaDTO(ID_PESSOA, NOME);
+
+        when(pessoaService.listarOpcoes(any())).thenReturn(List.of(selecao));
+
+        mockMvc.perform(get("/pessoas/selecao")
+                .contentType(MediaType.APPLICATION_JSON)
+                .param("titular", "true"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(ID_PESSOA.toString()))
                 .andExpect(jsonPath("$[0].nome").value(NOME));
     }
 
     /**
-     * Testa o endpoint PUT /pessoas/{id}.
-     * Valida o cenário de sucesso.
+     * Testa o método {@link PessoaController#buscarPorId(UUID)}.
+     */
+    @Test
+    @DisplayName("buscarPorId: Quando encontrada, deve retornar HTTP 200 OK e o DTO")
+    void testeBuscarPorId_QuandoValido_DeveRetornar200() throws Exception {
+        PessoaDTO dtoSaida = new PessoaDTO(ID_PESSOA, NOME, TITULAR);
+
+        when(pessoaService.buscarPorId(ID_PESSOA)).thenReturn(dtoSaida);
+
+        mockMvc.perform(get("/pessoas/{id}", ID_PESSOA)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(ID_PESSOA.toString()))
+                .andExpect(jsonPath("$.nome").value(NOME));
+    }
+
+    /**
+     * Testa o erro 404 no método {@link PessoaController#buscarPorId(UUID)}.
+     */
+    @Test
+    @DisplayName("buscarPorId: Quando não encontrada, deve retornar HTTP 404 Not Found")
+    void testeBuscarPorId_QuandoNaoEncontrado_DeveRetornar404() throws Exception {
+        when(pessoaService.buscarPorId(ID_PESSOA)).thenThrow(new EntityNotFoundException("Não encontrado"));
+
+        mockMvc.perform(get("/pessoas/{id}", ID_PESSOA)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    /**
+     * Testa o método
+     * {@link PessoaController#atualizar(UUID, CriarAtualizarPessoaDTO)}.
      */
     @Test
     @DisplayName("atualizar: Quando válido, deve retornar HTTP 200 OK com dados atualizados")
@@ -181,10 +225,8 @@ class PessoaControllerTest {
     }
 
     /**
-     * Testa o endpoint PUT /pessoas/{id} quando o registro não existe.
-     *
-     * <p>
-     * Simula EntityNotFoundException e espera HTTP 404 (Not Found).
+     * Testa o erro 404 no método
+     * {@link PessoaController#atualizar(UUID, CriarAtualizarPessoaDTO)}.
      */
     @Test
     @DisplayName("atualizar: Quando não encontrado, deve retornar HTTP 404")
@@ -202,8 +244,7 @@ class PessoaControllerTest {
     }
 
     /**
-     * Testa o endpoint DELETE /pessoas/{id}.
-     * Valida o cenário de sucesso.
+     * Testa o método {@link PessoaController#excluir(UUID)}.
      */
     @Test
     @DisplayName("excluir: Quando válido, deve retornar HTTP 204 No Content")
@@ -213,11 +254,8 @@ class PessoaControllerTest {
     }
 
     /**
-     * Testa o endpoint DELETE /pessoas/{id} quando há violação de integridade.
-     * (Ex: Tentar excluir pessoa com contas vinculadas).
-     *
-     * <p>
-     * Espera HTTP 409 Conflict.
+     * Testa os vínculos de integridade no método
+     * {@link PessoaController#excluir(UUID)}.
      */
     @Test
     @DisplayName("excluir: Quando houver vínculos (Regra de Negócio), deve retornar HTTP 409")

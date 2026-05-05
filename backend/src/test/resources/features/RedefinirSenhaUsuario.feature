@@ -44,7 +44,7 @@ Funcionalidade: Redefinição de Senha
     E o campo "erro.rota" na resposta deve ser "/api/autenticacao/redefinir-senha"
     E o corpo da resposta deve conter o campo "erros"
     E o campo "erros.campo" deve conter o item "token"
-    E o campo "erros.mensagem" deve conter o item "O token é obrigatório"
+    E o campo "erros.mensagem" deve conter o item "O token é obrigatório."
     E o campo "erros.campo" deve conter o item "senha"
     E o campo "erros.mensagem" deve conter o item "A senha é obrigatória."
     E o campo "erros.mensagem" deve conter o item "A senha deve ter no mínimo 8 caracteres, contendo ao menos uma letra maiúscula, uma minúscula e um número."

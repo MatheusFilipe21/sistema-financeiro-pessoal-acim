@@ -26,6 +26,7 @@ import br.com.sfpacim.backend.dtos.usuario.DadosCadastroUsuarioDTO;
 import br.com.sfpacim.backend.dtos.usuario.UsuarioDTO;
 import br.com.sfpacim.backend.exceptions.RegraDeNegocioException;
 import br.com.sfpacim.backend.exceptions.TratadorDeErrosGlobal;
+import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 import br.com.sfpacim.backend.services.AutenticacaoService;
 import br.com.sfpacim.backend.services.TokenService;
 import br.com.sfpacim.backend.services.UsuarioService;
@@ -44,8 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 
  * <p>
  * Esta classe utiliza {@link WebMvcTest} para carregar apenas a camada web
- * (MVC) e testa o controlador de forma isolada, simulando (mockando) o
- * UsuarioService.
+ * (MVC) e testa o controlador de forma isolada, simulando as dependências.
  *
  * @author Matheus F. N. Pereira
  */
@@ -82,15 +82,9 @@ class AutenticacaoControllerTest {
     private static final String TOKEN_JWT = "eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJTRlAtQUNJTSBBUEkiLCJzdWIiOiJtYXRoZXVzZm5wZXJlaXJhQGdtYWlsLmNvbSIsImlhdCI6MTc2MzMwNjE3NiwiZXhwIjoxNzYzMzM0OTc2fQ.e90EOyfiPFUE4Mu5LgbZEtrYnQIGzueecgm4G-fWIKTtSr7IuxC1X_hBkltJBRxHo9ocTvQFje44r0g84TqaiQ";
 
     /**
-     * Testa o endpoint POST /autenticacao/cadastro.
-     * Valida o cenário de sucesso.
-     * 
-     * <p>
-     * Verifica se, ao enviar dados válidos, o controlador retorna HTTP 201
-     * (Created),
-     * o DTO do usuário no corpo e o cabeçalho 'Location'.
-     *
-     * @throws Exception se ocorrer um erro durante a execução do MockMvc.
+     * Testa o método
+     * {@link AutenticacaoController#cadastrar(DadosCadastroUsuarioDTO)}.
+     * Valida o cenário de sucesso garantindo a geração do Location.
      */
     @Test
     @DisplayName("cadastrar: Quando dados válidos, deve retornar HTTP 201 Created e o UsuarioDTO")
@@ -113,13 +107,28 @@ class AutenticacaoControllerTest {
     }
 
     /**
-     * Testa a validação do DTO (Campo em Branco).
-     * 
-     * <p>
-     * Verifica se, ao enviar um nome que não atende ao @NotBlank,
-     * o controlador (via @Valid e TratadorDeErros) retorna HTTP 422.
-     *
-     * @throws Exception se ocorrer um erro durante a execução do MockMvc.
+     * Testa o método
+     * {@link AutenticacaoController#cadastrar(DadosCadastroUsuarioDTO)}.
+     * Valida o retorno do TratadorDeErrosGlobal para exceções de unicidade.
+     */
+    @Test
+    @DisplayName("cadastrar: Quando email duplicado, deve retornar HTTP 409 Conflict")
+    void testeCadastrar_QuandoEmailDuplicado_DeveRetornar409() throws Exception {
+        DadosCadastroUsuarioDTO dadosCadastro = new DadosCadastroUsuarioDTO(NOME, EMAIL, SENHA);
+        String jsonRequisicao = objectMapper.writeValueAsString(dadosCadastro);
+
+        when(usuarioService.registrar(any(DadosCadastroUsuarioDTO.class)))
+                .thenThrow(new ViolacaoDadosException("O e-mail já está em uso."));
+
+        mockMvc.perform(post("/autenticacao/cadastro")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonRequisicao))
+                .andExpect(status().isConflict());
+    }
+
+    /**
+     * Testa a validação do DTO no método
+     * {@link AutenticacaoController#cadastrar(DadosCadastroUsuarioDTO)}.
      */
     @Test
     @DisplayName("cadastrar: Quando nome estiver em branco (DTO Validation), deve retornar HTTP 422")
@@ -134,13 +143,8 @@ class AutenticacaoControllerTest {
     }
 
     /**
-     * Testa a validação do DTO (E-mail Inválido).
-     * 
-     * <p>
-     * Verifica se, ao enviar um e-mail que não atende ao @Email,
-     * o controlador (via @Valid e TratadorDeErros) retorna HTTP 422.
-     *
-     * @throws Exception se ocorrer um erro durante a execução do MockMvc.
+     * Testa a validação do DTO no método
+     * {@link AutenticacaoController#cadastrar(DadosCadastroUsuarioDTO)}.
      */
     @Test
     @DisplayName("cadastrar: Quando e-mail for inválido (DTO Validation), deve retornar HTTP 422")
@@ -156,13 +160,8 @@ class AutenticacaoControllerTest {
     }
 
     /**
-     * Testa a validação do DTO (Senha Fraca).
-     * 
-     * <p>
-     * Verifica se, ao enviar uma senha que não atende ao @Pattern,
-     * o controlador (via @Valid e TratadorDeErros) retorna HTTP 422.
-     *
-     * @throws Exception se ocorrer um erro durante a execução do MockMvc.
+     * Testa a validação do DTO no método
+     * {@link AutenticacaoController#cadastrar(DadosCadastroUsuarioDTO)}.
      */
     @Test
     @DisplayName("cadastrar: Quando senha for inválida (DTO Validation), deve retornar HTTP 422")
@@ -177,10 +176,7 @@ class AutenticacaoControllerTest {
     }
 
     /**
-     * Testa o endpoint POST /autenticacao/login.
-     * Valida o cenário de sucesso (HTTP 200 OK).
-     *
-     * @throws Exception se ocorrer um erro durante a execução do MockMvc.
+     * Testa o método {@link AutenticacaoController#login(DadosAutenticacaoDTO)}.
      */
     @Test
     @DisplayName("login: Quando credenciais válidas, deve retornar HTTP 200 OK e o Token JWT")
@@ -199,10 +195,7 @@ class AutenticacaoControllerTest {
     }
 
     /**
-     * Testa o endpoint POST /autenticacao/login (Falha de Autenticação).
-     * Valida o cenário de credenciais inválidas (HTTP 401 Unauthorized).
-     *
-     * @throws Exception se ocorrer um erro durante a execução do MockMvc.
+     * Testa o método {@link AutenticacaoController#login(DadosAutenticacaoDTO)}.
      */
     @Test
     @DisplayName("login: Quando credenciais inválidas (auth failure), deve retornar HTTP 401 Unauthorized")
@@ -220,10 +213,8 @@ class AutenticacaoControllerTest {
     }
 
     /**
-     * Testa o endpoint POST /autenticacao/login (Validação).
-     * Valida o cenário de DTO inválido (ex: e-mail em branco).
-     *
-     * @throws Exception se ocorrer um erro durante a execução do MockMvc.
+     * Testa a validação do DTO no método
+     * {@link AutenticacaoController#login(DadosAutenticacaoDTO)}.
      */
     @Test
     @DisplayName("login: Quando dados de entrada inválidos (DTO Validation), deve retornar HTTP 422")
@@ -238,14 +229,8 @@ class AutenticacaoControllerTest {
     }
 
     /**
-     * Testa o endpoint POST /autenticacao/recuperar-senha.
-     * Valida o cenário de sucesso (Solicitação aceita).
-     *
-     * <p>
-     * Verifica se, ao enviar um e-mail válido, o controlador retorna HTTP 204
-     * (No Content) e corpo vazio, indicando que o processo iniciou.
-     *
-     * @throws Exception se ocorrer um erro durante a execução do MockMvc.
+     * Testa o método
+     * {@link AutenticacaoController#recuperarSenha(DadosRecuperacaoSenhaDTO)}.
      */
     @Test
     @DisplayName("recuperarSenha: Quando e-mail válido, deve retornar HTTP 204 No Content")
@@ -261,13 +246,8 @@ class AutenticacaoControllerTest {
     }
 
     /**
-     * Testa a validação do endpoint (E-mail Inválido).
-     *
-     * <p>
-     * Verifica se, ao enviar um e-mail com formato inválido no DTO,
-     * o controlador retorna HTTP 422 (Unprocessable Entity).
-     *
-     * @throws Exception se ocorrer um erro durante a execução do MockMvc.
+     * Testa a validação do DTO no método
+     * {@link AutenticacaoController#recuperarSenha(DadosRecuperacaoSenhaDTO)}.
      */
     @Test
     @DisplayName("recuperarSenha: Quando e-mail inválido (DTO Validation), deve retornar HTTP 422")
@@ -282,12 +262,8 @@ class AutenticacaoControllerTest {
     }
 
     /**
-     * Testa o endpoint POST /autenticacao/redefinir-senha.
-     * Valida o cenário de sucesso.
-     *
-     * <p>
-     * Verifica se, ao enviar um token e uma nova senha válida, o controlador
-     * chama o serviço e retorna HTTP 204 (No Content).
+     * Testa o método
+     * {@link AutenticacaoController#redefinirSenha(DadosRedefinicaoSenhaDTO)}.
      */
     @Test
     @DisplayName("redefinirSenha: Quando dados válidos, deve retornar HTTP 204 No Content")
@@ -303,11 +279,8 @@ class AutenticacaoControllerTest {
     }
 
     /**
-     * Testa a validação do endpoint (Senha Fraca).
-     *
-     * <p>
-     * Verifica se o @Valid barra uma senha que não atende aos requisitos de
-     * complexidade.
+     * Testa a validação do DTO no método
+     * {@link AutenticacaoController#redefinirSenha(DadosRedefinicaoSenhaDTO)}.
      */
     @Test
     @DisplayName("redefinirSenha: Quando senha fraca (DTO Validation), deve retornar HTTP 422")
@@ -322,7 +295,8 @@ class AutenticacaoControllerTest {
     }
 
     /**
-     * Testa a validação do endpoint (Token em branco).
+     * Testa a validação do DTO no método
+     * {@link AutenticacaoController#redefinirSenha(DadosRedefinicaoSenhaDTO)}.
      */
     @Test
     @DisplayName("redefinirSenha: Quando token em branco (DTO Validation), deve retornar HTTP 422")
@@ -337,12 +311,8 @@ class AutenticacaoControllerTest {
     }
 
     /**
-     * Testa o erro de Regra de Negócio (Token Inválido/Expirado).
-     *
-     * <p>
-     * Simula o serviço lançando RegraDeNegocioException e verifica se o
-     * TratadorDeErrosGlobal converte corretamente para 422 (Unprocessable Entity),
-     * conforme definimos na arquitetura.
+     * Testa o erro de negócio no método
+     * {@link AutenticacaoController#redefinirSenha(DadosRedefinicaoSenhaDTO)}.
      */
     @Test
     @DisplayName("redefinirSenha: Quando serviço lança RegraDeNegocioException, deve retornar HTTP 422")

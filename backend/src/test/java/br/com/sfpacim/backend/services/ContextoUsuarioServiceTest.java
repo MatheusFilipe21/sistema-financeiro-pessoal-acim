@@ -9,7 +9,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
+import org.springframework.context.MessageSource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,6 +24,7 @@ import br.com.sfpacim.backend.repositories.UsuarioRepository;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -47,6 +51,9 @@ class ContextoUsuarioServiceTest {
     @Mock
     private Authentication authentication;
 
+    @Mock
+    private MessageSource messageSource;
+
     @InjectMocks
     private ContextoUsuarioService contextoUsuarioService;
 
@@ -57,8 +64,8 @@ class ContextoUsuarioServiceTest {
      * Configura o ambiente de teste antes de cada execução.
      *
      * <p>
-     * Inicializa o objeto {@link Usuario} e configura o mock do
-     * SecurityContextHolder para utilizar nosso contexto simulado.
+     * Inicializa o objeto {@link Usuario}, configura o mock do
+     * SecurityContextHolder e padroniza as respostas do MessageSource.
      */
     @BeforeEach
     void setUp() {
@@ -66,6 +73,21 @@ class ContextoUsuarioServiceTest {
                 "matheusfnpereira@gmail.com", "$2a$10$VUI0N7kPFDVnD6XZbLni6uyg3UF0RU/fQRNHnZb6oWhTGT3R9YqgK");
 
         SecurityContextHolder.setContext(securityContext);
+
+        Answer<String> answerMensagemDinamica = invocation -> {
+            String codigo = invocation.getArgument(0);
+            if ("erro.seguranca.contexto.vazio".equals(codigo)) {
+                return "Não há usuário autenticado no contexto de segurança.";
+            }
+            if ("erro.seguranca.usuario.nao-encontrado".equals(codigo)) {
+                return "Usuário autenticado não encontrado na base de dados.";
+            }
+            return "Mensagem Mockada";
+        };
+
+        Mockito.lenient()
+                .when(messageSource.getMessage(anyString(), any(), any()))
+                .thenAnswer(answerMensagemDinamica);
     }
 
     /**
