@@ -1,10 +1,16 @@
 package br.com.sfpacim.backend.utils;
 
-import java.text.Collator;
-import java.text.Normalizer;
 import java.util.List;
-import java.util.Locale;
-import java.util.regex.Pattern;
+
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Predicate;
+
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 
@@ -15,11 +21,6 @@ import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 public class MetodosUteis {
 
     /**
-     * Padrão para extrair diacríticos de uma String.
-     */
-    private static final Pattern DIACRITICOS = Pattern.compile("\\p{M}");
-
-    /**
      * Construtor privado para evitar instanciação da classe utilitária.
      */
     private MetodosUteis() {
@@ -27,147 +28,216 @@ public class MetodosUteis {
     }
 
     /**
-     * Retorna uma instância de {@link Collator} configurada para o Brasil.
+     * Busca a mensagem no arquivo properties injetando parâmetros dinâmicos.
+     * Substitui o uso de String.format() para manter compatibilidade com i18n.
      *
-     * <p>
-     * Ignora acentuação e diferença entre maiúsculas e minúsculas.
-     * Ideal para ordenação e comparação de Strings de forma natural.
-     *
-     * @return O {@link Collator} devidamente configurado.
+     * @param messageSource A instância do MessageSource.
+     * @param chave         A chave da mensagem no arquivo properties.
+     * @param args          Argumentos varargs para substituir {0}, {1}, etc.
+     * @return O texto traduzido e formatado, ou a chave como fallback.
      * 
      * @author Matheus F. N. Pereira
      */
-    public static Collator collator() {
-        Locale locale = Locale.of("pt", "BR");
-        Collator collator = Collator.getInstance(locale);
-        collator.setStrength(Collator.PRIMARY);
-        return collator;
-    }
+    public static String obterMensagem(MessageSource messageSource, String chave, Object... args) {
+        if (chave == null) {
+            return null;
+        }
 
-    /**
-     * Valida a regra de unicidade de um registro. Lança exceção padronizada se
-     * houver duplicidade.
-     *
-     * <p>
-     * Exemplo de saída: "Já existe uma pessoa cadastrada com o nome 'Matheus'."
-     *
-     * @param existeDuplicado Booleano indicando se a duplicidade foi detectada no
-     *                        banco.
-     * @param nomeEntidade    O tipo do registro no feminino (ex: "pessoa",
-     *                        "categoria", "conta").
-     * @param valorDuplicado  O nome que causou o conflito.
-     * 
-     * @throws ViolacaoDadosException Se o parâmetro existeDuplicado for verdadeiro.
-     * 
-     * @author Matheus F. N. Pereira
-     */
-    public static void validarUnicidade(boolean existeDuplicado, String nomeEntidade, String valorDuplicado) {
-        if (existeDuplicado) {
-            throw new ViolacaoDadosException(
-                    String.format("Já existe uma %s cadastrada com o nome '%s'.", nomeEntidade, valorDuplicado));
+        try {
+            return messageSource.getMessage(chave, args, LocaleContextHolder.getLocale());
+        } catch (Exception _) {
+            return chave;
         }
     }
 
     /**
-     * Valida a regra de unicidade incluindo um contexto adicional de pertencimento.
+     * Busca a mensagem no arquivo properties com base no idioma atual da
+     * requisição.
      *
-     * <p>
-     * Exemplo de saída: "Já existe uma conta 'Nubank' cadastrada para Matheus."
-     *
-     * @param existeDuplicado   Booleano indicando duplicidade.
-     * @param nomeEntidade      O tipo do registro (ex: "conta").
-     * @param valorDuplicado    O nome que causou o conflito.
-     * @param contextoAdicional Complemento para a mensagem indicando a posse.
-     * 
-     * @throws ViolacaoDadosException Se o parâmetro existeDuplicado for verdadeiro.
+     * @param messageSource A instância do MessageSource.
+     * @param chave         A chave da mensagem no arquivo properties.
+     * @return O texto traduzido ou a própria chave como fallback caso não seja
+     *         encontrada.
      * 
      * @author Matheus F. N. Pereira
      */
-    public static void validarUnicidade(boolean existeDuplicado, String nomeEntidade, String valorDuplicado,
-            String contextoAdicional) {
+    public static String obterMensagem(MessageSource messageSource, String chave) {
+        return obterMensagem(messageSource, chave, (Object[]) null);
+    }
+
+    /**
+     * Constrói a exceção de violação de dados com a mensagem traduzida e formatada.
+     * Utilizado para ser lançado (throw) explicitamente em blocos catch.
+     *
+     * @param messageSource      A instância do MessageSource.
+     * @param classeEntidade     A classe da entidade para extração do nome.
+     * @param chaveErro          A chave da mensagem de erro principal.
+     * @param argsComplementares Argumentos dinâmicos para substituir {1}, {2}, etc.
+     * @return Uma instância de {@link ViolacaoDadosException} pronta para ser
+     *         lançada.
+     * 
+     * @author Matheus F. N. Pereira
+     */
+    public static ViolacaoDadosException gerarExcecaoUnicidade(MessageSource messageSource, Class<?> classeEntidade,
+            String chaveErro, Object... argsComplementares) {
+
+        String prefixo = classeEntidade.getSimpleName().toLowerCase();
+        String chaveNomeEntidade = prefixo + ".nome.singular";
+        String nomeEntidadeTraduzida = obterMensagem(messageSource, chaveNomeEntidade);
+
+        Object[] argumentosFinais = new Object[argsComplementares.length + 1];
+        argumentosFinais[0] = nomeEntidadeTraduzida;
+
+        if (argsComplementares.length > 0) {
+            System.arraycopy(argsComplementares, 0, argumentosFinais, 1, argsComplementares.length);
+        }
+
+        String mensagem = obterMensagem(messageSource, chaveErro, argumentosFinais);
+
+        return new ViolacaoDadosException(mensagem);
+    }
+
+    /**
+     * Valida a regra de unicidade proativamente. Se duplicado, lança a exceção.
+     * 
+     * @param messageSource      A instância do MessageSource.
+     * @param existeDuplicado    O resultado da validação no banco.
+     * @param classeEntidade     A classe da entidade alvo.
+     * @param chaveErro          A chave da mensagem de erro principal.
+     * @param argsComplementares Argumentos dinâmicos complementares.
+     * 
+     * @author Matheus F. N. Pereira
+     */
+    public static void validarUnicidade(MessageSource messageSource, boolean existeDuplicado, Class<?> classeEntidade,
+            String chaveErro, Object... argsComplementares) {
+
         if (existeDuplicado) {
-            throw new ViolacaoDadosException(
-                    String.format("Já existe uma %s '%s' cadastrada para %s.", nomeEntidade, valorDuplicado,
-                            contextoAdicional));
+            throw gerarExcecaoUnicidade(messageSource, classeEntidade, chaveErro, argsComplementares);
         }
     }
 
     /**
      * Valida se existem dependências ativas impedindo uma exclusão.
      *
-     * <p>
-     * Caso a lista de dependências não esteja vazia, a execução é interrompida
-     * e uma exceção de regra de negócio é lançada com uma mensagem formatada
-     * dinamicamente baseada nos itens da lista.
-     *
-     * @param nomeAlvo     O nome da entidade que está sendo validada (ex:
-     *                     "Matheus").
-     * @param dependencias A lista contendo os nomes das dependências encontradas.
+     * @param messageSource A instância do MessageSource para buscar a tradução.
+     * @param nomeAlvo      O nome da entidade que está sendo validada (ex:
+     *                      "Matheus").
+     * @param dependencias  A lista contendo os nomes das dependências encontradas.
      * 
      * @throws ViolacaoDadosException Se a lista de dependências não estiver vazia.
      * 
      * @author Matheus F. N. Pereira
      */
-    public static void validarDependenciasExclusao(String nomeAlvo, List<String> dependencias) {
+    public static void validarDependenciasExclusao(MessageSource messageSource, String nomeAlvo,
+            List<String> dependencias) {
         if (dependencias == null || dependencias.isEmpty()) {
             return;
         }
 
-        String mensagemErro = gerarMensagemDependenciasExclusao(nomeAlvo, dependencias);
+        String mensagemErro = gerarMensagemDependenciasExclusao(messageSource, nomeAlvo, dependencias);
         throw new ViolacaoDadosException(mensagemErro);
     }
 
     /**
      * Gera a mensagem de erro dinâmica gramaticalmente correta.
      *
-     * <p>
-     * Concatena os elementos da lista utilizando vírgulas e a conjunção "e"
-     * para o último elemento (ex: "Contas, Cartões e Transações").
-     *
-     * @param nomeAlvo     O nome da entidade alvo da exclusão.
-     * @param dependencias A lista de dependências ativas.
-     * 
+     * @param messageSource A instância do MessageSource para buscar a tradução.
+     * @param nomeAlvo      O nome da entidade alvo da exclusão.
+     * @param dependencias  A lista de dependências ativas.
      * @return A mensagem de erro formatada para exibição ao usuário.
      * 
      * @author Matheus F. N. Pereira
      */
-    private static String gerarMensagemDependenciasExclusao(String nomeAlvo, List<String> dependencias) {
+    private static String gerarMensagemDependenciasExclusao(MessageSource messageSource, String nomeAlvo,
+            List<String> dependencias) {
         int ultimoIndice = dependencias.size() - 1;
 
         String textoDependencias = ultimoIndice == 0
                 ? dependencias.get(0)
                 : String.join(", ", dependencias.subList(0, ultimoIndice)) + " e " + dependencias.get(ultimoIndice);
 
-        return String.format(
-                "Não é possível excluir '%s' pois existem %s vinculadas. Remova os registros vinculados primeiro.",
-                nomeAlvo, textoDependencias);
+        return obterMensagem(messageSource, "erro.exclusao.dependencias", nomeAlvo, textoDependencias);
     }
 
     /**
-     * Normaliza uma string para fins de comparação e busca.
+     * Adiciona um predicado de busca textual parcial (LIKE) ignorando acentos e
+     * caixa. Só adiciona o predicado se o termo de busca for válido.
      *
-     * <p>
-     * O processo envolve:
-     * 1. Remover espaços em branco nas extremidades.
-     * 2. Converter para caixa baixa (lowercase).
-     * 3. Decompor caracteres acentuados (NFD) e remover os diacríticos.
-     * Exemplo: " São Paulo " vira "sao paulo".
-     * 
-     * @param texto O texto original.
-     * 
-     * @return O texto normalizado ou string vazia se nulo.
+     * @param predicates  A lista de predicados atual.
+     * @param cb          O CriteriaBuilder.
+     * @param campoTabela A expressão do campo no banco (ex: root.get("descricao")).
+     * @param termoBusca  A string digitada pelo usuário.
      * 
      * @author Matheus F. N. Pereira
      */
-    public static String normalizarParaBusca(String texto) {
-        if (texto == null) {
-            return "";
+    public static void adicionarFiltroTextual(List<Predicate> predicates, CriteriaBuilder cb,
+            Expression<String> campoTabela, String termoBusca) {
+        if (StringUtils.hasText(termoBusca)) {
+            Expression<String> campoNormalizado = cb.function("unaccent", String.class, cb.lower(campoTabela));
+
+            Expression<String> termoNormalizado = cb.function("unaccent", String.class,
+                    cb.literal("%" + termoBusca.toLowerCase().trim() + "%"));
+
+            predicates.add(cb.like(campoNormalizado, termoNormalizado));
         }
+    }
 
-        String temp = texto.trim().toLowerCase();
+    /**
+     * Adiciona um predicado IN para coleções, caso a lista não seja nula ou vazia.
+     * Funciona tanto para atributos diretos (Enum) quanto relacionais (ID).
+     *
+     * @param predicates A lista de predicados atual.
+     * @param campo      O caminho do campo no banco (ex: root.get("tipo") ou
+     *                   root.get("categoria").get("id")).
+     * @param valores    A lista de valores permitidos para o filtro.
+     * @param <T>        O tipo do campo e dos valores da lista.
+     * 
+     * @author Matheus F. N. Pereira
+     */
+    public static <T> void adicionarFiltroIn(List<Predicate> predicates, Path<T> campo,
+            List<T> valores) {
+        if (!CollectionUtils.isEmpty(valores)) {
+            predicates.add(campo.in(valores));
+        }
+    }
 
-        temp = Normalizer.normalize(temp, Normalizer.Form.NFD);
+    /**
+     * Adiciona um predicado Maior ou Igual (>=), caso o valor não seja nulo.
+     * Ideal para datas iniciais e valores monetários mínimos.
+     *
+     * @param predicates A lista de predicados atual.
+     * @param cb         O CriteriaBuilder.
+     * @param campo      O caminho do campo no banco.
+     * @param valor      O valor mínimo a ser comparado.
+     * @param <Y>        O tipo do campo (deve ser Comparable, como LocalDate,
+     *                   BigDecimal, etc).
+     * 
+     * @author Matheus F. N. Pereira
+     */
+    public static <Y extends Comparable<? super Y>> void adicionarFiltroMaiorOuIgual(
+            List<Predicate> predicates, CriteriaBuilder cb, Path<Y> campo, Y valor) {
+        if (valor != null) {
+            predicates.add(cb.greaterThanOrEqualTo(campo, valor));
+        }
+    }
 
-        return DIACRITICOS.matcher(temp).replaceAll("");
+    /**
+     * Adiciona um predicado Menor ou Igual (<=), caso o valor não seja nulo.
+     * Ideal para datas finais e valores monetários máximos.
+     *
+     * @param predicates A lista de predicados atual.
+     * @param cb         O CriteriaBuilder.
+     * @param campo      O caminho do campo no banco.
+     * @param valor      O valor máximo a ser comparado.
+     * @param <Y>        O tipo do campo (deve ser Comparable, como LocalDate,
+     *                   BigDecimal, etc).
+     * 
+     * @author Matheus F. N. Pereira
+     */
+    public static <Y extends Comparable<? super Y>> void adicionarFiltroMenorOuIgual(
+            List<Predicate> predicates, CriteriaBuilder cb, Path<Y> campo, Y valor) {
+        if (valor != null) {
+            predicates.add(cb.lessThanOrEqualTo(campo, valor));
+        }
     }
 }

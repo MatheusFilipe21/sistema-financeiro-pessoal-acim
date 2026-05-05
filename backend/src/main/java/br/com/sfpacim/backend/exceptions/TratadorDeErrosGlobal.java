@@ -1,5 +1,6 @@
 package br.com.sfpacim.backend.exceptions;
 
+import org.springframework.context.MessageSource;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,7 +11,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import br.com.sfpacim.backend.dtos.erro.ErroPadraoDTO;
 import br.com.sfpacim.backend.dtos.erro.ErroValidacaoDTO;
+import br.com.sfpacim.backend.utils.MetodosUteis;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,13 +22,28 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * <p>
  * Captura exceções específicas da aplicação e as transforma em
- * respostas HTTP (ResponseEntity) padronizadas.
+ * respostas HTTP (ResponseEntity) padronizadas, utilizando o MessageSource
+ * para internacionalização dos títulos e mensagens.
  *
  * @author Matheus F. N. Pereira
  */
 @Slf4j
 @RestControllerAdvice
 public class TratadorDeErrosGlobal {
+
+    /**
+     * Instância utilizada para buscar as traduções.
+     */
+    private final MessageSource messageSource;
+
+    /**
+     * Construtor para injeção do MessageSource.
+     * 
+     * @param messageSource Instância utilizada para buscar as traduções.
+     */
+    public TratadorDeErrosGlobal(MessageSource messageSource) {
+        this.messageSource = messageSource;
+    }
 
     /**
      * Manipula exceções de autenticação (lançadas pelo Spring Security).
@@ -43,8 +61,8 @@ public class TratadorDeErrosGlobal {
 
         ErroPadraoDTO erroPadrao = new ErroPadraoDTO(
                 HttpStatus.UNAUTHORIZED, // 401
-                "Falha na Autenticação",
-                "E-mail ou senha inválidos.",
+                MetodosUteis.obterMensagem(messageSource, "erro.401.titulo"),
+                MetodosUteis.obterMensagem(messageSource, "erro.401.mensagem"),
                 requisicao.getRequestURI());
 
         return ResponseEntity.status(erroPadrao.status()).body(erroPadrao);
@@ -59,21 +77,21 @@ public class TratadorDeErrosGlobal {
      * ou quando o registro pertence a outro usuário (Isolamento de Dados).
      *
      * @param excecao    A exceção
-     *                   {@link jakarta.persistence.EntityNotFoundException}
+     *                   {@link EntityNotFoundException}
      *                   capturada.
      * @param requisicao A requisição HTTP (para obter a Rota/URI).
      * @return ResponseEntity (HTTP 404) com o {@link ErroPadraoDTO}.
      */
-    @ExceptionHandler(jakarta.persistence.EntityNotFoundException.class)
+    @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ErroPadraoDTO> excecaoEntidadeNaoEncontrada(
-            jakarta.persistence.EntityNotFoundException excecao,
+            EntityNotFoundException excecao,
             HttpServletRequest requisicao) {
 
         log.warn("Recurso não encontrado: {}", excecao.getMessage());
 
         ErroPadraoDTO erroPadrao = new ErroPadraoDTO(
                 HttpStatus.NOT_FOUND, // 404
-                "Recurso Não Encontrado",
+                MetodosUteis.obterMensagem(messageSource, "erro.404.titulo"),
                 excecao.getMessage(),
                 requisicao.getRequestURI());
 
@@ -85,7 +103,7 @@ public class TratadorDeErrosGlobal {
      *
      * @param excecao    A exceção de violação de dados capturada.
      * @param requisicao A requisição HTTP (para obter a Rota/URI).
-     * @return ResponseEntity (HTTP 400) com o {@link ErroPadraoDTO}.
+     * @return ResponseEntity (HTTP 409) com o {@link ErroPadraoDTO}.
      */
     @ExceptionHandler({ ViolacaoDadosException.class, DataIntegrityViolationException.class })
     public ResponseEntity<ErroPadraoDTO> excecaoViolacaoDados(Exception excecao, HttpServletRequest requisicao) {
@@ -94,12 +112,12 @@ public class TratadorDeErrosGlobal {
         if (excecao instanceof ViolacaoDadosException) {
             mensagemErro = excecao.getMessage();
         } else {
-            mensagemErro = "Erro de integridade dos dados. Por gentileza, verifique os dados informados e tente novamente.";
+            mensagemErro = MetodosUteis.obterMensagem(messageSource, "erro.409.mensagem.padrao");
         }
 
         ErroPadraoDTO erroPadrao = new ErroPadraoDTO(
                 HttpStatus.CONFLICT, // 409
-                "Conflito de Dados",
+                MetodosUteis.obterMensagem(messageSource, "erro.409.titulo"),
                 mensagemErro,
                 requisicao.getRequestURI());
 
@@ -122,13 +140,13 @@ public class TratadorDeErrosGlobal {
 
         ErroValidacaoDTO erroValidacao = new ErroValidacaoDTO(
                 HttpStatus.UNPROCESSABLE_CONTENT, // 422
-                "Dados Inválidos",
-                "Um ou mais campos estão inválidos.",
+                MetodosUteis.obterMensagem(messageSource, "erro.422.validacao.titulo"),
+                MetodosUteis.obterMensagem(messageSource, "erro.422.validacao.mensagem"),
                 requisicao.getRequestURI());
 
         excecao.getFieldErrors().forEach(erroValidacao::adicionarErro);
 
-        return ResponseEntity.status(erroValidacao.getErro().status()).body(erroValidacao);
+        return ResponseEntity.status(erroValidacao.erro().status()).body(erroValidacao);
     }
 
     /**
@@ -147,7 +165,7 @@ public class TratadorDeErrosGlobal {
 
         ErroPadraoDTO erroPadrao = new ErroPadraoDTO(
                 HttpStatus.UNPROCESSABLE_CONTENT, // 422
-                "Operação Não Permitida",
+                MetodosUteis.obterMensagem(messageSource, "erro.422.negocio.titulo"),
                 excecao.getMessage(),
                 requisicao.getRequestURI());
 
@@ -168,8 +186,8 @@ public class TratadorDeErrosGlobal {
 
         ErroPadraoDTO erroPadrao = new ErroPadraoDTO(
                 HttpStatus.INTERNAL_SERVER_ERROR, // 500
-                "Serviço Indisponível",
-                "Ocorreu um erro inesperado no servidor. Tente novamente mais tarde.",
+                MetodosUteis.obterMensagem(messageSource, "erro.500.titulo"),
+                MetodosUteis.obterMensagem(messageSource, "erro.500.mensagem"),
                 requisicao.getRequestURI());
 
         return ResponseEntity.status(erroPadrao.status()).body(erroPadrao);

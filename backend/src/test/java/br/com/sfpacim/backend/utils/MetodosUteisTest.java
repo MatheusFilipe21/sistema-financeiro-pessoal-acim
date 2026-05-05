@@ -1,206 +1,305 @@
 package br.com.sfpacim.backend.utils;
 
-import java.text.Collator;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
+
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Predicate;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.MessageSource;
+import org.springframework.context.NoSuchMessageException;
 
 import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import br.com.sfpacim.backend.models.Categoria;
 
 /**
  * Testes unitários para a classe utilitária {@link MetodosUteis}.
  *
  * <p>
- * Cobre a normalização de strings, formatação dinâmica de mensagens de erro
- * e regras de collation, garantindo 100% de cobertura de código e ramificações.
+ * Cobre a formatação dinâmica de mensagens de erro, regras de negócio e
+ * predicados dinâmicos da JPA.
  *
  * @author Matheus F. N. Pereira
  */
+@ExtendWith(MockitoExtension.class)
 class MetodosUteisTest {
 
+    @Mock
+    private MessageSource messageSource;
+
     /**
-     * Testa as regras de ordenação e comparação do método
-     * {@link MetodosUteis#collator()}.
-     *
-     * <p>
-     * Garante que a instância de Collator está configurada com força PRIMÁRIA
-     * (PRIMARY),
-     * ignorando diferenças de acentuação e de letras maiúsculas/minúsculas.
+     * Testa o bloqueio de instanciação no construtor da classe.
      */
     @Test
-    @DisplayName("collator: Deve configurar comparador ignorando acentos e case")
-    void testeCollator() {
-        Collator collator = MetodosUteis.collator();
+    @DisplayName("Construtor: Deve ser privado para impedir instanciação")
+    void testeConstrutorPrivado() throws Exception {
+        Constructor<MetodosUteis> constructor = MetodosUteis.class.getDeclaredConstructor();
+        assertTrue(Modifier.isPrivate(constructor.getModifiers()));
 
-        assertEquals(0, collator.compare("João", "joao"), "Deve ignorar acentuação e maiúsculas");
-        assertEquals(0, collator.compare("MACA", "Maçã"), "Deve ignorar acentuação e maiúsculas");
-        assertTrue(collator.compare("Ana", "Zélia") < 0, "Deve ordenar alfabeticamente ('A' vem antes de 'Z')");
+        constructor.setAccessible(true);
+        assertDoesNotThrow(() -> constructor.newInstance());
     }
 
     /**
-     * Testa a limpeza de formatação do método
-     * {@link MetodosUteis#normalizarParaBusca(String)}.
-     *
-     * <p>
-     * Cobre o cenário ideal, onde espaços sobressalentes são removidos (trim),
-     * letras maiúsculas são rebaixadas e a acentuação é decomposta e expurgada via
-     * Regex.
+     * Testa o comportamento de segurança ao receber chave nula no método
+     * {@link MetodosUteis#obterMensagem(MessageSource, String, Object...)}.
      */
     @Test
-    @DisplayName("normalizarParaBusca: Deve remover acentos, espaços e converter para minúsculas")
-    void testeNormalizarParaBusca_Sucesso() {
-        String resultado = MetodosUteis.normalizarParaBusca("  São Paulo  ");
-        assertEquals("sao paulo", resultado);
-
-        resultado = MetodosUteis.normalizarParaBusca("ÁéîõÜç");
-        assertEquals("aeiouc", resultado);
+    @DisplayName("obterMensagem: Quando chave nula, deve retornar nulo")
+    void testeObterMensagem_QuandoChaveNula_DeveRetornarNulo() {
+        assertNull(MetodosUteis.obterMensagem(messageSource, null));
     }
 
     /**
-     * Testa as ramificações de segurança do método
-     * {@link MetodosUteis#normalizarParaBusca(String)}.
-     *
-     * <p>
-     * Garante que entradas nulas ou compostas apenas por espaços em branco não
-     * quebrem
-     * a lógica de validação de unicidade.
+     * Testa o sucesso na extração da mensagem do properties no método
+     * {@link MetodosUteis#obterMensagem(MessageSource, String, Object...)}.
      */
     @Test
-    @DisplayName("normalizarParaBusca: Quando string for nula ou vazia, deve retornar string vazia")
-    void testeNormalizarParaBusca_NuloOuVazio() {
-        assertEquals("", MetodosUteis.normalizarParaBusca(null));
-        assertEquals("", MetodosUteis.normalizarParaBusca("   "));
+    @DisplayName("obterMensagem: Quando sucesso, deve retornar string formatada")
+    void testeObterMensagem_QuandoSucesso_DeveRetornarMensagem() {
+        when(messageSource.getMessage(eq("chave.teste"), any(), any())).thenReturn("Mensagem de Teste");
+        assertEquals("Mensagem de Teste", MetodosUteis.obterMensagem(messageSource, "chave.teste"));
     }
 
     /**
-     * Testa a ramificação verdadeira do método simples de validação.
-     *
-     * <p>
-     * Garante o lançamento da {@link ViolacaoDadosException} com a formatação
-     * padrão para entidades de nível raiz (ex: Pessoas e Categorias).
+     * Testa o fallback quando a chave não existe no properties no método
+     * {@link MetodosUteis#obterMensagem(MessageSource, String, Object...)}.
      */
     @Test
-    @DisplayName("validarUnicidade (Simples): Quando duplicado, deve lançar exceção padronizada")
-    void testeValidarUnicidadeSimples_QuandoDuplicado_DeveLancarExcecao() {
-        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
-                () -> MetodosUteis.validarUnicidade(true, "Pessoa", "Matheus"));
-
-        assertEquals("Já existe uma Pessoa cadastrada com o nome 'Matheus'.", excecao.getMessage());
+    @DisplayName("obterMensagem: Quando exceção, deve retornar a própria chave (Fallback)")
+    void testeObterMensagem_QuandoExcecao_DeveRetornarChave() {
+        when(messageSource.getMessage(anyString(), any(), any())).thenThrow(NoSuchMessageException.class);
+        assertEquals("chave.inexistente", MetodosUteis.obterMensagem(messageSource, "chave.inexistente"));
     }
 
     /**
-     * Testa a ramificação falsa do método simples de validação.
-     *
-     * <p>
-     * Garante que o fluxo do sistema continua normalmente quando a flag indica
-     * inexistência de conflitos.
+     * Testa a montagem da exceção de unicidade com injeção de parâmetros no método
+     * {@link MetodosUteis#gerarExcecaoUnicidade(MessageSource, Class, String, Object...)}.
      */
     @Test
-    @DisplayName("validarUnicidade (Simples): Quando NÃO duplicado, não deve fazer nada")
-    void testeValidarUnicidadeSimples_QuandoNaoDuplicado() {
-        assertDoesNotThrow(() -> MetodosUteis.validarUnicidade(false, "Pessoa", "Matheus"));
+    @DisplayName("gerarExcecaoUnicidade: Deve montar mensagem traduzindo a entidade e os argumentos")
+    void testeGerarExcecaoUnicidade() {
+        when(messageSource.getMessage(eq("categoria.nome.singular"), any(), any())).thenReturn("Categoria");
+        when(messageSource.getMessage(eq("erro.duplicado"), any(), any())).thenAnswer(invocation -> {
+            Object[] args = invocation.getArgument(1);
+            return String.format("%s duplicada: %s", args[0], args[1]);
+        });
+
+        ViolacaoDadosException excecao = MetodosUteis.gerarExcecaoUnicidade(
+                messageSource, Categoria.class, "erro.duplicado", "Streaming");
+
+        assertEquals("Categoria duplicada: Streaming", excecao.getMessage());
     }
 
     /**
-     * Testa a ramificação verdadeira do método contextual de validação.
-     *
-     * <p>
-     * Garante o lançamento da {@link ViolacaoDadosException} formatada para
-     * entidades
-     * que pertencem à outra (ex: Contas vinculadas a Pessoas).
+     * Testa o disparo da exceção de duplicidade no método
+     * {@link MetodosUteis#validarUnicidade(MessageSource, boolean, Class, String, Object...)}.
      */
     @Test
-    @DisplayName("validarUnicidade (Contextual): Quando duplicado, deve lançar exceção com dono")
-    void testeValidarUnicidadeContextual_QuandoDuplicado_DeveLancarExcecao() {
-        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
-                () -> MetodosUteis.validarUnicidade(true, "Conta", "Nubank", "Matheus"));
+    @DisplayName("validarUnicidade: Quando duplicado, deve lançar exceção")
+    void testeValidarUnicidade_QuandoDuplicado_DeveLancarExcecao() {
+        when(messageSource.getMessage(anyString(), any(), any())).thenReturn("Erro genérico");
 
-        assertEquals("Já existe uma Conta 'Nubank' cadastrada para Matheus.", excecao.getMessage());
+        assertThrows(ViolacaoDadosException.class,
+                () -> MetodosUteis.validarUnicidade(messageSource, true, Categoria.class, "chave"));
     }
 
     /**
-     * Testa a ramificação falsa do método contextual de validação.
+     * Testa o fluxo limpo quando não há duplicidade no método
+     * {@link MetodosUteis#validarUnicidade(MessageSource, boolean, Class, String, Object...)}.
      */
     @Test
-    @DisplayName("validarUnicidade (Contextual): Quando NÃO duplicado, não deve fazer nada")
-    void testeValidarUnicidadeContextual_QuandoNaoDuplicado() {
-        assertDoesNotThrow(() -> MetodosUteis.validarUnicidade(false, "Conta", "Nubank", "Matheus"));
+    @DisplayName("validarUnicidade: Quando não duplicado, deve passar silenciosamente")
+    void testeValidarUnicidade_QuandoNaoDuplicado_NaoFazNada() {
+        assertDoesNotThrow(() -> MetodosUteis.validarUnicidade(messageSource, false, Categoria.class, "chave"));
     }
 
     /**
-     * Testa a blindagem do gerador de mensagens dinâmicas contra listas vazias.
-     *
-     * <p>
-     * Cobre o IF de interrupção precoce no método
-     * {@link MetodosUteis#validarDependenciasExclusao(String, List)}.
+     * Testa as ramificações de early-return ao não identificar dependências no
+     * método
+     * {@link MetodosUteis#validarDependenciasExclusao(MessageSource, String, List)}.
      */
     @Test
-    @DisplayName("validarDependenciasExclusao: Quando nulo ou vazio, não deve lançar exceção")
-    void testeDependenciasExclusao_QuandoVazioOuNulo() {
-        List<String> listaVazia = List.of();
-
-        assertDoesNotThrow(() -> MetodosUteis.validarDependenciasExclusao("Alvo", null));
-        assertDoesNotThrow(() -> MetodosUteis.validarDependenciasExclusao("Alvo", listaVazia));
+    @DisplayName("validarDependenciasExclusao: Quando lista nula ou vazia, não faz nada")
+    void testeValidarDependenciasExclusao_QuandoVazia_NaoFazNada() {
+        assertDoesNotThrow(() -> MetodosUteis.validarDependenciasExclusao(messageSource, "Alvo", null));
+        assertDoesNotThrow(() -> MetodosUteis.validarDependenciasExclusao(messageSource, "Alvo", List.of()));
     }
 
     /**
-     * Testa a formatação gramatical para uma única dependência.
+     * Testa a formatação gramatical para uma única dependência no método
+     * {@link MetodosUteis#validarDependenciasExclusao(MessageSource, String, List)}.
      */
     @Test
     @DisplayName("validarDependenciasExclusao: Com 1 item, formata sem vírgulas ou conjunções")
     void testeDependenciasExclusao_UmItem() {
-        List<String> dependencias = List.of("Contas");
+        when(messageSource.getMessage(eq("erro.exclusao.dependencias"), any(), any())).thenAnswer(inv -> {
+            Object[] args = inv.getArgument(1);
+            return args[0] + " tem vínculos: " + args[1];
+        });
 
-        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
-                () -> MetodosUteis.validarDependenciasExclusao("João", dependencias));
-
-        assertEquals(
-                "Não é possível excluir 'João' pois existem Contas vinculadas. Remova os registros vinculados primeiro.",
-                excecao.getMessage());
+        ViolacaoDadosException ex = assertThrows(ViolacaoDadosException.class,
+                () -> MetodosUteis.validarDependenciasExclusao(messageSource, "João", List.of("Contas")));
+        assertEquals("João tem vínculos: Contas", ex.getMessage());
     }
 
     /**
-     * Testa a formatação gramatical conectando duas dependências.
-     *
-     * <p>
-     * Cobre o uso da conjunção "e" sem uso de vírgulas (Ex: A e B).
+     * Testa a formatação gramatical ligando duas dependências no método
+     * {@link MetodosUteis#validarDependenciasExclusao(MessageSource, String, List)}.
      */
     @Test
     @DisplayName("validarDependenciasExclusao: Com 2 itens, formata ligando com 'e'")
     void testeDependenciasExclusao_DoisItens() {
-        List<String> dependencias = List.of("Contas", "Transações");
+        when(messageSource.getMessage(eq("erro.exclusao.dependencias"), any(), any())).thenAnswer(inv -> {
+            Object[] args = inv.getArgument(1);
+            return args[0] + " tem vínculos: " + args[1];
+        });
 
-        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
-                () -> MetodosUteis.validarDependenciasExclusao("João", dependencias));
-
-        assertEquals(
-                "Não é possível excluir 'João' pois existem Contas e Transações vinculadas. Remova os registros vinculados primeiro.",
-                excecao.getMessage());
+        ViolacaoDadosException ex = assertThrows(ViolacaoDadosException.class,
+                () -> MetodosUteis.validarDependenciasExclusao(messageSource, "João", List.of("Contas", "Transações")));
+        assertEquals("João tem vínculos: Contas e Transações", ex.getMessage());
     }
 
     /**
-     * Testa a formatação gramatical complexa para múltiplas dependências.
-     *
-     * <p>
-     * Cobre o uso do particionamento de lista (subList) para aplicar vírgulas e
-     * finalizar a enumeração com a conjunção "e" (Ex: A, B e C).
+     * Testa a formatação gramatical complexa para três ou mais dependências no
+     * método
+     * {@link MetodosUteis#validarDependenciasExclusao(MessageSource, String, List)}.
      */
     @Test
     @DisplayName("validarDependenciasExclusao: Com 3 itens, formata lista gramaticalmente com vírgula e 'e'")
     void testeDependenciasExclusao_TresItens() {
-        List<String> dependencias = List.of("Contas", "Cartões", "Transações");
+        when(messageSource.getMessage(eq("erro.exclusao.dependencias"), any(), any())).thenAnswer(inv -> {
+            Object[] args = inv.getArgument(1);
+            return args[0] + " tem vínculos: " + args[1];
+        });
 
-        ViolacaoDadosException excecao = assertThrows(ViolacaoDadosException.class,
-                () -> MetodosUteis.validarDependenciasExclusao("João", dependencias));
+        ViolacaoDadosException ex = assertThrows(ViolacaoDadosException.class, () -> MetodosUteis
+                .validarDependenciasExclusao(messageSource, "João", List.of("Contas", "Cartões", "Transações")));
+        assertEquals("João tem vínculos: Contas, Cartões e Transações", ex.getMessage());
+    }
 
-        assertEquals(
-                "Não é possível excluir 'João' pois existem Contas, Cartões e Transações vinculadas. Remova os registros vinculados primeiro.",
-                excecao.getMessage());
+    /**
+     * Testa a montagem do predicado de busca textual via JPA Criteria no método
+     * {@link MetodosUteis#adicionarFiltroTextual(List, CriteriaBuilder, Expression, String)}.
+     */
+    @Test
+    @DisplayName("adicionarFiltroTextual: Deve aplicar LIKE quando termo for válido")
+    @SuppressWarnings("unchecked")
+    void testeAdicionarFiltroTextual() {
+        List<Predicate> predicates = new ArrayList<>();
+        CriteriaBuilder cb = mock(CriteriaBuilder.class);
+        Expression<String> campo = mock(Expression.class);
+        Expression<String> funcExp = mock(Expression.class);
+        Predicate likePredicate = mock(Predicate.class);
+
+        when(cb.lower(campo)).thenReturn(funcExp);
+        when(cb.function(anyString(), eq(String.class), any())).thenReturn(funcExp);
+        when(cb.literal(anyString())).thenReturn(funcExp);
+        when(cb.like(any(Expression.class), any(Expression.class))).thenReturn(likePredicate);
+
+        MetodosUteis.adicionarFiltroTextual(predicates, cb, campo, " Busca ");
+
+        assertEquals(1, predicates.size());
+        verify(cb).literal("%busca%");
+    }
+
+    /**
+     * Testa o descarte seguro de predicados com termos vazios no método
+     * {@link MetodosUteis#adicionarFiltroTextual(List, CriteriaBuilder, Expression, String)}.
+     */
+    @Test
+    @DisplayName("adicionarFiltroTextual: Não deve adicionar se o termo for vazio")
+    @SuppressWarnings("unchecked")
+    void testeAdicionarFiltroTextual_QuandoVazio_Ignora() {
+        List<Predicate> predicates = new ArrayList<>();
+        CriteriaBuilder cb = mock(CriteriaBuilder.class);
+        Expression<String> campo = mock(Expression.class);
+
+        MetodosUteis.adicionarFiltroTextual(predicates, cb, campo, "   ");
+        assertTrue(predicates.isEmpty());
+    }
+
+    /**
+     * Testa a montagem de predicado IN em listas populadas no método
+     * {@link MetodosUteis#adicionarFiltroIn(List, Path, List)}.
+     */
+    @Test
+    @DisplayName("adicionarFiltroIn: Deve adicionar predicado quando lista possuir itens")
+    @SuppressWarnings("unchecked")
+    void testeAdicionarFiltroIn_QuandoTemValores() {
+        List<Predicate> predicates = new ArrayList<>();
+        Path<String> campo = mock(Path.class);
+        Predicate inPredicate = mock(Predicate.class);
+
+        when(campo.in(any(List.class))).thenReturn(inPredicate);
+
+        MetodosUteis.adicionarFiltroIn(predicates, campo, List.of("A", "B"));
+        assertEquals(1, predicates.size());
+    }
+
+    /**
+     * Testa a omissão segura do predicado IN ao receber listas nulas ou vazias no
+     * método
+     * {@link MetodosUteis#adicionarFiltroIn(List, Path, List)}.
+     */
+    @Test
+    @DisplayName("adicionarFiltroIn: Não deve adicionar quando nulo ou vazio")
+    @SuppressWarnings("unchecked")
+    void testeAdicionarFiltroIn_QuandoVazio() {
+        List<Predicate> predicates = new ArrayList<>();
+        Path<String> campo = mock(Path.class);
+
+        MetodosUteis.adicionarFiltroIn(predicates, campo, null);
+        MetodosUteis.adicionarFiltroIn(predicates, campo, List.of());
+        assertTrue(predicates.isEmpty());
+    }
+
+    /**
+     * Testa a montagem e o comportamento seguro dos comparadores lógicos nos
+     * métodos
+     * {@link MetodosUteis#adicionarFiltroMaiorOuIgual} e
+     * {@link MetodosUteis#adicionarFiltroMenorOuIgual}.
+     */
+    @Test
+    @DisplayName("adicionarFiltroMatematico: MaiorOuIgual e MenorOuIgual devem respeitar valores não nulos")
+    @SuppressWarnings("unchecked")
+    void testeAdicionarFiltroMatematico() {
+        List<Predicate> predicates = new ArrayList<>();
+        CriteriaBuilder cb = mock(CriteriaBuilder.class);
+        Path<BigDecimal> campo = mock(Path.class);
+        Predicate mathPredicate = mock(Predicate.class);
+
+        when(cb.greaterThanOrEqualTo(any(), any(BigDecimal.class))).thenReturn(mathPredicate);
+        when(cb.lessThanOrEqualTo(any(), any(BigDecimal.class))).thenReturn(mathPredicate);
+
+        MetodosUteis.adicionarFiltroMaiorOuIgual(predicates, cb, campo, BigDecimal.TEN);
+        MetodosUteis.adicionarFiltroMenorOuIgual(predicates, cb, campo, BigDecimal.ONE);
+
+        MetodosUteis.adicionarFiltroMaiorOuIgual(predicates, cb, campo, null);
+        MetodosUteis.adicionarFiltroMenorOuIgual(predicates, cb, campo, null);
+
+        assertEquals(2, predicates.size());
     }
 }
