@@ -6,8 +6,11 @@ import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Classe base para testes de persistência.
- * Configura o Spring para usar o banco real (Postgres) em vez do H2,
- * e ativa o perfil de teste (application-test.yml).
+ * 
+ * <p>
+ * Ativa o perfil de teste e impede a autoconfiguração de bancos
+ * em memória, garantindo que os testes sejam executados diretamente
+ * no banco de dados real configurado para testes.
  * 
  * @author Matheus F. N. Pereira
  */
