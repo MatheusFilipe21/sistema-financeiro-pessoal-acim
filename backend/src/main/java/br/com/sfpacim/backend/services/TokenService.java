@@ -2,8 +2,6 @@ package br.com.sfpacim.backend.services;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Date;
@@ -61,7 +59,7 @@ public class TokenService {
      */
     public String gerarToken(Usuario usuario) {
         SecretKey chave = this.getChaveDeAssinatura();
-        Instant agora = LocalDateTime.now().toInstant(ZoneOffset.of("-03:00"));
+        Instant agora = Instant.now();
         Instant expiracao = agora.plusMillis(this.tempoExpiracaoMs);
 
         return Jwts.builder()
@@ -82,11 +80,11 @@ public class TokenService {
      * este token seja invalidado automaticamente, impedindo reuso.
      *
      * @param usuario A entidade {@link Usuario} que solicitou a recuperação.
-     * @return O Token JWT assinado com validade de 30 minutos.
+     * @return O Token JWT assinado com validade de 4 horas.
      */
     public String gerarTokenRecuperacao(Usuario usuario) {
         SecretKey chaveDinamica = this.getChaveDeAssinaturaDinamica(usuario.getSenha());
-        Instant agora = LocalDateTime.now().toInstant(ZoneOffset.of("-03:00"));
+        Instant agora = Instant.now();
         Instant expiracao = agora.plus(4, ChronoUnit.HOURS);
 
         return Jwts.builder()
@@ -145,7 +143,7 @@ public class TokenService {
      * assinatura.
      * 
      * <p>
-     * Este método é necessário para para buscar o usuário e obter sua senha atual,
+     * Este método é necessário para buscar o usuário e obter sua senha atual,
      * para só então reconstruir a chave dinâmica e validar a assinatura real.
      *
      * @param token O token JWT completo.

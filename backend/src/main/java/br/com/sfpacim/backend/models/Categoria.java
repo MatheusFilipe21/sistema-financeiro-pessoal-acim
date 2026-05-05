@@ -28,7 +28,18 @@ import lombok.ToString;
  * Suporta o conceito de categorias globais (Sistema) e categorias
  * personalizadas (Usuário). Se o campo {@code usuario} for nulo,
  * a categoria é considerada do sistema e visível para todos.
- *
+ * 
+ * <b>Nota sobre Arquitetura e Validação:</b>
+ * Não há a definição de uma {@code @UniqueConstraint} nativa do JPA na tabela
+ * para o campo {@code nome}. Isso ocorre porque a regra de unicidade desta
+ * entidade é complexa e não suportada pelas constraints básicas de banco de
+ * dados: ela precisa ser insensível a maiúsculas/minúsculas, ignorar acentos
+ * (utilizando a função {@code unaccent} do PostgreSQL) e impedir colisões de
+ * escopo (ex: o usuário não pode criar uma categoria pessoal com o mesmo nome
+ * de uma categoria global do sistema). Por este motivo, a validação de
+ * integridade foi delegada para a camada de Repositório (via consulta
+ * otimizada).
+ * 
  * @author Matheus F. N. Pereira
  */
 @Getter

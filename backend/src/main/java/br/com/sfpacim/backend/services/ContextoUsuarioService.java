@@ -1,5 +1,6 @@
 package br.com.sfpacim.backend.services;
 
+import org.springframework.context.MessageSource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -7,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.UsuarioRepository;
+import br.com.sfpacim.backend.utils.MetodosUteis;
 
 /**
  * Serviço utilitário para recuperação do usuário autenticado.
@@ -20,14 +22,17 @@ import br.com.sfpacim.backend.repositories.UsuarioRepository;
 @Service
 public class ContextoUsuarioService {
 
+    private final MessageSource messageSource;
     private final UsuarioRepository usuarioRepository;
 
     /**
      * Construtor para Injeção de Dependências.
      * 
+     * @param messageSource     A instância do MessageSource.
      * @param usuarioRepository O repositório para buscar os dados do usuário.
      */
-    public ContextoUsuarioService(UsuarioRepository usuarioRepository) {
+    public ContextoUsuarioService(MessageSource messageSource, UsuarioRepository usuarioRepository) {
+        this.messageSource = messageSource;
         this.usuarioRepository = usuarioRepository;
     }
 
@@ -41,19 +46,21 @@ public class ContextoUsuarioService {
      * @return A entidade {@link Usuario} logada.
      * 
      * @throws UsernameNotFoundException Caso o usuário do token não exista mais no
-     *                                   banco.
+     *                                   banco ou o contexto de segurança esteja
+     *                                   vazio.
      */
     public Usuario getUsuarioAutenticado() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UsernameNotFoundException("Não há usuário autenticado no contexto de segurança.");
+            throw new UsernameNotFoundException(
+                    MetodosUteis.obterMensagem(messageSource, "erro.seguranca.contexto.vazio"));
         }
 
         String email = authentication.getName();
 
         return usuarioRepository.findByEmail(email)
-                .orElseThrow(
-                        () -> new UsernameNotFoundException("Usuário autenticado não encontrado na base de dados."));
+                .orElseThrow(() -> new UsernameNotFoundException(
+                        MetodosUteis.obterMensagem(messageSource, "erro.seguranca.usuario.nao-encontrado")));
     }
 }

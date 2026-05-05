@@ -1,6 +1,6 @@
 package br.com.sfpacim.backend.services;
 
-import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.context.MessageSource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +12,7 @@ import br.com.sfpacim.backend.models.Pessoa;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.PessoaRepository;
 import br.com.sfpacim.backend.repositories.UsuarioRepository;
+import br.com.sfpacim.backend.utils.MetodosUteis;
 
 /**
  * Serviço responsável pela lógica de negócio relacionada ao {@link Usuario}.
@@ -21,6 +22,7 @@ import br.com.sfpacim.backend.repositories.UsuarioRepository;
 @Service
 public class UsuarioService {
 
+    private final MessageSource messageSource;
     private final UsuarioRepository usuarioRepository;
     private final PessoaRepository pessoaRepository;
     private final PasswordEncoder passwordEncoder;
@@ -32,13 +34,15 @@ public class UsuarioService {
      * O Spring injeta automaticamente as instâncias necessárias quando esta
      * classe é criada.
      *
+     * @param messageSource     A instância do MessageSource.
      * @param usuarioRepository O repositório para acesso aos dados do usuário.
      * @param pessoaRepository  O repositório para persistência da pessoa titular
      *                          vinculada.
      * @param passwordEncoder   O bean para codificação de senhas (BCrypt).
      */
-    public UsuarioService(UsuarioRepository usuarioRepository, PessoaRepository pessoaRepository,
-            PasswordEncoder passwordEncoder) {
+    public UsuarioService(MessageSource messageSource, UsuarioRepository usuarioRepository,
+            PessoaRepository pessoaRepository, PasswordEncoder passwordEncoder) {
+        this.messageSource = messageSource;
         this.usuarioRepository = usuarioRepository;
         this.pessoaRepository = pessoaRepository;
         this.passwordEncoder = passwordEncoder;
@@ -58,7 +62,12 @@ public class UsuarioService {
      */
     @Transactional
     public UsuarioDTO registrar(DadosCadastroUsuarioDTO dados) throws ViolacaoDadosException {
-        Usuario usuario = this.salvarEntidade(paraEntidade(dados));
+        if (usuarioRepository.existsByEmail(dados.email())) {
+            throw new ViolacaoDadosException(
+                    MetodosUteis.obterMensagem(messageSource, "erro.usuario.email.duplicado", dados.email()));
+        }
+
+        Usuario usuario = usuarioRepository.save(paraEntidade(dados));
 
         criarPessoaTitular(usuario);
 
@@ -74,10 +83,11 @@ public class UsuarioService {
      * @param usuario   A entidade do usuário já carregada do banco.
      * @param novaSenha A nova senha vinda do DTO.
      */
+    @Transactional
     public void atualizarSenha(Usuario usuario, String novaSenha) {
         usuario.setSenha(passwordEncoder.encode(novaSenha));
 
-        this.salvarEntidade(usuario);
+        usuarioRepository.save(usuario);
     }
 
     /**
@@ -106,28 +116,6 @@ public class UsuarioService {
     }
 
     /**
-     * Tenta salvar uma entidade {@link Usuario} no repositório.
-     * 
-     * <p>
-     * Este método encapsula o save() e trata a exceção de violação
-     * de integridade (e-mail duplicado), lançando uma
-     * exceção de negócio mais clara (ViolacaoDadosException).
-     *
-     * @param usuario Entidade {@link Usuario} a ser salva.
-     * @return O usuário persistido.
-     * @throws ViolacaoDadosException Caso o e-mail (unique=true) já esteja
-     *                                cadastrado.
-     */
-    private Usuario salvarEntidade(Usuario usuario) throws ViolacaoDadosException {
-        try {
-            return usuarioRepository.saveAndFlush(usuario);
-        } catch (DataIntegrityViolationException _) {
-            throw new ViolacaoDadosException(
-                    String.format("O e-mail: %s já está cadastrado.", usuario.getEmail()));
-        }
-    }
-
-    /**
      * Cria e salva a Pessoa vinculada ao usuário recém-criado.
      * 
      * <p>
@@ -136,10 +124,15 @@ public class UsuarioService {
      *
      * @param usuario O usuário recém-cadastrado que será dono do registro.
      */
+    // TODO: Dívida Técnica - Refatorar a relação entre Usuario e Pessoa para 1:1
+    // compartilhando a mesma PK (@MapsId).
+    // Quando concluído, remover a injeção do PessoaRepository desta classe e
+    // delegar a criação automática da Pessoa ao Hibernate através de
+    // CascadeType.ALL na entidade Usuario.
     private void criarPessoaTitular(Usuario usuario) {
         Pessoa titular = new Pessoa(usuario.getNome(), usuario);
         titular.setTitular(true);
 
-        pessoaRepository.saveAndFlush(titular);
+        pessoaRepository.save(titular);
     }
 }

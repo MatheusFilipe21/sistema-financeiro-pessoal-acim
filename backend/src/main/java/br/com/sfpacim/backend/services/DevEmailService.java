@@ -64,7 +64,8 @@ public class DevEmailService implements EmailService {
 
             mailSender.send(email);
 
-            log.info("E-mail enviado com sucesso para o utilizando as configurações de desenvolvimento.");
+            log.info("E-mail enviado com sucesso para {} utilizando as configurações de desenvolvimento.",
+                    destinatario);
         } catch (Exception e) {
             log.warn("Não foi possível enviar o e-mail utilizando as configurações de desenvolvimento.", e);
         }

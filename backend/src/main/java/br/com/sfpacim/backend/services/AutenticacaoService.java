@@ -1,8 +1,7 @@
 package br.com.sfpacim.backend.services;
 
-import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -16,6 +15,7 @@ import br.com.sfpacim.backend.exceptions.RegraDeNegocioException;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.UsuarioRepository;
 import br.com.sfpacim.backend.services.interfaces.EmailService;
+import br.com.sfpacim.backend.utils.MetodosUteis;
 
 /**
  * Serviço responsável por orquestrar a lógica de autenticação.
@@ -31,6 +31,7 @@ public class AutenticacaoService {
     @Value("${app.frontend.url}")
     private String urlFrontend;
 
+    private final MessageSource messageSource;
     private final AuthenticationManager authenticationManager;
     private final TokenService tokenService;
     private final UsuarioRepository usuarioRepository;
@@ -40,14 +41,17 @@ public class AutenticacaoService {
     /**
      * Construtor para Injeção de Dependências.
      *
+     * @param messageSource         A instância do MessageSource.
      * @param authenticationManager O gerenciador de autenticação do Spring.
      * @param tokenService          O serviço para geração de tokens JWT.
      * @param usuarioRepository     Repositório para buscar usuários.
      * @param emailService          Serviço de envio de e-mails.
      * @param usuarioService        Serviço de domínio do usuário.
      */
-    public AutenticacaoService(AuthenticationManager authenticationManager, TokenService tokenService,
+    public AutenticacaoService(MessageSource messageSource, AuthenticationManager authenticationManager,
+            TokenService tokenService,
             UsuarioRepository usuarioRepository, EmailService emailService, UsuarioService usuarioService) {
+        this.messageSource = messageSource;
         this.authenticationManager = authenticationManager;
         this.tokenService = tokenService;
         this.usuarioRepository = usuarioRepository;
@@ -81,39 +85,26 @@ public class AutenticacaoService {
      * Verifica se o e-mail informado existe na base de dados.
      * <ul>
      * <li><b>Se existir:</b> Gera um token de recuperação seguro (assinado com a
-     * senha atual),
-     * monta o link de redefinição e envia por e-mail.</li>
+     * senha atual), monta o link de redefinição e envia por e-mail.</li>
      * <li><b>Se não existir:</b> Finaliza a execução silenciosamente (não lança
-     * erro),
-     * para evitar ataques aos usuários.</li>
+     * erro), para evitar ataques de enumeração aos usuários.</li>
      * </ul>
      *
      * @param dados O DTO contendo o e-mail solicitado.
      */
     public void solicitarRecuperacaoSenha(DadosRecuperacaoSenhaDTO dados) {
-        Optional<Usuario> usuario = usuarioRepository.findByEmail(dados.email());
-
-        if (usuario.isPresent()) {
-            Usuario usuarioEncontrado = usuario.get();
+        usuarioRepository.findByEmail(dados.email()).ifPresent(usuarioEncontrado -> {
             String token = tokenService.gerarTokenRecuperacao(usuarioEncontrado);
 
             String link = this.urlFrontend + "/redefinir-senha?token=" + token;
 
-            String mensagemEmail = String.format("""
-                    Olá, %s!
+            String mensagemEmail = MetodosUteis.obterMensagem(messageSource, "email.recuperacao.senha.mensagem",
+                    usuarioEncontrado.getNome(), link);
 
-                    Recebemos uma solicitação para redefinir sua senha no Sistema Financeiro Pessoal ACIM.
-                    Clique no link abaixo para criar uma nova senha:
-
-                    %s
-
-                    Este link é válido por 4 horas.
-                    Se você não solicitou isso, pode ignorar este e-mail.
-                    """, usuarioEncontrado.getNome(), link);
-
-            emailService.enviar(usuarioEncontrado.getEmail(), "Recuperação de Senha - Sistema Financeiro Pessoal ACIM",
+            emailService.enviar(usuarioEncontrado.getEmail(),
+                    MetodosUteis.obterMensagem(messageSource, "email.recuperacao.senha.assunto"),
                     mensagemEmail);
-        }
+        });
     }
 
     /**
@@ -150,6 +141,7 @@ public class AutenticacaoService {
      * @return Uma nova instância de {@link RegraDeNegocioException}.
      */
     private RegraDeNegocioException criarErroToken() {
-        return new RegraDeNegocioException("Token inválido ou expirado.");
+        return new RegraDeNegocioException(
+                MetodosUteis.obterMensagem(messageSource, "erro.autenticacao.token.invalido"));
     }
 }

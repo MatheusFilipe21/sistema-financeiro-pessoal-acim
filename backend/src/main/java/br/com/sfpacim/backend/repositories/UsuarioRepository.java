@@ -18,11 +18,15 @@ import br.com.sfpacim.backend.models.Usuario;
 public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
 
     /**
-     * Busca um usuário pelo seu e-mail (Chave de Negócio).
+     * Verifica se um e-mail já está cadastrado na base de dados.
      * 
-     * <p>
-     * O Spring Data JPA cria a consulta automaticamente
-     * com base no nome do método (Query Methods).
+     * @param email O e-mail a ser verificado.
+     * @return {@code true} se o e-mail existir; {@code false} caso contrário.
+     */
+    boolean existsByEmail(String email);
+
+    /**
+     * Busca um usuário pelo seu e-mail (Chave de Negócio).
      *
      * @param email O e-mail a ser buscado.
      * @return Um Optional contendo o Usuario, se encontrado.

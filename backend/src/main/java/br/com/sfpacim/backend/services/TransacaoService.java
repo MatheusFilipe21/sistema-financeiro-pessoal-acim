@@ -1,18 +1,21 @@
 package br.com.sfpacim.backend.services;
 
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import jakarta.persistence.EntityNotFoundException;
 
+import org.springframework.context.MessageSource;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import br.com.sfpacim.backend.dtos.transacao.CriarAtualizarTransacaoDTO;
+import br.com.sfpacim.backend.dtos.transacao.FiltroTransacaoDTO;
+import br.com.sfpacim.backend.dtos.transacao.ListagemTransacaoDTO;
 import br.com.sfpacim.backend.dtos.transacao.TransacaoDTO;
 import br.com.sfpacim.backend.exceptions.RegraDeNegocioException;
 import br.com.sfpacim.backend.models.Categoria;
@@ -22,6 +25,8 @@ import br.com.sfpacim.backend.models.Transacao;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.models.enums.TipoTransacao;
 import br.com.sfpacim.backend.repositories.TransacaoRepository;
+import br.com.sfpacim.backend.repositories.specifications.TransacaoSpec;
+import br.com.sfpacim.backend.utils.MetodosUteis;
 
 /**
  * Serviço responsável pela lógica de negócio relacionada à entidade
@@ -37,26 +42,30 @@ import br.com.sfpacim.backend.repositories.TransacaoRepository;
 @Service
 public class TransacaoService {
 
+    private final MessageSource messageSource;
+    private final ContextoUsuarioService contextoUsuarioService;
     private final TransacaoRepository transacaoRepository;
     private final CategoriaService categoriaService;
     private final ContaService contaService;
     private final PessoaService pessoaService;
-    private final ContextoUsuarioService contextoUsuarioService;
 
     /**
      * Construtor para Injeção de Dependências.
      * 
+     * @param messageSource          A instância do MessageSource.
      * @param transacaoRepository    Repositório principal de transações.
+     * @param contextoUsuarioService Serviço de contexto do usuário.
      * @param categoriaService       Serviço para validar categorias.
      * @param contaService           Serviço para validar contas.
      * @param pessoaService          Serviço para validar pessoas.
-     * @param contextoUsuarioService Serviço de contexto do usuário.
      */
-    public TransacaoService(TransacaoRepository transacaoRepository,
+    public TransacaoService(MessageSource messageSource,
+            TransacaoRepository transacaoRepository,
+            ContextoUsuarioService contextoUsuarioService,
             CategoriaService categoriaService,
             ContaService contaService,
-            PessoaService pessoaService,
-            ContextoUsuarioService contextoUsuarioService) {
+            PessoaService pessoaService) {
+        this.messageSource = messageSource;
         this.transacaoRepository = transacaoRepository;
         this.categoriaService = categoriaService;
         this.contaService = contaService;
@@ -112,44 +121,36 @@ public class TransacaoService {
     }
 
     /**
-     * Lista transações paginadas e filtradas por período de vencimento.
+     * Lista as transações do usuário de forma paginada e filtrada.
      *
      * <p>
-     * Utilizado principalmente para alimentar a tabela de "Contas a Pagar/Receber".
+     * Utilizado para alimentar dashboards, extratos avançados e tabelas de
+     * "Contas a Pagar/Receber". Delega a complexidade da busca e a paginação ao
+     * SGBD. Retorna o DTO otimizado para exibição visual no frontend.
      *
-     * @param inicio   Data inicial do vencimento.
-     * @param fim      Data final do vencimento.
-     * @param pageable Configuração de paginação e ordenação.
-     * @return Página de {@link TransacaoDTO}.
-     * @throws RegraDeNegocioException Se a data de início for posterior à data
-     *                                 final.
-     * @throws RegraDeNegocioException Se o período de consulta ultrapassar 90 dias.
+     * @param filtro   DTO contendo todos os critérios dinâmicos de busca
+     *                 (opcionais).
+     * @param pageable Configuração de paginação e ordenação injetadas pelo Spring.
+     * @return Página de {@link ListagemTransacaoDTO}.
+     * @throws RegraDeNegocioException Se houver incoerência nas datas informadas
+     *                                 (início maior que fim).
      */
     @Transactional(readOnly = true)
-    public Page<TransacaoDTO> listarPorPeriodo(LocalDate inicio, LocalDate fim, Pageable pageable) {
-        if (inicio.isAfter(fim)) {
-            throw new RegraDeNegocioException("A data de início não pode ser posterior à data final.");
-        }
-
-        long diferencaEmDias = ChronoUnit.DAYS.between(inicio, fim);
-
-        if (diferencaEmDias > 90) {
-            throw new RegraDeNegocioException("O período de consulta não pode ultrapassar 90 dias.");
-        }
+    public Page<ListagemTransacaoDTO> listar(FiltroTransacaoDTO filtro, Pageable pageable) {
+        validarCoerenciaCronologica(filtro.dataVencimentoInicio(), filtro.dataVencimentoFim());
 
         UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
 
-        Page<Transacao> transacoes = transacaoRepository.findByUsuarioIdAndDataVencimentoBetween(
-                usuarioId, inicio, fim, pageable);
+        Specification<Transacao> spec = TransacaoSpec.comFiltros(usuarioId, filtro);
 
-        return transacoes.map(this::paraDTO);
+        return transacaoRepository.findAll(spec, pageable).map(this::paraListagemDTO);
     }
 
     /**
      * Busca os detalhes de uma transação específica.
      *
      * @param transacaoId ID da transação.
-     * @return DTO com os dados completos.
+     * @return DTO com os dados completos (para formulários de edição).
      */
     @Transactional(readOnly = true)
     public TransacaoDTO buscarPorId(UUID transacaoId) {
@@ -219,6 +220,9 @@ public class TransacaoService {
 
     /**
      * Remove uma transação.
+     * 
+     * <p>
+     * Aplica o estorno de saldo na conta caso a transação estivesse efetivada.
      *
      * @param transacaoId O identificador da transação.
      */
@@ -259,6 +263,19 @@ public class TransacaoService {
     }
 
     /**
+     * Verifica se existe alguma transação vinculada a uma categoria.
+     * Utilizado pelo CategoriaService para bloqueio de exclusão de categorias
+     * personalizadas.
+     *
+     * @param categoriaId ID da categoria.
+     * @return {@code true} se existir.
+     */
+    boolean existeTransacaoVinculadaACategoria(UUID categoriaId) {
+        UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
+        return transacaoRepository.existsByUsuarioIdAndCategoriaId(usuarioId, categoriaId);
+    }
+
+    /**
      * Busca uma transação garantindo que ela pertence ao usuário informado.
      *
      * <p>
@@ -274,7 +291,8 @@ public class TransacaoService {
     Transacao obterEntidadeValidada(UUID usuarioId, UUID transacaoId) {
         return transacaoRepository.findByUsuarioIdAndId(usuarioId, transacaoId)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        String.format("Transação com id %s não encontrada ou acesso negado.", transacaoId)));
+                        MetodosUteis.obterMensagem(messageSource, "erro.recurso.nao-encontrado",
+                                MetodosUteis.obterMensagem(messageSource, "transacao.nome.singular"), transacaoId)));
     }
 
     /**
@@ -292,18 +310,28 @@ public class TransacaoService {
             return transacaoRepository.saveAndFlush(transacao);
         } catch (DataIntegrityViolationException _) {
             throw new RegraDeNegocioException(
-                    "Erro de integridade ao salvar transação. Verifique os dados fornecidos.");
+                    MetodosUteis.obterMensagem(messageSource, "erro.transacao.integridade.salvar"));
         }
     }
 
     /**
-     * Converte a entidade para DTO.
+     * Converte a entidade para o DTO de leitura completo.
      * 
      * @param transacao Entidade persistida.
-     * @return DTO de leitura.
+     * @return DTO contendo todos os dados (útil para edição).
      */
     private TransacaoDTO paraDTO(Transacao transacao) {
         return new TransacaoDTO(transacao);
+    }
+
+    /**
+     * Converte a entidade para o DTO de leitura otimizado (Extrato).
+     * 
+     * @param transacao Entidade persistida.
+     * @return DTO contendo dados amigáveis para tabelas.
+     */
+    private ListagemTransacaoDTO paraListagemDTO(Transacao transacao) {
+        return new ListagemTransacaoDTO(transacao);
     }
 
     /**
@@ -342,6 +370,20 @@ public class TransacaoService {
             conta.debitar(transacao.getValor());
         } else {
             conta.creditar(transacao.getValor());
+        }
+    }
+
+    /**
+     * Valida se o intervalo temporal é logicamente coerente.
+     *
+     * @param inicio Data inicial do período.
+     * @param fim    Data final do período.
+     * @throws RegraDeNegocioException Caso a data inicial seja posterior à final.
+     */
+    private void validarCoerenciaCronologica(LocalDate inicio, LocalDate fim) {
+        if (inicio != null && fim != null && inicio.isAfter(fim)) {
+            throw new RegraDeNegocioException(
+                    MetodosUteis.obterMensagem(messageSource, "erro.filtro.data.invalida"));
         }
     }
 }

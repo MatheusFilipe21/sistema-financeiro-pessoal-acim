@@ -1,21 +1,30 @@
 package br.com.sfpacim.backend.services;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import jakarta.persistence.EntityNotFoundException;
 
+import org.springframework.context.MessageSource;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import br.com.sfpacim.backend.dtos.categoria.CategoriaDTO;
 import br.com.sfpacim.backend.dtos.categoria.CriarAtualizarCategoriaDTO;
+import br.com.sfpacim.backend.dtos.categoria.FiltroCategoriaDTO;
+import br.com.sfpacim.backend.dtos.categoria.SelecaoCategoriaDTO;
 import br.com.sfpacim.backend.exceptions.RegraDeNegocioException;
 import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 import br.com.sfpacim.backend.models.Categoria;
 import br.com.sfpacim.backend.models.Usuario;
 import br.com.sfpacim.backend.repositories.CategoriaRepository;
+import br.com.sfpacim.backend.repositories.specifications.CategoriaSpec;
 import br.com.sfpacim.backend.utils.MetodosUteis;
 
 /**
@@ -31,19 +40,25 @@ import br.com.sfpacim.backend.utils.MetodosUteis;
 @Service
 public class CategoriaService {
 
+    private final MessageSource messageSource;
     private final CategoriaRepository categoriaRepository;
     private final ContextoUsuarioService contextoUsuarioService;
+    private final TransacaoService transacaoService;
 
     /**
      * Construtor para Injeção de Dependências.
      *
+     * @param messageSource          A instância do MessageSource.
      * @param categoriaRepository    O repositório de categorias.
      * @param contextoUsuarioService O serviço para recuperar o usuário autenticado.
+     * @param transacaoService       O serviço para acesso as transações.
      */
-    public CategoriaService(CategoriaRepository categoriaRepository,
-            ContextoUsuarioService contextoUsuarioService) {
+    public CategoriaService(MessageSource messageSource, CategoriaRepository categoriaRepository,
+            ContextoUsuarioService contextoUsuarioService, @Lazy TransacaoService transacaoService) {
+        this.messageSource = messageSource;
         this.categoriaRepository = categoriaRepository;
         this.contextoUsuarioService = contextoUsuarioService;
+        this.transacaoService = transacaoService;
     }
 
     /**
@@ -69,22 +84,58 @@ public class CategoriaService {
     }
 
     /**
-     * Lista todas as categorias visíveis para o usuário.
+     * Lista as categorias visíveis para o usuário de forma paginada e filtrada.
      *
      * <p>
-     * Inclui categorias pessoais e globais, ordenadas por nome.
+     * A busca delega a ordenação, filtros e paginação ao SGBD. Inclui
+     * automaticamente tanto as categorias pessoais do usuário quanto as
+     * categorias globais do sistema.
      *
-     * @return Lista de {@link CategoriaDTO}.
+     * @param filtro   Objeto {@link FiltroCategoriaDTO} contendo os parâmetros de
+     *                 busca.
+     * @param pageable Configurações de paginação e ordenação injetadas pelo Spring.
+     * @return Uma {@link Page} de {@link CategoriaDTO}.
      */
     @Transactional(readOnly = true)
-    public List<CategoriaDTO> listar() {
+    public Page<CategoriaDTO> listar(FiltroCategoriaDTO filtro, Pageable pageable) {
         UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
 
-        List<Categoria> categorias = categoriaRepository.findByUsuarioIdOrUsuarioIsNullOrderByNomeAsc(usuarioId);
+        Specification<Categoria> spec = CategoriaSpec.comFiltros(usuarioId, filtro);
 
-        return categorias.stream()
-                .map(this::paraDTO)
-                .toList();
+        return categoriaRepository.findAll(spec, pageable).map(this::paraDTO);
+    }
+
+    /**
+     * Lista as opções de categorias visíveis para o usuário em componentes de
+     * seleção.
+     *
+     * <p>
+     * Retorna uma lista leve contendo dados de identificação e apresentação visual
+     * (ícone/cor). Traz todas as categorias (Receita, Despesa e Ambos) para
+     * otimizar o payload.
+     *
+     * @return Uma lista não paginada de {@link SelecaoCategoriaDTO}.
+     */
+    @Transactional(readOnly = true)
+    public List<SelecaoCategoriaDTO> listarOpcoes() {
+        UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
+
+        return categoriaRepository.buscarOpcoesParaSelecao(usuarioId);
+    }
+
+    /**
+     * Busca os detalhes de uma categoria pelo seu identificador.
+     *
+     * @param categoriaId O identificador da categoria.
+     * @return O {@link CategoriaDTO} contendo os dados da categoria.
+     * @throws EntityNotFoundException Se a categoria não for encontrada ou não for
+     *                                 visível ao usuário.
+     */
+    @Transactional(readOnly = true)
+    public CategoriaDTO buscarPorId(UUID categoriaId) {
+        UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
+
+        return paraDTO(obterEntidadeValidada(usuarioId, categoriaId));
     }
 
     /**
@@ -105,7 +156,8 @@ public class CategoriaService {
         Categoria categoria = obterEntidadeValidada(usuarioId, categoriaId);
 
         if (categoria.isDoSistema()) {
-            throw new RegraDeNegocioException("Categorias padrão do sistema não podem ser alteradas.");
+            throw new RegraDeNegocioException(
+                    MetodosUteis.obterMensagem(messageSource, "erro.categoria.sistema.alteracao"));
         }
 
         categoria.setNome(dto.nome().trim());
@@ -132,9 +184,7 @@ public class CategoriaService {
         UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
         Categoria categoria = obterEntidadeValidada(usuarioId, categoriaId);
 
-        if (categoria.isDoSistema()) {
-            throw new RegraDeNegocioException("Não é possível excluir uma categoria padrão do sistema.");
-        }
+        validarDependenciasParaExclusao(categoria);
 
         categoriaRepository.delete(categoria);
     }
@@ -150,40 +200,73 @@ public class CategoriaService {
      *                                 visível.
      */
     Categoria obterEntidadeValidada(UUID usuarioId, UUID categoriaId) {
-        return categoriaRepository.findByUsuarioIdOrSistemaAndId(usuarioId, categoriaId)
+        return categoriaRepository.buscarPorIdEUsuarioOuSistema(usuarioId, categoriaId)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        String.format("Categoria com id %s não encontrada ou acesso negado.", categoriaId)));
+                        MetodosUteis.obterMensagem(messageSource, "erro.recurso.nao-encontrado",
+                                MetodosUteis.obterMensagem(messageSource, "categoria.nome.singular"), categoriaId)));
     }
 
     /**
      * Valida se já existe uma categoria com o mesmo nome (sistema ou do usuário).
      *
      * <p>
-     * A validação é realizada em memória buscando as categorias visíveis ao
-     * usuário,
-     * garantindo portabilidade (H2, Postgres) e ignorando case/acentos.
+     * A validação é delegada ao banco de dados utilizando a função {@code unaccent}
+     * do PostgreSQL, garantindo integridade semântica e prevenindo colisões entre
+     * categorias pessoais e globais. O tipo (Receita/Despesa/Ambos) é ignorado na
+     * validação para forçar o uso da categoria genérica caso os nomes coincidam.
      *
      * @param categoria A entidade a ser validada.
      * @throws ViolacaoDadosException Se duplicidade for detectada.
      */
     private void validarUnicidadeNome(Categoria categoria) {
-        UUID usuarioId = categoria.getUsuario().getId();
-        String nomeNovoNormalizado = MetodosUteis.normalizarParaBusca(categoria.getNome());
+        UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
 
-        boolean existeDuplicado = categoriaRepository.findByUsuarioIdOrUsuarioIsNullOrderByNomeAsc(usuarioId)
-                .stream()
-                .filter(c -> categoria.getId() == null || !c.getId().equals(categoria.getId()))
-                .anyMatch(c -> MetodosUteis.normalizarParaBusca(c.getNome()).equals(nomeNovoNormalizado));
+        boolean existeDuplicado = categoriaRepository.existeCategoriaDuplicada(usuarioId, categoria.getNome(),
+                categoria.getId());
 
-        MetodosUteis.validarUnicidade(existeDuplicado, Categoria.class.getSimpleName(), categoria.getNome());
+        MetodosUteis.validarUnicidade(messageSource, existeDuplicado, Categoria.class, "erro.unicidade.padrao",
+                categoria.getNome());
+    }
+
+    /**
+     * Valida se a categoria possui dependências ativas ou restrições de sistema
+     * que impeçam sua exclusão.
+     *
+     * <p>
+     * O método aplica duas travas de segurança:
+     * 1. Impede a remoção de categorias globais (padrão do sistema).
+     * 2. Consulta o serviço de transações para verificar se existem registros
+     * vinculados a esta categoria personalizada.
+     * Caso existam vínculos, delega a formatação da mensagem e o lançamento
+     * da exceção de violação para a classe utilitária.
+     *
+     * @param categoria A entidade {@link Categoria} avaliada para exclusão.
+     * @throws RegraDeNegocioException Caso a categoria seja do sistema.
+     * @throws ViolacaoDadosException  Caso existam transações vinculadas à
+     *                                 categoria.
+     */
+    private void validarDependenciasParaExclusao(Categoria categoria) throws ViolacaoDadosException {
+        List<String> dependencias = new ArrayList<>();
+
+        if (categoria.isDoSistema()) {
+            throw new RegraDeNegocioException(
+                    MetodosUteis.obterMensagem(messageSource, "erro.categoria.sistema.exclusao"));
+        }
+
+        if (transacaoService.existeTransacaoVinculadaACategoria(categoria.getId())) {
+            dependencias.add(MetodosUteis.obterMensagem(messageSource, "transacao.nome.plural"));
+        }
+
+        MetodosUteis.validarDependenciasExclusao(messageSource, categoria.getNome(), dependencias);
     }
 
     /**
      * Tenta salvar a categoria no banco de dados.
      *
      * <p>
-     * Captura {@link DataIntegrityViolationException} como uma camada extra
-     * de segurança para a constraint de unicidade.
+     * Força a sincronização com o banco (flush) para capturar imediatamente
+     * a {@link DataIntegrityViolationException} como uma camada extra de segurança
+     * para a constraint de unicidade.
      *
      * @param categoria Entidade a ser salva.
      * @return Entidade salva.
@@ -192,8 +275,8 @@ public class CategoriaService {
         try {
             return categoriaRepository.saveAndFlush(categoria);
         } catch (DataIntegrityViolationException _) {
-            MetodosUteis.validarUnicidade(true, Categoria.class.getSimpleName(), categoria.getNome());
-            return null;
+            throw MetodosUteis.gerarExcecaoUnicidade(messageSource, Categoria.class, "erro.unicidade.padrao",
+                    categoria.getNome());
         }
     }
 

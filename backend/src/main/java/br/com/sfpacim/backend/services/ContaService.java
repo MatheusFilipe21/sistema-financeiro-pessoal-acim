@@ -1,24 +1,32 @@
 package br.com.sfpacim.backend.services;
 
-import java.text.Collator;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
 import jakarta.persistence.EntityNotFoundException;
 
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import br.com.sfpacim.backend.dtos.conta.ContaDTO;
 import br.com.sfpacim.backend.dtos.conta.CriarAtualizarContaDTO;
+import br.com.sfpacim.backend.dtos.conta.FiltroContaDTO;
+import br.com.sfpacim.backend.dtos.conta.ListagemContaDTO;
+import br.com.sfpacim.backend.dtos.conta.SelecaoContaDTO;
+import br.com.sfpacim.backend.exceptions.RegraDeNegocioException;
 import br.com.sfpacim.backend.exceptions.ViolacaoDadosException;
 import br.com.sfpacim.backend.models.Conta;
 import br.com.sfpacim.backend.models.Pessoa;
+import br.com.sfpacim.backend.models.enums.InstituicaoFinanceira;
 import br.com.sfpacim.backend.repositories.ContaRepository;
+import br.com.sfpacim.backend.repositories.specifications.ContaSpec;
 import br.com.sfpacim.backend.utils.MetodosUteis;
 
 /**
@@ -34,6 +42,7 @@ import br.com.sfpacim.backend.utils.MetodosUteis;
 @Service
 public class ContaService {
 
+    private final MessageSource messageSource;
     private final ContaRepository contaRepository;
     private final ContextoUsuarioService contextoUsuarioService;
     private final PessoaService pessoaService;
@@ -42,14 +51,17 @@ public class ContaService {
     /**
      * Construtor para Injeção de Dependências.
      *
+     * @param messageSource          A instância do MessageSource.
      * @param contaRepository        O repositório para acesso aos dados da conta.
      * @param contextoUsuarioService O serviço utilitário para recuperar o usuário
      *                               autenticado do contexto de segurança.
      * @param pessoaService          O serviço para buscar a pessoa titular.
      * @param transacaoService       O serviço para acesso as transações.
      */
-    public ContaService(ContaRepository contaRepository, ContextoUsuarioService contextoUsuarioService,
-            PessoaService pessoaService, @Lazy TransacaoService transacaoService) {
+    public ContaService(MessageSource messageSource, ContaRepository contaRepository,
+            ContextoUsuarioService contextoUsuarioService, PessoaService pessoaService,
+            @Lazy TransacaoService transacaoService) {
+        this.messageSource = messageSource;
         this.contaRepository = contaRepository;
         this.pessoaService = pessoaService;
         this.contextoUsuarioService = contextoUsuarioService;
@@ -61,13 +73,15 @@ public class ContaService {
      *
      * <p>
      * Recupera o usuário do contexto de segurança e persiste a nova conta,
-     * validando se a pessoa pertence ao usuário, se é titular e a unicidade
-     * de nome.
+     * validando se a pessoa pertence ao usuário, se possui titularidade válida
+     * e a unicidade dos dados da conta.
      *
      * @param dto Os dados da nova conta (nome, instituição, saldo inicial, pessoa).
      * @return O {@link ContaDTO} representando a conta criada.
-     * @throws ViolacaoDadosException  Se houver duplicidade de nome ou se a pessoa
-     *                                 não for titular.
+     * @throws ViolacaoDadosException  Se houver duplicidade (mesmo nome e
+     *                                 instituição para a mesma pessoa).
+     * @throws RegraDeNegocioException Se a pessoa selecionada não for um titular
+     *                                 habilitado.
      * @throws EntityNotFoundException Se a pessoa não for encontrada ou não
      *                                 pertencer ao usuário.
      */
@@ -85,30 +99,56 @@ public class ContaService {
     }
 
     /**
-     * Lista todas as contas de todas as pessoas vinculadas ao usuário autenticado.
+     * Lista as contas vinculadas ao usuário de forma paginada e filtrada.
      *
      * <p>
-     * Aplica uma ordenação composta em memória:
-     * <ul>
-     * <li><b>1º Nível:</b> Nome do Titular (alfabética).</li>
-     * <li><b>2º Nível:</b> Nome da Conta (alfabética).</li>
-     * </ul>
+     * A ordenação, os filtros dinâmicos e a paginação são delegados ao SGBD através
+     * de Specifications e do objeto Pageable.
      *
-     * @return Uma lista de {@link ContaDTO} ordenada por nome do titular e nome da
-     *         conta.
+     * @param filtro   Objeto contendo os parâmetros de busca (nome, instituições,
+     *                 pessoas).
+     * @param pageable Configurações de página, tamanho e ordenação.
+     * @return Uma {@link Page} de {@link ListagemContaDTO} otimizada para tabelas.
      */
     @Transactional(readOnly = true)
-    public List<ContaDTO> listar() {
+    public Page<ListagemContaDTO> listar(FiltroContaDTO filtro, Pageable pageable) {
         UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
-        Collator collator = MetodosUteis.collator();
 
-        return contaRepository.findByPessoaUsuarioId(usuarioId)
-                .stream()
-                .sorted(Comparator
-                        .comparing((Conta c) -> c.getPessoa().getNome(), collator)
-                        .thenComparing(Conta::getNome, collator))
-                .map(this::paraDTO)
-                .toList();
+        Specification<Conta> spec = ContaSpec.comFiltros(usuarioId, filtro);
+
+        return contaRepository.findAll(spec, pageable).map(this::paraListagemDTO);
+    }
+
+    /**
+     * Lista as opções de contas visíveis para o usuário em componentes de seleção.
+     *
+     * <p>
+     * Retorna uma lista leve contendo dados de identificação, instituição
+     * financeira e o titular da conta para facilitar a distinção visual no
+     * frontend.
+     *
+     * @return Uma lista não paginada de {@link SelecaoContaDTO}.
+     */
+    @Transactional(readOnly = true)
+    public List<SelecaoContaDTO> listarOpcoes() {
+        UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
+
+        return contaRepository.buscarOpcoesParaSelecao(usuarioId);
+    }
+
+    /**
+     * Busca os detalhes de uma conta pelo seu identificador.
+     *
+     * @param contaId O identificador da conta.
+     * @return O {@link ContaDTO} completo contendo os dados para edição.
+     * @throws EntityNotFoundException Se a conta não for encontrada ou não for
+     *                                 visível ao usuário.
+     */
+    @Transactional(readOnly = true)
+    public ContaDTO buscarPorId(UUID contaId) throws EntityNotFoundException {
+        UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
+
+        return paraDTO(obterEntidadeValidada(usuarioId, contaId));
     }
 
     /**
@@ -122,19 +162,30 @@ public class ContaService {
      * @param contaId O identificador da conta a ser atualizada.
      * @param dto     Os novos dados da conta.
      * @return O {@link ContaDTO} atualizado.
-     * @throws ViolacaoDadosException  Se o novo nome gerar duplicidade.
-     * @throws EntityNotFoundException Se a conta não existir ou pertencer a
-     *                                 outro usuário.
+     * @throws ViolacaoDadosException  Se a alteração gerar duplicidade (mesmo nome
+     *                                 e instituição para a mesma pessoa).
+     * @throws RegraDeNegocioException Se a pessoa for alterada e o novo dono não
+     *                                 for um titular habilitado.
+     * @throws EntityNotFoundException Se a conta ou a pessoa não existirem ou
+     *                                 pertencerem a outro usuário.
      */
     @Transactional
     public ContaDTO atualizar(UUID contaId, CriarAtualizarContaDTO dto) throws ViolacaoDadosException,
             EntityNotFoundException {
         UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
-        Conta conta = obterEntidadeValidada(usuarioId, contaId);
 
-        if (!conta.getPessoa().getId().equals(dto.pessoaId())) {
-            Pessoa pessoa = pessoaService.obterEntidadeValidada(usuarioId, dto.pessoaId());
+        Conta conta = obterEntidadeValidada(usuarioId, contaId);
+        Pessoa pessoa = pessoaService.obterEntidadeValidada(usuarioId, dto.pessoaId());
+
+        boolean isPessoaAlterada = !conta.getPessoa().getId().equals(dto.pessoaId());
+
+        if (isPessoaAlterada) {
             pessoaService.validarTitularidade(pessoa);
+        }
+
+        validarUnicidade(dto.pessoaId(), dto.instituicao(), dto.nome(), contaId, pessoa.getNome());
+
+        if (isPessoaAlterada) {
             conta.setPessoa(pessoa);
         }
 
@@ -157,9 +208,10 @@ public class ContaService {
      *
      * @param contaId O identificador da conta a ser excluída.
      * @throws EntityNotFoundException Se a conta não for encontrada.
+     * @throws ViolacaoDadosException  Se a conta possuir transações vinculadas.
      */
     @Transactional
-    public void excluir(UUID contaId) throws EntityNotFoundException {
+    public void excluir(UUID contaId) throws EntityNotFoundException, ViolacaoDadosException {
         UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
         Conta conta = obterEntidadeValidada(usuarioId, contaId);
 
@@ -180,7 +232,8 @@ public class ContaService {
     Conta obterEntidadeValidada(UUID usuarioId, UUID contaId) throws EntityNotFoundException {
         return contaRepository.findByPessoaUsuarioIdAndId(usuarioId, contaId)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        String.format("Conta com id %s não encontrada ou acesso negado.", contaId)));
+                        MetodosUteis.obterMensagem(messageSource, "erro.recurso.nao-encontrado",
+                                MetodosUteis.obterMensagem(messageSource, "conta.nome.singular"), contaId)));
     }
 
     /**
@@ -210,13 +263,24 @@ public class ContaService {
     }
 
     /**
-     * Converte a entidade {@link Conta} (persistida) para o DTO de resposta.
+     * Converte a entidade {@link Conta} (persistida) para o DTO de resposta
+     * completo.
      *
      * @param conta A entidade carregada do banco.
      * @return O {@link ContaDTO} contendo os dados formatados para o cliente.
      */
     private ContaDTO paraDTO(Conta conta) {
         return new ContaDTO(conta);
+    }
+
+    /**
+     * Converte a entidade {@link Conta} para o DTO otimizado de listagem.
+     *
+     * @param conta A entidade carregada do banco.
+     * @return O {@link ListagemContaDTO} contendo dados simplificados para tabelas.
+     */
+    private ListagemContaDTO paraListagemDTO(Conta conta) {
+        return new ListagemContaDTO(conta);
     }
 
     /**
@@ -230,40 +294,64 @@ public class ContaService {
      * @return Entidade salva.
      */
     private Conta salvarEntidade(Conta conta) {
+        String nomePessoaTitular = conta.getPessoa().getNome();
+
         try {
-            validarUnicidadeNome(conta);
+            validarUnicidade(conta);
 
             return contaRepository.saveAndFlush(conta);
         } catch (DataIntegrityViolationException _) {
-            MetodosUteis.validarUnicidade(true, Conta.class.getSimpleName(), conta.getNome(),
-                    conta.getPessoa().getNome());
-            return null;
+            throw MetodosUteis.gerarExcecaoUnicidade(messageSource, Conta.class, "erro.unicidade.conta.detalhada",
+                    conta.getNome(), conta.getInstituicao().getDescricao(), nomePessoaTitular);
         }
     }
 
     /**
-     * Valida se já existe uma conta com o mesmo nome para a mesma pessoa.
+     * Valida se já existe uma conta com o mesmo nome e instituição para a mesma
+     * pessoa.
      *
      * <p>
-     * A validação é realizada em memória para garantir portabilidade entre
-     * diferentes bancos de dados (H2, Postgres), utilizando normalização de strings
-     * para ignorar acentos e diferenças de caixa.
+     * A validação é delegada diretamente ao banco de dados, utilizando a função
+     * {@code unaccent} do PostgreSQL. Isso garante performance e integridade
+     * semântica, ignorando acentos e diferenças entre maiúsculas e minúsculas.
+     *
+     * @param pessoaId        ID da Pessoa (Titular).
+     * @param instituicao     Instituição financeira.
+     * @param nomeConta       Nome digitado pelo usuário.
+     * @param contaIdAIgnorar ID da própria conta (em caso de atualização) ou null
+     *                        (no cadastro).
+     * @param nomePessoa      Nome da pessoa para montar a mensagem de erro
+     *                        formatada.
+     * @throws ViolacaoDadosException Se duplicidade for detectada.
+     */
+    private void validarUnicidade(UUID pessoaId, InstituicaoFinanceira instituicao, String nomeConta,
+            UUID contaIdAIgnorar, String nomePessoa) throws ViolacaoDadosException {
+        UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
+
+        boolean existeDuplicado = contaRepository.existeContaDuplicada(
+                usuarioId,
+                pessoaId,
+                instituicao,
+                nomeConta,
+                contaIdAIgnorar);
+
+        MetodosUteis.validarUnicidade(messageSource, existeDuplicado, Conta.class, "erro.unicidade.conta.detalhada",
+                nomeConta, instituicao.getDescricao(), nomePessoa);
+    }
+
+    /**
+     * Valida a unicidade da conta delegando os dados da Entidade para a sobrecarga
+     * principal. Ideal para cenários de Cadastro (onde a entidade é nova).
      *
      * @param conta A entidade {@link Conta} a ser validada.
      * @throws ViolacaoDadosException Se duplicidade for detectada.
      */
-    private void validarUnicidadeNome(Conta conta) {
-        UUID usuarioId = contextoUsuarioService.getUsuarioAutenticado().getId();
-        UUID pessoaId = conta.getPessoa().getId();
-        String nomeNovoNormalizado = MetodosUteis.normalizarParaBusca(conta.getNome());
-
-        boolean existeDuplicado = contaRepository.findByPessoaUsuarioIdAndPessoaId(usuarioId, pessoaId)
-                .stream()
-                .filter(c -> conta.getId() == null || !c.getId().equals(conta.getId()))
-                .filter(c -> c.getInstituicao() == conta.getInstituicao())
-                .anyMatch(c -> MetodosUteis.normalizarParaBusca(c.getNome()).equals(nomeNovoNormalizado));
-
-        MetodosUteis.validarUnicidade(existeDuplicado, Conta.class.getSimpleName(), conta.getNome(),
+    private void validarUnicidade(Conta conta) throws ViolacaoDadosException {
+        validarUnicidade(
+                conta.getPessoa().getId(),
+                conta.getInstituicao(),
+                conta.getNome(),
+                conta.getId(),
                 conta.getPessoa().getNome());
     }
 
@@ -282,9 +370,9 @@ public class ContaService {
         List<String> dependencias = new ArrayList<>();
 
         if (transacaoService.existeTransacaoVinculadaAConta(conta.getId())) {
-            dependencias.add("Transações");
+            dependencias.add(MetodosUteis.obterMensagem(messageSource, "transacao.nome.plural"));
         }
 
-        MetodosUteis.validarDependenciasExclusao(conta.getNome(), dependencias);
+        MetodosUteis.validarDependenciasExclusao(messageSource, conta.getNome(), dependencias);
     }
 }

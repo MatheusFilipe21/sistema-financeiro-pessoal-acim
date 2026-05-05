@@ -4,10 +4,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import br.com.sfpacim.backend.dtos.conta.SelecaoContaDTO;
 import br.com.sfpacim.backend.models.Conta;
+import br.com.sfpacim.backend.models.enums.InstituicaoFinanceira;
 
 /**
  * Repositório para a entidade {@link Conta}.
@@ -17,7 +21,18 @@ import br.com.sfpacim.backend.models.Conta;
  *
  * @author Matheus F. N. Pereira
  */
-public interface ContaRepository extends JpaRepository<Conta, UUID> {
+public interface ContaRepository extends JpaRepository<Conta, UUID>, JpaSpecificationExecutor<Conta> {
+
+    /**
+     * Verifica se existe alguma conta vinculada a um ID de pessoa específico,
+     * garantindo também a validação de propriedade do usuário.
+     *
+     * @param usuarioId O ID do usuário dono da conta.
+     * @param pessoaId  O ID da pessoa a ser verificada.
+     * @return {@code true} se existir pelo menos uma conta; {@code false} caso
+     *         contrário.
+     */
+    boolean existsByPessoaUsuarioIdAndPessoaId(UUID usuarioId, UUID pessoaId);
 
     /**
      * Busca uma conta garantindo primeiro a titularidade do usuário e depois o ID
@@ -31,38 +46,54 @@ public interface ContaRepository extends JpaRepository<Conta, UUID> {
     Optional<Conta> findByPessoaUsuarioIdAndId(UUID usuarioId, UUID id);
 
     /**
-     * Busca todas as contas vinculadas a um ID de usuário (através de suas
-     * pessoas).
+     * Valida a existência de uma conta duplicada (mesmo nome e instituição) para a
+     * mesma pessoa, ignorando acentos e caixa.
      *
      * <p>
-     * Utiliza {@link EntityGraph} para resolver o problema de consultas N+1,
-     * forçando o Hibernate a trazer os dados da Pessoa em um único JOIN no
-     * banco de dados, otimizando a listagem geral.
-     *
-     * @param usuarioId O ID do usuário dono das contas.
-     * @return Lista de contas com a entidade Pessoa já carregada na memória.
+     * A regra de unicidade de contas é composta pelo vínculo com a pessoa, a
+     * instituição financeira e o nome da conta normalizado via {@code unaccent}.
+     * 
+     * @param usuarioId   O ID do usuário dono da conta.
+     * @param pessoaId    O ID da pessoa titular da conta.
+     * @param instituicao A instituição financeira da conta.
+     * @param nome        O nome da conta a ser verificado.
+     * @param id          O ID da conta atual para desconsiderá-la em caso de
+     *                    atualização.
+     *                    Pode ser nulo para novos cadastros.
+     * @return {@code true} se já existir uma conta equivalente para a pessoa;
+     *         {@code false} caso contrário.
      */
-    @EntityGraph(attributePaths = "pessoa")
-    List<Conta> findByPessoaUsuarioId(UUID usuarioId);
+    @Query("""
+                SELECT COUNT(c) > 0
+                FROM Conta c
+                WHERE c.pessoa.usuario.id = :usuarioId
+                AND c.pessoa.id = :pessoaId
+                AND c.instituicao = :instituicao
+                AND (:id IS NULL OR c.id <> :id)
+                AND unaccent(LOWER(c.nome)) = unaccent(LOWER(:nome))
+            """)
+    boolean existeContaDuplicada(@Param("usuarioId") UUID usuarioId, @Param("pessoaId") UUID pessoaId,
+            @Param("instituicao") InstituicaoFinanceira instituicao, @Param("nome") String nome, @Param("id") UUID id);
 
     /**
-     * Busca todas as contas vinculadas a uma pessoa específica, garantindo a
-     * titularidade do usuário.
+     * Busca a lista de contas formatada para componentes de seleção.
      *
-     * @param usuarioId O ID do usuário dono das contas.
-     * @param pessoaId  O ID da pessoa titular.
-     * @return Lista de contas da pessoa.
-     */
-    List<Conta> findByPessoaUsuarioIdAndPessoaId(UUID usuarioId, UUID pessoaId);
-
-    /**
-     * Verifica se existe alguma conta vinculada a um ID de pessoa específico,
-     * garantindo também a validação de propriedade do usuário.
+     * <p>
+     * Utiliza projeção direta via JPQL para instanciar o DTO sem sobrecarregar o
+     * contexto de persistência do Hibernate. O alias 'pessoaNome' garante o
+     * mapeamento correto para o Record.
      *
-     * @param usuarioId O ID do usuário dono da conta.
-     * @param pessoaId  O ID da pessoa a ser verificada.
-     * @return {@code true} se existir pelo menos uma conta; {@code false} caso
-     *         contrário.
+     * @param usuarioId O identificador do usuário autenticado.
+     * @return Uma lista de {@link SelecaoContaDTO} pronta para Dropdowns.
      */
-    boolean existsByPessoaUsuarioIdAndPessoaId(UUID usuarioId, UUID pessoaId);
+    @Query("""
+            SELECT c.id AS id,
+                   c.nome AS nome,
+                   c.instituicao AS instituicao,
+                   c.pessoa.nome AS pessoaNome
+            FROM Conta c
+            WHERE c.pessoa.usuario.id = :usuarioId
+            ORDER BY c.nome ASC
+            """)
+    List<SelecaoContaDTO> buscarOpcoesParaSelecao(@Param("usuarioId") UUID usuarioId);
 }
