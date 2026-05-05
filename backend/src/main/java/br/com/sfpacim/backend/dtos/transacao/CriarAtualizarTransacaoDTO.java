@@ -13,57 +13,69 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 /**
- * DTO (Data Transfer Object) para recebimento de dados de criação e
- * atualização de transações.
+ * DTO (Data Transfer Object) para encapsular os dados de entrada para a
+ * criação ou atualização de uma transação.
  *
- * <p>
- * Contém as validações de integridade dos dados de entrada (Bean Validation).
+ * Este record aplica as validações de negócio usando o Spring Validation.
  *
  * @author Matheus F. N. Pereira
+ *
+ * @param descricao       A descrição da transação.
+ * @param valor           O valor da transação (deve ser positivo).
+ * @param dataCompetencia A data de competência (fato gerador).
+ * @param dataVencimento  A data de vencimento.
+ * @param dataPagamento   A data do efetivo pagamento (opcional).
+ * @param tipo            O tipo da transação (RECEITA ou DESPESA).
+ * @param status          O status da transação (PENDENTE ou PAGO).
+ * @param observacao      Observações adicionais (opcional).
+ * @param categoriaId     O identificador único da categoria vinculada.
+ * @param contaId         O identificador único da conta vinculada.
+ * @param pessoaId        O identificador único da pessoa vinculada (opcional).
  */
-@Schema(description = "DTO utilizado para cadastrar ou atualizar uma transação.")
+@Schema(description = "${transacao.descricao.schema.criacao-atualizacao}")
 public record CriarAtualizarTransacaoDTO(
 
-        @Schema(description = "Descrição da transação.", example = "Conta de Luz") //
-        @NotBlank(message = "A descrição é obrigatória.") //
-        @Size(max = 255, message = "A descrição deve ter no máximo 255 caracteres.") String descricao,
+        @Schema(description = "${transacao.descricao.descricao}", example = "${transacao.exemplo.descricao}") //
+        @NotBlank(message = "{transacao.validacao.descricao.obrigatoria}") //
+        @Size(max = 255, message = "{transacao.validacao.descricao.tamanho}") //
+        String descricao,
 
-        @Schema(description = "Valor da transação (deve ser positivo).", example = "150.90") //
-        @NotNull(message = "O valor é obrigatório.") //
-        @Positive(message = "O valor deve ser maior que zero.") //
+        @Schema(description = "${transacao.descricao.valor.criacao}", example = "${transacao.exemplo.valor}") //
+        @NotNull(message = "{transacao.validacao.valor.obrigatorio}") //
+        @Positive(message = "{transacao.validacao.valor.positivo}") //
         BigDecimal valor,
 
-        @Schema(description = "Data de competência.", example = "2026-02-14") //
-        @NotNull(message = "A data de competência é obrigatória.") //
+        @Schema(description = "${transacao.descricao.data-competencia}", example = "${transacao.exemplo.data-competencia}") //
+        @NotNull(message = "{transacao.validacao.data-competencia.obrigatoria}") //
         LocalDate dataCompetencia,
 
-        @Schema(description = "Data de vencimento.", example = "2026-02-20") //
-        @NotNull(message = "A data de vencimento é obrigatória.") //
+        @Schema(description = "${transacao.descricao.data-vencimento}", example = "${transacao.exemplo.data-vencimento}") //
+        @NotNull(message = "{transacao.validacao.data-vencimento.obrigatoria}") //
         LocalDate dataVencimento,
 
-        @Schema(description = "Data de pagamento (Opcional).", example = "2026-02-18") //
+        @Schema(description = "${transacao.descricao.data-pagamento}", example = "${transacao.exemplo.data-pagamento}") //
         LocalDate dataPagamento,
 
-        @Schema(description = "Tipo da transação.", example = "DESPESA") //
-        @NotNull(message = "O tipo é obrigatório.") //
+        @Schema(description = "${transacao.descricao.tipo}", example = "${transacao.exemplo.tipo}") //
+        @NotNull(message = "{geral.validacao.tipo.obrigatorio}") //
         TipoTransacao tipo,
 
-        @Schema(description = "Status da transação.", example = "PENDENTE") //
-        @NotNull(message = "O status é obrigatório.") //
+        @Schema(description = "${transacao.descricao.status}", example = "${transacao.exemplo.status}") //
+        @NotNull(message = "{transacao.validacao.status.obrigatorio}") //
         StatusTransacao status,
 
-        @Schema(description = "Observações adicionais.", example = "Referente ao consumo de Janeiro.") //
-        @Size(max = 500, message = "A observação deve ter no máximo 500 caracteres.") //
+        @Schema(description = "${transacao.descricao.observacao}", example = "${transacao.exemplo.observacao}") //
+        @Size(max = 500, message = "{transacao.validacao.observacao.tamanho}") //
         String observacao,
 
-        @Schema(description = "ID da categoria vinculada.", example = "c8f2a1b3-4d5e-6f7g-8h9i-0j1k2l3m4n5o") //
-        @NotNull(message = "A categoria é obrigatória.") //
+        @Schema(description = "${transacao.descricao.categoria-id}", example = "${categoria.exemplo.id}") //
+        @NotNull(message = "{transacao.validacao.categoria.obrigatoria}") //
         UUID categoriaId,
 
-        @Schema(description = "ID da conta vinculada.", example = "b2c3d4e5-f6a7-8901-2345-67890abcdef1") //
-        @NotNull(message = "A conta é obrigatória.") //
+        @Schema(description = "${transacao.descricao.conta-id}", example = "${conta.exemplo.id}") //
+        @NotNull(message = "{transacao.validacao.conta.obrigatoria}") //
         UUID contaId,
 
-        @Schema(description = "ID da pessoa vinculada (Opcional).", example = "a1b2c3d4-e5f6-7890-1234-56789abcdef0") //
+        @Schema(description = "${transacao.descricao.pessoa-id}", example = "${pessoa.exemplo.id}") //
         UUID pessoaId) {
 }

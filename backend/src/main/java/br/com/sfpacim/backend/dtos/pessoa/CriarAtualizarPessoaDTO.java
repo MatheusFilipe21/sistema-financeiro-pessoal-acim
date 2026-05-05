@@ -16,13 +16,13 @@ import jakarta.validation.constraints.NotBlank;
  *
  * @param nome O nome da pessoa (Obrigatório).
  */
-@Schema(description = "DTO utilizado para cadastrar ou atualizar uma pessoa.")
+@Schema(description = "${pessoa.descricao.schema.criacao-atualizacao}")
 public record CriarAtualizarPessoaDTO(
 
-        @Schema(description = "Nome da pessoa.", example = "Matheus Filipe do Nascimento Pereira") //
-        @NotBlank(message = "O nome é obrigatório.") //
+        @Schema(description = "${pessoa.descricao.nome}", example = "${pessoa.exemplo.nome}") //
+        @NotBlank(message = "{geral.validacao.nome.obrigatorio}") //
         String nome,
 
-        @Schema(description = "Define se a pessoa será titular de contas/cartões (Padrão: false).", example = "true") //
+        @Schema(description = "${pessoa.descricao.titular}", example = "${pessoa.exemplo.titular}") //
         Boolean titular) {
 }

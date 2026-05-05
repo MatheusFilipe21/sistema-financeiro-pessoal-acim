@@ -13,9 +13,7 @@ import jakarta.validation.constraints.NotNull;
  * atualização de contas.
  *
  * <p>
- * Este record é usado exclusivamente como corpo da requisição (@RequestBody)
- * nos endpoints POST e PUT. Contém as validações necessárias para garantir
- * a integridade dos dados antes de chegarem à camada de serviço.
+ * Este record aplica as validações de negócio usando o Spring Validation.
  *
  * @author Matheus F. N. Pereira
  *
@@ -24,22 +22,22 @@ import jakarta.validation.constraints.NotNull;
  * @param saldoInicial Saldo inicial da conta (Obrigatório).
  * @param pessoaId     ID da pessoa titular da conta (Obrigatório).
  */
-@Schema(description = "DTO utilizado para cadastrar ou atualizar uma conta bancária.")
+@Schema(description = "${conta.descricao.schema.criacao-atualizacao}")
 public record CriarAtualizarContaDTO(
 
-        @Schema(description = "Nome identificador da conta.", example = "Investimentos Mercado Pago") //
-        @NotBlank(message = "O nome é obrigatório.") //
+        @Schema(description = "${conta.descricao.nome}", example = "${conta.exemplo.nome}") //
+        @NotBlank(message = "{geral.validacao.nome.obrigatorio}") //
         String nome,
 
-        @Schema(description = "Instituição financeira vinculada.", example = "MERCADO_PAGO") //
-        @NotNull(message = "A instituição financeira é obrigatória.") //
+        @Schema(description = "${conta.descricao.instituicao}", example = "${conta.exemplo.instituicao}") //
+        @NotNull(message = "{conta.validacao.instituicao.obrigatoria}") //
         InstituicaoFinanceira instituicao,
 
-        @Schema(description = "Saldo inicial da conta.", example = "1500.50") //
-        @NotNull(message = "O saldo inicial é obrigatório.") //
+        @Schema(description = "${conta.descricao.saldo-inicial}", example = "${conta.exemplo.saldo-inicial.novo}") //
+        @NotNull(message = "{conta.validacao.saldo-inicial.obrigatorio}") //
         BigDecimal saldoInicial,
 
-        @Schema(description = "ID da pessoa titular da conta.", example = "f47ac10b-58cc-4372-a567-0e02b2c3d479") //
-        @NotNull(message = "A pessoa titular é obrigatória.") //
+        @Schema(description = "${conta.descricao.pessoa-id}", example = "${pessoa.exemplo.id}") //
+        @NotNull(message = "{conta.validacao.pessoa-id.obrigatorio}") //
         UUID pessoaId) {
 }

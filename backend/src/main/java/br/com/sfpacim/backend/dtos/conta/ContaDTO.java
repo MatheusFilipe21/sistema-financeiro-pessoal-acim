@@ -3,7 +3,6 @@ package br.com.sfpacim.backend.dtos.conta;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-import br.com.sfpacim.backend.dtos.pessoa.PessoaDTO;
 import br.com.sfpacim.backend.models.Conta;
 import br.com.sfpacim.backend.models.enums.InstituicaoFinanceira;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -12,10 +11,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * DTO (Data Transfer Object) para expor os dados públicos de uma
  * {@link Conta}.
  *
- * <p>
- * Usado como resposta JSON padrão. Inclui os dados da pessoa titular
- * para facilitar a exibição no frontend.
- *
  * @author Matheus F. N. Pereira
  *
  * @param id           O identificador único da conta.
@@ -23,28 +18,28 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * @param instituicao  A instituição financeira.
  * @param saldoInicial O saldo inicial cadastrado.
  * @param saldoAtual   O saldo atualizado (calculado).
- * @param pessoa       DTO com os dados do titular.
+ * @param pessoaId     O identificador único da pessoa titular da conta.
  */
-@Schema(description = "DTO para representar os dados de uma conta cadastrada.")
+@Schema(description = "${conta.descricao.schema.leitura}")
 public record ContaDTO(
 
-        @Schema(description = "Identificador único da conta.", example = "a1b2c3d4-e5f6-7890-1234-56789abcdef0") //
+        @Schema(description = "${conta.descricao.id}", example = "${conta.exemplo.id}") //
         UUID id,
 
-        @Schema(description = "Nome da conta.", example = "Investimentos Mercado Pago") //
+        @Schema(description = "${conta.descricao.nome}", example = "${conta.exemplo.nome}") //
         String nome,
 
-        @Schema(description = "Instituição financeira.", example = "MERCADO_PAGO") //
+        @Schema(description = "${conta.descricao.instituicao}", example = "${conta.exemplo.instituicao}") //
         InstituicaoFinanceira instituicao,
 
-        @Schema(description = "Saldo inicial informado no cadastro.", example = "1000.00") //
+        @Schema(description = "${conta.descricao.saldo-inicial}", example = "${conta.exemplo.saldo-inicial}") //
         BigDecimal saldoInicial,
 
-        @Schema(description = "Saldo atual calculado.", example = "1250.50") //
+        @Schema(description = "${conta.descricao.saldo-atual}", example = "${conta.exemplo.saldo-atual}") //
         BigDecimal saldoAtual,
 
-        @Schema(description = "Dados da pessoa titular da conta.") //
-        PessoaDTO pessoa) {
+        @Schema(description = "${conta.descricao.pessoa-id}", example = "${pessoa.exemplo.id}") //
+        UUID pessoaId) {
 
     /**
      * Construtor customizado para mapear/converter a entidade {@link Conta}
@@ -59,6 +54,6 @@ public record ContaDTO(
                 conta.getInstituicao(),
                 conta.getSaldoInicial(),
                 conta.getSaldoAtual(),
-                new PessoaDTO(conta.getPessoa()));
+                conta.getPessoa().getId());
     }
 }

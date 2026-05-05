@@ -10,28 +10,28 @@ import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
- * Representa um erro de validação contendo uma lista de campos com mensagens de
- * erro específicas.
+ * DTO (Data Transfer Object) para encapsular um erro de validação contendo uma
+ * lista de campos com mensagens de erro específicas.
  *
  * @author Matheus F. N. Pereira
+ *
+ * @param erro  Contém os dados padrão do erro (Status, Título, Mensagem, Rota,
+ *              Data/Hora).
+ * @param erros Lista de erros de validação, cada um representando um campo e
+ *              sua respectiva mensagem de erro.
  */
-@Schema(description = "Representa um erro de validação contendo detalhes sobre os campos inválidos.")
-public class ErroValidacaoDTO {
+@Schema(description = "${erro.descricao.schema.validacao}")
+public record ErroValidacaoDTO(
+
+        @Schema(description = "${erro.descricao.validacao.erro}") //
+        ErroPadraoDTO erro,
+
+        @ArraySchema(schema = @Schema(description = "${erro.descricao.validacao.erros}")) //
+        List<CampoMensagemDTO> erros) {
 
     /**
-     * Contém os dados padrão do erro (Status, Título, Mensagem, Rota, Data/Hora).
-     */
-    private final ErroPadraoDTO erro;
-
-    /**
-     * Lista de erros de validação, cada um representando um campo e sua respectiva
-     * mensagem de erro.
-     */
-    @ArraySchema(schema = @Schema(description = "Lista de erros de validação.", example = "[{\"campo\": \"email\", \"mensagem\": \"O email é inválido.\"}]"))
-    private final List<CampoMensagemDTO> erros = new ArrayList<>();
-
-    /**
-     * Construtor que inicializa o objeto com as informações básicas do erro.
+     * Construtor customizado que inicializa o objeto com as informações básicas do
+     * erro e prepara a lista de erros de validação vazia.
      *
      * @param statusHTTP Status HTTP do erro.
      * @param titulo     Título do erro.
@@ -39,7 +39,7 @@ public class ErroValidacaoDTO {
      * @param rota       Rota em que o erro ocorreu.
      */
     public ErroValidacaoDTO(HttpStatus statusHTTP, String titulo, String mensagem, String rota) {
-        this.erro = new ErroPadraoDTO(statusHTTP, titulo, mensagem, rota);
+        this(new ErroPadraoDTO(statusHTTP, titulo, mensagem, rota), new ArrayList<>());
     }
 
     /**
@@ -55,27 +55,10 @@ public class ErroValidacaoDTO {
     /**
      * Adiciona um erro de validação à lista de erros com base
      * em um FieldError do Spring Validation.
+     *
+     * @param erro O erro capturado pelo Spring.
      */
     public void adicionarErro(FieldError erro) {
         this.adicionarErro(erro.getField(), erro.getDefaultMessage());
-    }
-
-    /**
-     * Obtém o objeto de erro padrão contendo as informações
-     * básicas do erro (Status, Título, Mensagem, Rota, Data/Hora).
-     *
-     * @return O DTO {@link ErroPadraoDTO} associado.
-     */
-    public ErroPadraoDTO getErro() {
-        return erro;
-    }
-
-    /**
-     * Obtém a lista de erros de validação detalhados por campo.
-     *
-     * @return A lista de {@link CampoMensagemDTO}.
-     */
-    public List<CampoMensagemDTO> getErros() {
-        return erros;
     }
 }

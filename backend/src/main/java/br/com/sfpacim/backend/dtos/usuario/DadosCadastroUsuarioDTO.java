@@ -6,40 +6,33 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
 /**
- * DTO (Data Transfer Object) que representa os dados recebidos
- * no JSON da requisição de cadastro de usuário.
+ * DTO (Data Transfer Object) para encapsular os dados de entrada
+ * do cadastro de um usuário.
  * 
  * <p>
  * Este record aplica as validações de negócio usando o Spring Validation.
  *
  * @author Matheus F. N. Pereira
+ * 
+ * @param nome  O nome do usuário.
+ * @param email O e-mail único do usuário (será usado para login).
+ * @param senha A senha de acesso (mínimo 8 caracteres, 1 maiúscula, 1
+ *              minúscula, 1 número).
  */
-@Schema(description = "Dados de entrada para o cadastro de um novo usuário.")
+@Schema(description = "${usuario.descricao.schema.cadastro}")
 public record DadosCadastroUsuarioDTO(
 
-        /**
-         * O nome é obrigatório.
-         */
-        @Schema(description = "Nome do usuário.", example = "Matheus Filipe do Nascimento Pereira") //
-        @NotBlank(message = "O nome é obrigatório.") //
+        @Schema(description = "${usuario.descricao.nome}", example = "${usuario.exemplo.nome}") //
+        @NotBlank(message = "{geral.validacao.nome.obrigatorio}") //
         String nome,
 
-        /**
-         * O e-mail deve ter um formato válido.
-         * O e-mail é obrigatório.
-         */
-        @Schema(description = "E-mail único (será usado para login).", example = "matheusfnpereira@gmail.com") //
-        @NotBlank(message = "O e-mail é obrigatório.") //
-        @Email(message = "O formato do e-mail é inválido.") //
+        @Schema(description = "${usuario.descricao.email.cadastro}", example = "${usuario.exemplo.email}") //
+        @NotBlank(message = "{usuario.validacao.email.obrigatorio}") //
+        @Email(message = "{usuario.validacao.email.invalido}") //
         String email,
 
-        /**
-         * A senha deve ser complexa.
-         * A senha é obrigatória.
-         * Regra: Mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número.
-         */
-        @Schema(description = "Senha de acesso (mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número).", example = "Ab123456") //
-        @NotBlank(message = "A senha é obrigatória.") //
-        @Pattern(regexp = "^(?=.*[\\d])(?=.*[a-z])(?=.*[A-Z]).{8,}$", message = "A senha deve ter no mínimo 8 caracteres, contendo ao menos uma letra maiúscula, uma minúscula e um número.") //
+        @Schema(description = "${usuario.descricao.senha}", example = "${usuario.exemplo.senha}") //
+        @NotBlank(message = "{usuario.validacao.senha.obrigatoria}") //
+        @Pattern(regexp = "^(?=.*[\\d])(?=.*[a-z])(?=.*[A-Z]).{8,}$", message = "{usuario.validacao.senha.padrao}") //
         String senha) {
 }

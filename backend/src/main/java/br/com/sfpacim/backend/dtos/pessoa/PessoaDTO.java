@@ -9,30 +9,27 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * DTO (Data Transfer Object) para expor os dados públicos de uma
  * {@link Pessoa}.
  *
- * <p>
- * Este record é usado como a resposta JSON padrão para endpoints
- * de listagem e detalhamento de pessoas.
- *
  * @author Matheus F. N. Pereira
  *
- * @param id   O identificador único (UUID) da pessoa.
- * @param nome O nome da pessoa.
+ * @param id      O identificador único (UUID) da pessoa.
+ * @param nome    O nome da pessoa.
+ * @param titular Indica se esta pessoa é titular de contas e cartões.
  */
-@Schema(description = "DTO para representar os dados de uma pessoa cadastrada.")
+@Schema(description = "${pessoa.descricao.schema.leitura}")
 public record PessoaDTO(
 
-        @Schema(description = "Identificador único da pessoa.", example = "f47ac10b-58cc-4372-a567-0e02b2c3d479") //
+        @Schema(description = "${pessoa.descricao.id}", example = "${pessoa.exemplo.id}") //
         UUID id,
 
-        @Schema(description = "Nome da pessoa.", example = "Matheus Filipe do Nascimento Pereira") //
+        @Schema(description = "${pessoa.descricao.nome}", example = "${pessoa.exemplo.nome}") //
         String nome,
 
-        @Schema(description = "Indica se esta pessoa pode ser titular de contas/cartões.", example = "true") //
+        @Schema(description = "${pessoa.descricao.titular}", example = "${pessoa.exemplo.titular}") //
         boolean titular) {
 
     /**
      * Construtor customizado para mapear/converter a entidade {@link Pessoa}
-     * (vinda do banco) para este DTO (que será enviado como JSON).
+     * para este DTO.
      *
      * @param pessoa A entidade JPA Pessoa a ser convertida.
      */

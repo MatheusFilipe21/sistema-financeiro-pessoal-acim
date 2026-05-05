@@ -16,45 +16,58 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * {@link Transacao}.
  *
  * @author Matheus F. N. Pereira
+ *
+ * @param id              Identificador único da transação.
+ * @param descricao       Descrição curta do lançamento.
+ * @param valor           Valor monetário da transação.
+ * @param dataCompetencia Data de competência (Fato gerador).
+ * @param dataVencimento  Data de vencimento.
+ * @param dataPagamento   Data do efetivo pagamento (pode ser nulo).
+ * @param tipo            Tipo da transação (RECEITA ou DESPESA).
+ * @param status          Status atual (PENDENTE ou PAGO).
+ * @param observacao      Observações adicionais.
+ * @param categoriaId     ID da categoria vinculada.
+ * @param contaId         ID da conta vinculada.
+ * @param pessoaId        ID da pessoa vinculada (Opcional).
  */
-@Schema(description = "DTO para representar uma transação financeira (Receita ou Despesa).")
+@Schema(description = "${transacao.descricao.schema.leitura}")
 public record TransacaoDTO(
 
-        @Schema(description = "Identificador único da transação.", example = "a1b2c3d4-e5f6-7890-1234-56789abcdef0") //
+        @Schema(description = "${transacao.descricao.id}", example = "${transacao.exemplo.id}") //
         UUID id,
 
-        @Schema(description = "Descrição curta do lançamento.", example = "Compras no Supermercado") //
+        @Schema(description = "${transacao.descricao.descricao.curta}", example = "${transacao.exemplo.descricao.extrato}") //
         String descricao,
 
-        @Schema(description = "Valor monetário da transação.", example = "450.50") //
-        @Positive(message = "O valor da transação deve ser maior que zero.") //
+        @Schema(description = "${transacao.descricao.valor}", example = "${transacao.exemplo.valor.extrato}") //
+        @Positive(message = "{transacao.validacao.valor.positivo}") //
         BigDecimal valor,
 
-        @Schema(description = "Data de competência (Fato gerador).", example = "2026-02-10") //
+        @Schema(description = "${transacao.descricao.data-competencia}", example = "${transacao.exemplo.data-competencia}") //
         LocalDate dataCompetencia,
 
-        @Schema(description = "Data de vencimento.", example = "2026-02-15") //
+        @Schema(description = "${transacao.descricao.data-vencimento}", example = "${transacao.exemplo.data-vencimento}") //
         LocalDate dataVencimento,
 
-        @Schema(description = "Data do efetivo pagamento (pode ser nulo).", example = "2026-02-14") //
+        @Schema(description = "${transacao.descricao.data-pagamento}", example = "${transacao.exemplo.data-pagamento}") //
         LocalDate dataPagamento,
 
-        @Schema(description = "Tipo da transação (RECEITA ou DESPESA).", example = "DESPESA") //
+        @Schema(description = "${transacao.descricao.tipo}", example = "${transacao.exemplo.tipo}") //
         TipoTransacao tipo,
 
-        @Schema(description = "Status atual (PENDENTE ou PAGO).", example = "PAGO") //
+        @Schema(description = "${transacao.descricao.status}", example = "${transacao.exemplo.status}") //
         StatusTransacao status,
 
-        @Schema(description = "Observações adicionais.", example = "Compra do mês incluindo itens de limpeza.") //
+        @Schema(description = "${transacao.descricao.observacao}", example = "${transacao.exemplo.observacao}") //
         String observacao,
 
-        @Schema(description = "ID da categoria vinculada.") //
+        @Schema(description = "${transacao.descricao.categoria-id}", example = "${categoria.exemplo.id}") //
         UUID categoriaId,
 
-        @Schema(description = "ID da conta vinculada.", example = "b2c3d4e5-f6a7-8901-2345-67890abcdef1") //
+        @Schema(description = "${transacao.descricao.conta-id}", example = "${conta.exemplo.id}") //
         UUID contaId,
 
-        @Schema(description = "ID da pessoa vinculada (Opcional).", example = "c3d4e5f6-a7b8-9012-3456-7890abcdef2") //
+        @Schema(description = "${transacao.descricao.pessoa-id}", example = "${pessoa.exemplo.id}") //
         UUID pessoaId) {
 
     /**

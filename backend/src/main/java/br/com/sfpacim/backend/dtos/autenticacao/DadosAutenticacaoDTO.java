@@ -5,23 +5,23 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * DTO (Record) que representa os dados de entrada (JSON)
- * para o endpoint de login (POST /autenticacao/login).
+ * DTO (Data Transfer Object) para encapsular os dados de entrada para a
+ * autenticação (login) de um usuário.
  *
  * @author Matheus F. N. Pereira
  *
- * @param email O e-mail do usuário.
- * @param senha A senha (em texto puro) do usuário.
+ * @param email O e-mail cadastrado do usuário.
+ * @param senha A senha de acesso (em texto puro).
  */
-@Schema(description = "Dados de entrada para a autenticação (login) de um usuário.")
+@Schema(description = "${autenticacao.descricao.schema.login}")
 public record DadosAutenticacaoDTO(
 
-        @Schema(description = "E-mail cadastrado.", example = "matheusfnpereira@gmail.com") //
-        @NotBlank(message = "O e-mail é obrigatório.") //
-        @Email(message = "O formato do e-mail é inválido.") //
+        @Schema(description = "${autenticacao.descricao.email}", example = "${usuario.exemplo.email}") //
+        @NotBlank(message = "{usuario.validacao.email.obrigatorio}") //
+        @Email(message = "{usuario.validacao.email.invalido}") //
         String email,
 
-        @Schema(description = "Senha de acesso.", example = "Ab123456") //
-        @NotBlank(message = "A senha é obrigatória.") //
+        @Schema(description = "${autenticacao.descricao.senha}", example = "${usuario.exemplo.senha}") //
+        @NotBlank(message = "{usuario.validacao.senha.obrigatoria}") //
         String senha) {
 }

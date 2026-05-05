@@ -19,25 +19,25 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * @param cor     Cor hexadecimal.
  * @param sistema Indica se é uma categoria padrão do sistema (não editável).
  */
-@Schema(description = "DTO para representar uma categoria de transação.")
+@Schema(description = "${categoria.descricao.schema.leitura}")
 public record CategoriaDTO(
 
-        @Schema(description = "Identificador único da categoria.", example = "c8f2a1b3-4d5e-6f7g-8h9i-0j1k2l3m4n5o") //
+        @Schema(description = "${categoria.descricao.id}", example = "${categoria.exemplo.id}") //
         UUID id,
 
-        @Schema(description = "Nome da categoria.", example = "Alimentação") //
+        @Schema(description = "${categoria.descricao.nome}", example = "${categoria.exemplo.nome}") //
         String nome,
 
-        @Schema(description = "Tipo da categoria.", example = "DESPESA") //
+        @Schema(description = "${categoria.descricao.tipo}", example = "${categoria.exemplo.tipo}") //
         TipoCategoria tipo,
 
-        @Schema(description = "Ícone visual (Material Icons).", example = "restaurant") //
+        @Schema(description = "${categoria.descricao.icone}", example = "${categoria.exemplo.icone}") //
         String icone,
 
-        @Schema(description = "Cor hexadecimal para exibição.", example = "#FF5733") //
+        @Schema(description = "${categoria.descricao.cor}", example = "${categoria.exemplo.cor}") //
         String cor,
 
-        @Schema(description = "Indica se a categoria é padrão do sistema (bloqueada para edição).", example = "true") //
+        @Schema(description = "${categoria.descricao.sistema}", example = "${categoria.exemplo.sistema}") //
         boolean sistema) {
 
     /**

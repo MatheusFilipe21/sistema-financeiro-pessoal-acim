@@ -5,22 +5,18 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * DTO (Record) que representa os dados de entrada (JSON)
- * para o endpoint de solicitação de recuperação de senha (POST
- * /autenticacao/recuperar-senha).
+ * DTO (Data Transfer Object) para encapsular os dados de entrada para a
+ * solicitação de recuperação de senha.
  *
  * @author Matheus F. N. Pereira
  *
- * @param email O e-mail cadastrado do usuário.
+ * @param email O e-mail cadastrado do usuário (obrigatório e formato válido).
  */
+@Schema(description = "${autenticacao.descricao.schema.recuperacao}")
 public record DadosRecuperacaoSenhaDTO(
 
-        /**
-         * O e-mail deve ter um formato válido.
-         * O e-mail é obrigatório.
-         */
-        @Schema(description = "E-mail cadastrado.", example = "matheusfnpereira@gmail.com") //
-        @NotBlank(message = "O e-mail é obrigatório.") //
-        @Email(message = "O formato do e-mail é inválido.") //
+        @Schema(description = "${autenticacao.descricao.email}", example = "${usuario.exemplo.email}") //
+        @NotBlank(message = "{usuario.validacao.email.obrigatorio}") //
+        @Email(message = "{usuario.validacao.email.invalido}") //
         String email) {
 }

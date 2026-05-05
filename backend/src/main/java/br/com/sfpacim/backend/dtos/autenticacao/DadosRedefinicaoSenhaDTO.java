@@ -5,28 +5,24 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
 /**
- * DTO com os dados necessários para efetivar a troca de senha.
+ * DTO (Data Transfer Object) para encapsular os dados necessários para
+ * efetivar a redefinição de senha.
+ *
+ * @author Matheus F. N. Pereira
  *
  * @param token O token JWT recebido por e-mail.
- * @param senha A nova senha desejada (deve seguir as regras de
- *              complexidade).
+ * @param senha A nova senha desejada (mínimo 8 caracteres, 1 maiúscula, 1
+ *              minúscula, 1 número).
  */
+@Schema(description = "${autenticacao.descricao.schema.redefinicao}")
 public record DadosRedefinicaoSenhaDTO(
 
-        /**
-         * O token é obrigatório.
-         */
-        @Schema(description = "Token de recuperação Bearer (JWT).", example = "eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJTRlAtQUNJTSBBUEkiLCJzdWIiOiJtYXRoZXVzZm5wZXJlaXJhQGdtYWlsLmNvbSIsImlhdCI6MTc2NTExMTMzMCwiZXhwIjoxNzY1MTI1NzMwfQ.MB0urXWxU4Hr4J3XA61x_RfzKmNzbs3uJ5rwVStnzg8oCfHYlgN-vsNrrU7CKYNnfs8MvUrMnK1Vw2Dkbr2pPg") //
-        @NotBlank(message = "O token é obrigatório") //
+        @Schema(description = "${autenticacao.descricao.token.recuperacao}", example = "${autenticacao.exemplo.token.recuperacao}") //
+        @NotBlank(message = "{autenticacao.validacao.token.obrigatorio}") //
         String token,
 
-        /**
-         * A senha deve ser complexa.
-         * A senha é obrigatória.
-         * Regra: Mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número.
-         */
-        @Schema(description = "Senha de acesso (mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número).", example = "Ab1234567") //
-        @NotBlank(message = "A senha é obrigatória.") //
-        @Pattern(regexp = "^(?=.*[\\d])(?=.*[a-z])(?=.*[A-Z]).{8,}$", message = "A senha deve ter no mínimo 8 caracteres, contendo ao menos uma letra maiúscula, uma minúscula e um número.") //
+        @Schema(description = "${usuario.descricao.senha}", example = "${usuario.exemplo.senha}") //
+        @NotBlank(message = "{usuario.validacao.senha.obrigatoria}") //
+        @Pattern(regexp = "^(?=.*[\\d])(?=.*[a-z])(?=.*[A-Z]).{8,}$", message = "{usuario.validacao.senha.padrao}") //
         String senha) {
 }

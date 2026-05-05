@@ -18,23 +18,23 @@ import io.swagger.v3.oas.annotations.media.Schema;
  *
  * @param id    O identificador único (UUID) do usuário.
  * @param nome  O nome do usuário.
- * @param email O e-mail (único) do usuário.
+ * @param email O e-mail único do usuário.
  */
-@Schema(description = "DTO para representar os dados públicos de um usuário no sistema.")
+@Schema(description = "${usuario.descricao.schema.leitura}")
 public record UsuarioDTO(
 
-        @Schema(description = "Identificador único (UUID) do usuário.", example = "f47ac10b-58cc-4372-a567-0e02b2c3d479") //
+        @Schema(description = "${usuario.descricao.id}", example = "${usuario.exemplo.id}") //
         UUID id,
 
-        @Schema(description = "Nome do usuário.", example = "Matheus Filipe do Nascimento Pereira") //
+        @Schema(description = "${usuario.descricao.nome}", example = "${usuario.exemplo.nome}") //
         String nome,
 
-        @Schema(description = "E-mail único do usuário (usado para login).", example = "matheus@email.com") //
+        @Schema(description = "${usuario.descricao.email.leitura}", example = "${usuario.exemplo.email}") //
         String email) {
 
     /**
-     * Construtor customizado para mapear/converter a entidade {@link Usuario}
-     * (vinda do banco) para este DTO (que será enviado como JSON).
+     * Construtor customizado para mapear a entidade {@link Usuario}
+     * para este DTO.
      *
      * @param usuario A entidade JPA Usuario a ser convertida.
      */

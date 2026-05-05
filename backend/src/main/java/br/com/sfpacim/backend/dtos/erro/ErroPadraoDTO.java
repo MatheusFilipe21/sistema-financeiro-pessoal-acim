@@ -8,26 +8,33 @@ import org.springframework.http.HttpStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
- * Estrutura padrão para representar erros na API.
+ * DTO (Data Transfer Object) com a estrutura padrão para
+ * representar erros na API.
  *
  * @author Matheus F. N. Pereira
+ *
+ * @param status   Código de status HTTP do erro.
+ * @param titulo   Título descritivo do erro.
+ * @param mensagem Mensagem detalhada sobre o problema.
+ * @param dataHora Data e hora em que o erro ocorreu.
+ * @param rota     Caminho do endpoint que gerou a falha.
  */
-@Schema(description = "Estrutura padrão para representar erros na API.")
+@Schema(description = "${erro.descricao.schema.padrao}")
 public record ErroPadraoDTO(
 
-        @Schema(description = "Código de status HTTP do erro.", example = "400") //
+        @Schema(description = "${erro.descricao.padrao.status}", example = "${erro.exemplo.padrao.status}") //
         Integer status,
 
-        @Schema(description = "Título do erro.", example = "Violação de Dados") //
+        @Schema(description = "${erro.descricao.padrao.titulo}", example = "${erro.exemplo.padrao.titulo}") //
         String titulo,
 
-        @Schema(description = "Mensagem detalhada do erro.", example = "O e-mail informado já está cadastrado.") //
+        @Schema(description = "${erro.descricao.padrao.mensagem}", example = "${erro.exemplo.padrao.mensagem}") //
         String mensagem,
 
-        @Schema(description = "Data e hora do erro no formato dd/MM/yyyy HH:mm.", example = "11/11/2025 08:00") //
+        @Schema(description = "${erro.descricao.padrao.data-hora}", example = "${erro.exemplo.padrao.data-hora}") //
         String dataHora,
 
-        @Schema(description = "Rota da requisição que gerou o erro.", example = "/api/autenticacao/cadastro") //
+        @Schema(description = "${erro.descricao.padrao.rota}", example = "${erro.exemplo.padrao.rota}") //
         String rota) {
 
     /**
